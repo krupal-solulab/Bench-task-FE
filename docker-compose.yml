@@ -1,0 +1,24 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api/v1}
+        VITE_APP_NAME: ${VITE_APP_NAME:-Project & Task Management}
+        VITE_ENABLE_DEVTOOLS: ${VITE_ENABLE_DEVTOOLS:-false}
+    image: ptm-web:local
+    ports:
+      - '8080:8080'
+    networks:
+      - ptm-network
+
+# The backend lives in a separate repository/compose stack. To run both together:
+#   1. docker network create ptm-network            (skip if it already exists)
+#   2. cd <backend-repo> && docker compose up -d     (backend's compose file must join `ptm-network`)
+#   3. cd <this-repo>    && docker compose up -d
+# The frontend then reaches the backend at whatever service name/port the backend's compose file
+# exposes on `ptm-network` — set VITE_API_BASE_URL accordingly before building the image.
+networks:
+  ptm-network:
+    external: true
+    name: ptm-network

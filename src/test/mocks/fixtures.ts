@@ -1,0 +1,113 @@
+import type { Comment } from '@/types/comment.types'
+import type { Project } from '@/types/project.types'
+import type { Task } from '@/types/task.types'
+import type { User } from '@/types/user.types'
+
+export const mockUsers: User[] = [
+  {
+    id: 'u-admin',
+    name: 'Ada Admin',
+    email: 'admin@example.com',
+    role: 'Admin',
+    isActive: true,
+    createdAt: '2025-01-01T00:00:00.000Z',
+    updatedAt: '2025-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'u-manager',
+    name: 'Mona Manager',
+    email: 'manager@example.com',
+    role: 'Manager',
+    isActive: true,
+    createdAt: '2025-01-01T00:00:00.000Z',
+    updatedAt: '2025-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'u-dev1',
+    name: 'Dev One',
+    email: 'dev1@example.com',
+    role: 'Developer',
+    isActive: true,
+    createdAt: '2025-01-01T00:00:00.000Z',
+    updatedAt: '2025-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'u-dev2',
+    name: 'Dev Two',
+    email: 'dev2@example.com',
+    role: 'Developer',
+    isActive: true,
+    createdAt: '2025-01-01T00:00:00.000Z',
+    updatedAt: '2025-01-01T00:00:00.000Z',
+  },
+]
+
+export const mockProjects: Project[] = [
+  {
+    id: 'p-1',
+    name: 'Website Revamp',
+    description: 'Redesign the marketing site.',
+    status: 'In Progress',
+    owner: mockUsers[1] as User,
+    members: [
+      { user: mockUsers[1] as User, role: 'owner', joinedAt: '2025-01-02T00:00:00.000Z' },
+      { user: mockUsers[2] as User, role: 'member', joinedAt: '2025-01-03T00:00:00.000Z' },
+    ],
+    dueDate: '2026-01-01T00:00:00.000Z',
+    taskCount: 2,
+    createdAt: '2025-01-01T00:00:00.000Z',
+    updatedAt: '2025-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'p-2',
+    name: 'Mobile App',
+    description: 'Native mobile client.',
+    status: 'Planning',
+    owner: mockUsers[0] as User,
+    members: [{ user: mockUsers[0] as User, role: 'owner', joinedAt: '2025-01-02T00:00:00.000Z' }],
+    dueDate: null,
+    taskCount: 0,
+    createdAt: '2025-01-05T00:00:00.000Z',
+    updatedAt: '2025-01-05T00:00:00.000Z',
+  },
+]
+
+export const mockTasks: Task[] = [
+  {
+    id: 't-1',
+    title: 'Design homepage hero',
+    description: 'New hero section with CTA.',
+    project: { id: 'p-1', name: 'Website Revamp' },
+    assignee: mockUsers[2] as User,
+    status: 'In Progress',
+    priority: 'P1',
+    dueDate: '2025-06-01T00:00:00.000Z',
+    createdBy: mockUsers[1] as User,
+    createdAt: '2025-01-10T00:00:00.000Z',
+    updatedAt: '2025-01-10T00:00:00.000Z',
+  },
+  {
+    id: 't-2',
+    title: 'Set up analytics',
+    description: 'Wire up product analytics events.',
+    project: { id: 'p-1', name: 'Website Revamp' },
+    assignee: mockUsers[3] as User,
+    status: 'Todo',
+    priority: 'P3',
+    dueDate: null,
+    createdBy: mockUsers[1] as User,
+    createdAt: '2025-01-11T00:00:00.000Z',
+    updatedAt: '2025-01-11T00:00:00.000Z',
+  },
+]
+
+export const mockComments: Comment[] = [
+  {
+    id: 'c-1',
+    taskId: 't-1',
+    body: 'Kicking this off today.',
+    author: mockUsers[2] as User,
+    createdAt: '2025-01-12T00:00:00.000Z',
+    updatedAt: '2025-01-12T00:00:00.000Z',
+  },
+]
