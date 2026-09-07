@@ -26,10 +26,9 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
 
-    /* Path aliases */
-    "baseUrl": ".",
+    /* Path aliases (paths are resolved relative to this file since TS 4.1+; no baseUrl needed) */
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"]
