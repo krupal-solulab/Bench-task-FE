@@ -142,4 +142,53 @@ export const handlers = [
       }),
     ),
   ),
+
+  http.get(url('/dashboard/projects-by-status'), () =>
+    HttpResponse.json(
+      ok([
+        { status: 'Planning', count: 1 },
+        { status: 'In Progress', count: 1 },
+        { status: 'Completed', count: 0 },
+      ]),
+    ),
+  ),
+  http.get(url('/dashboard/tasks-status'), () =>
+    HttpResponse.json(
+      ok([
+        { status: 'Todo', count: 1 },
+        { status: 'In Progress', count: 1 },
+        { status: 'Review', count: 0 },
+        { status: 'Done', count: 0 },
+      ]),
+    ),
+  ),
+  http.get(url('/dashboard/tasks-by-priority'), () =>
+    HttpResponse.json(
+      ok([
+        { priority: 'P1', count: 1 },
+        { priority: 'P2', count: 0 },
+        { priority: 'P3', count: 1 },
+      ]),
+    ),
+  ),
+  http.get(url('/dashboard/developer-workload'), () =>
+    HttpResponse.json(
+      ok([
+        { userId: 'u-dev1', name: 'Dev One', totalAssigned: 3, completed: 1, completionRate: 33 },
+        { userId: 'u-dev2', name: 'Dev Two', totalAssigned: 2, completed: 2, completionRate: 100 },
+      ]),
+    ),
+  ),
+  http.get(url('/dashboard/overdue-summary'), () => HttpResponse.json(ok([]))),
+  http.get(url('/dashboard/task-trend'), () =>
+    HttpResponse.json(
+      ok(
+        Array.from({ length: 7 }).map((_, i) => ({
+          date: new Date(Date.now() - (6 - i) * 86_400_000).toISOString().slice(0, 10),
+          created: Math.max(0, 3 - i),
+          completed: Math.max(0, i - 2),
+        })),
+      ),
+    ),
+  ),
 ]

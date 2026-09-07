@@ -17,6 +17,7 @@ export interface Project {
   status: ProjectStatus
   owner: User
   members: ProjectMember[]
+  startDate: string
   dueDate: string | null
   taskCount: number
   createdAt: string
@@ -37,6 +38,7 @@ export interface ProjectListQuery {
 export interface CreateProjectPayload {
   name: string
   description: string
+  startDate?: string | null
   dueDate?: string | null
   memberIds?: string[]
 }

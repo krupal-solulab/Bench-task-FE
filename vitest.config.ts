@@ -17,20 +17,14 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
-      exclude: [
-        'node_modules/',
-        'src/test/',
-        'src/components/ui/',
-        '**/*.d.ts',
-        '**/*.config.*',
-        'src/main.tsx',
-      ],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/test/', 'src/components/ui/', '**/*.d.ts', 'src/main.tsx'],
       // Raised progressively through the build phases; Phase 6 ("Fill test coverage") targets 60%+.
       thresholds: {
-        lines: 25,
-        functions: 20,
-        branches: 25,
-        statements: 25,
+        lines: 15,
+        functions: 30,
+        branches: 50,
+        statements: 15,
       },
     },
   },

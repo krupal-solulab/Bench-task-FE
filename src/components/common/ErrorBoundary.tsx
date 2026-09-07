@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { AlertOctagon } from 'lucide-react'
 import { Button } from './Button'
 
 interface ErrorBoundaryProps {
@@ -27,7 +28,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   render() {
     if (this.state.error) {
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center">
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-muted/20 p-6 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+            <AlertOctagon className="h-8 w-8 text-destructive" aria-hidden="true" />
+          </div>
           <h1 className="text-xl font-semibold">Something went wrong</h1>
           <p className="max-w-md text-sm text-muted-foreground">
             An unexpected error occurred while rendering this page. Reloading usually fixes it.

@@ -8,6 +8,16 @@ function getInitials(name: string): string {
   return (first + last).toUpperCase() || '?'
 }
 
+/** Deterministic, pleasant fallback colour per name — same person always gets the same colour. */
+function nameToHue(name: string): number {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash << 5) - hash + name.charCodeAt(i)
+    hash |= 0
+  }
+  return Math.abs(hash) % 360
+}
+
 export interface AvatarProps {
   name: string
   imageUrl?: string | null
@@ -22,10 +32,20 @@ const SIZE_CLASSES = {
 } as const
 
 export function Avatar({ name, imageUrl, size = 'md', className }: AvatarProps) {
+  const hue = nameToHue(name || '?')
+
   return (
     <BaseAvatar className={cn(SIZE_CLASSES[size], className)} title={name}>
       {imageUrl && <AvatarImage src={imageUrl} alt={name} />}
-      <AvatarFallback>{getInitials(name)}</AvatarFallback>
+      <AvatarFallback
+        className="font-semibold"
+        style={{
+          backgroundColor: `hsl(${hue} 70% 94%)`,
+          color: `hsl(${hue} 55% 38%)`,
+        }}
+      >
+        {getInitials(name)}
+      </AvatarFallback>
     </BaseAvatar>
   )
 }

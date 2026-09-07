@@ -59,9 +59,13 @@ export function UserSelect({
     )
   }
 
+  // Only fall back to the "Unassigned" sentinel when that item actually renders — otherwise
+  // Radix can't resolve a label for it and the trigger shows blank instead of the placeholder.
+  const selectValue = value ?? (allowUnassigned ? UNASSIGNED_VALUE : undefined)
+
   return (
     <Select
-      value={value ?? UNASSIGNED_VALUE}
+      value={selectValue}
       onValueChange={(next) => onChange(next === UNASSIGNED_VALUE ? null : next)}
     >
       <SelectTrigger id={id} aria-label={placeholder}>

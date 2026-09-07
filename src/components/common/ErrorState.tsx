@@ -11,9 +11,11 @@ export function ErrorState({ message, onRetry, retrying = false }: ErrorStatePro
   return (
     <div
       role="alert"
-      className="flex flex-col items-center justify-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 py-12 text-center"
+      className="flex animate-fade-in-up flex-col items-center justify-center gap-3 rounded-xl border border-destructive/20 bg-destructive/[0.03] py-14 text-center"
     >
-      <AlertTriangle className="h-10 w-10 text-destructive" aria-hidden="true" />
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
+        <AlertTriangle className="h-6 w-6 text-destructive" aria-hidden="true" />
+      </div>
       <p className="max-w-sm text-sm text-foreground">{message}</p>
       {onRetry && (
         <Button variant="outline" size="sm" onClick={onRetry} loading={retrying}>

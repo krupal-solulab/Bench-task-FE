@@ -20,6 +20,15 @@ export const PRIORITY_COLORS = {
   P3: 'bg-slate-100 text-slate-600 border-slate-200',
 } as const
 
+/** Raw hex for Recharts fills/strokes — mirrors STATUS_COLORS/PRIORITY_COLORS for visual continuity. */
+export const CHART_COLORS = {
+  projectStatus: { Planning: '#64748b', 'In Progress': '#3b82f6', Completed: '#10b981' },
+  taskStatus: { Todo: '#64748b', 'In Progress': '#3b82f6', Review: '#f59e0b', Done: '#10b981' },
+  priority: { P1: '#ef4444', P2: '#f59e0b', P3: '#94a3b8' },
+  trend: { created: '#3b82f6', completed: '#10b981' },
+  single: '#3b82f6',
+} as const
+
 export const DEFAULT_PAGE_SIZE = 20
 export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const
 

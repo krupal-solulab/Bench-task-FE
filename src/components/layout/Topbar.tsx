@@ -28,8 +28,13 @@ export function Topbar() {
   }
 
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-card px-4">
-      <span className="font-semibold">{APP_NAME}</span>
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-card/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+      <span className="flex items-center gap-2 font-semibold tracking-tight">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
+          {APP_NAME.charAt(0)}
+        </span>
+        {APP_NAME}
+      </span>
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
@@ -43,7 +48,7 @@ export function Topbar() {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex items-center gap-2 rounded-md p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex items-center gap-2 rounded-full p-0.5 ring-offset-background transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               aria-label="Open user menu"
             >
               <Avatar name={user?.name ?? ''} size="sm" />

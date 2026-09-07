@@ -54,16 +54,16 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="w-full overflow-x-auto rounded-md border">
+    <div className="w-full overflow-x-auto rounded-xl border bg-card shadow-soft">
       <table className="w-full text-sm">
-        <thead className="bg-muted/50">
+        <thead className="bg-muted/40">
           <tr>
             {columns.map((column) => (
               <th
                 key={column.key}
                 scope="col"
                 className={cn(
-                  'px-4 py-3 text-left font-medium text-muted-foreground',
+                  'px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground',
                   column.className,
                 )}
               >
@@ -71,7 +71,7 @@ export function DataTable<T>({
                   <button
                     type="button"
                     onClick={() => handleSort(column)}
-                    className="inline-flex items-center gap-1 hover:text-foreground"
+                    className="inline-flex items-center gap-1 normal-case tracking-normal transition-colors hover:text-foreground"
                   >
                     {column.header}
                     {sortBy === column.key ? (
@@ -85,7 +85,7 @@ export function DataTable<T>({
                     )}
                   </button>
                 ) : (
-                  column.header
+                  <span className="normal-case tracking-normal">{column.header}</span>
                 )}
               </th>
             ))}
@@ -96,7 +96,10 @@ export function DataTable<T>({
             <tr
               key={getRowKey(row)}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
-              className={cn(onRowClick && 'cursor-pointer hover:bg-muted/40')}
+              className={cn(
+                'transition-colors duration-150',
+                onRowClick && 'cursor-pointer hover:bg-accent/40',
+              )}
             >
               {columns.map((column) => (
                 <td key={column.key} className={cn('px-4 py-3', column.className)}>
