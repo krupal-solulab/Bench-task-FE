@@ -19,6 +19,10 @@ export const apiClient = axios.create({
   timeout: 15_000,
   headers: {
     'Content-Type': 'application/json',
+    // Free ngrok tunnels serve an HTML browser-warning interstitial (no CORS headers at all) to
+    // real browser requests, which the app would otherwise see as a CORS failure. This header is
+    // ngrok's documented bypass; it's a no-op against any non-ngrok backend.
+    'ngrok-skip-browser-warning': 'true',
   },
 })
 
