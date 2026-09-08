@@ -23,15 +23,15 @@ COPY . .
 RUN npm run build
 
 # ---- Runtime ----
-FROM nginx:alpine AS runtime
-
-RUN addgroup -S webapp && adduser -S webapp -G webapp \
-    && chown -R webapp:webapp /var/cache/nginx /var/run
+# nginxinc/nginx-unprivileged runs as a non-root user out of the box, with its pid file, cache
+# dirs, and temp paths all pre-configured to be writable by that user (plain nginx:alpine's /run
+# is a tmpfs recreated fresh at container start, so a build-time `chown` there has no effect and
+# nginx fails to write its pid file — this image exists specifically to avoid that class of bug).
+FROM nginxinc/nginx-unprivileged:alpine AS runtime
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-USER webapp
 EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]
