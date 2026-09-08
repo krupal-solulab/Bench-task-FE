@@ -48,17 +48,23 @@ export const handlers = [
     )
   }),
 
-  http.post(url('/auth/register'), async ({ request }) => {
-    const body = (await request.json()) as { name: string; email: string; password: string }
-    if (mockUsers.some((u) => u.email === body.email)) {
+  http.post(url('/auth/register-organization'), async ({ request }) => {
+    const body = (await request.json()) as {
+      organizationName: string
+      adminName: string
+      adminEmail: string
+      adminPassword: string
+    }
+    if (mockUsers.some((u) => u.email === body.adminEmail)) {
       return HttpResponse.json(fail(409, 'Email already registered'), { status: 409 })
     }
     const user = {
       id: 'u-new',
-      name: body.name,
-      email: body.email,
-      role: 'Developer' as const,
+      name: body.adminName,
+      email: body.adminEmail,
+      role: 'Admin' as const,
       isActive: true,
+      organizationId: 'org-new',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }

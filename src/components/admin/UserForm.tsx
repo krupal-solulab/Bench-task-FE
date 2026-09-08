@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { createUserSchema, type CreateUserFormValues } from '@/schemas/user.schema'
-import { ROLES } from '@/types/user.types'
+import { ORG_ROLES } from '@/types/user.types'
 
 export function UserForm({
   onSubmit,
@@ -69,7 +69,7 @@ export function UserForm({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {ROLES.map((r) => (
+            {ORG_ROLES.map((r) => (
               <SelectItem key={r} value={r}>
                 {r}
               </SelectItem>

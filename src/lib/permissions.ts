@@ -11,6 +11,7 @@ export type Capability =
   | 'task:reassign'
   | 'user:manage'
   | 'dashboard:viewOrgWide'
+  | 'platform:manageOrganizations'
 
 /** Mirrors the backend's role -> capability map. Never trust this alone; the API is the real gate. */
 const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
@@ -38,6 +39,9 @@ const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
     'dashboard:viewOrgWide',
   ],
   Developer: [],
+  // Manages organizations only — deliberately empty of every org-data capability, mirroring the
+  // backend's hard block on a PlatformAdmin ever touching a tenant's projects/tasks/comments.
+  PlatformAdmin: ['platform:manageOrganizations'],
 }
 
 export function can(role: Role | undefined, capability: Capability): boolean {

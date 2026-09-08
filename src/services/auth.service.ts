@@ -4,14 +4,15 @@ import type {
   AuthTokens,
   ChangePasswordPayload,
   LoginPayload,
-  RegisterPayload,
+  RegisterOrganizationPayload,
 } from '@/types/auth.types'
 import type { User } from '@/types/user.types'
 
 export const authService = {
   login: (payload: LoginPayload) => apiPost<AuthResponse>('/auth/login', payload),
 
-  register: (payload: RegisterPayload) => apiPost<AuthResponse>('/auth/register', payload),
+  registerOrganization: (payload: RegisterOrganizationPayload) =>
+    apiPost<AuthResponse>('/auth/register-organization', payload),
 
   refresh: (refreshToken: string) => apiPost<AuthTokens>('/auth/refresh', { refreshToken }),
 

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ROLES } from '@/types/user.types'
+import { ORG_ROLES } from '@/types/user.types'
 
 export const createUserSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(60, 'Name is too long'),
@@ -9,7 +9,7 @@ export const createUserSchema = z.object({
     .min(8, 'Password must be at least 8 characters')
     .regex(/[A-Za-z]/, 'Password must contain at least one letter')
     .regex(/\d/, 'Password must contain at least one number'),
-  role: z.enum(ROLES),
+  role: z.enum(ORG_ROLES),
 })
 
 export type CreateUserFormValues = z.infer<typeof createUserSchema>

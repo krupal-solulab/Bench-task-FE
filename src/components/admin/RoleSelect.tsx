@@ -11,7 +11,7 @@ import { useUpdateUserRole } from '@/hooks/mutations/useUserMutations'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
-import { ROLES, type Role, type User } from '@/types/user.types'
+import { ORG_ROLES, type Role, type User } from '@/types/user.types'
 
 export function RoleSelect({ user }: { user: User }) {
   const { user: currentUser } = useAuth()
@@ -44,7 +44,7 @@ export function RoleSelect({ user }: { user: User }) {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {ROLES.map((role) => (
+          {ORG_ROLES.map((role) => (
             <SelectItem key={role} value={role}>
               {role}
             </SelectItem>

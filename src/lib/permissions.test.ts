@@ -25,4 +25,12 @@ describe('permissions', () => {
   it('lets a Manager edit any field regardless of assignment', () => {
     expect(canEditTaskField('Manager', 'other', false)).toBe(true)
   })
+
+  it('grants a PlatformAdmin only the platform capability, no org-data capabilities', () => {
+    expect(can('PlatformAdmin', 'platform:manageOrganizations')).toBe(true)
+    expect(can('PlatformAdmin', 'project:create')).toBe(false)
+    expect(can('PlatformAdmin', 'task:create')).toBe(false)
+    expect(can('PlatformAdmin', 'user:manage')).toBe(false)
+    expect(can('PlatformAdmin', 'dashboard:viewOrgWide')).toBe(false)
+  })
 })

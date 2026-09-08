@@ -12,52 +12,52 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { UserForm } from '@/components/admin/UserForm'
-import { UserTable } from '@/components/admin/UserTable'
-import { useUsers } from '@/hooks/queries/useUsers'
-import { useCreateUser } from '@/hooks/mutations/useUserMutations'
+import { OrganizationForm } from '@/components/platform/OrganizationForm'
+import { OrganizationTable } from '@/components/platform/OrganizationTable'
+import { useOrganizations } from '@/hooks/queries/useOrganizations'
+import { useCreateOrganization } from '@/hooks/mutations/useOrganizationMutations'
 import { usePagination } from '@/hooks/usePagination'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { useToast } from '@/hooks/useToast'
 import { isConflictError, toApiError } from '@/lib/error'
-import { ORG_ROLES, type Role } from '@/types/user.types'
-import type { CreateUserFormValues } from '@/schemas/user.schema'
+import { ORGANIZATION_STATUSES, type OrganizationStatus } from '@/types/organization.types'
+import type { CreateOrganizationFormValues } from '@/schemas/organization.schema'
 
 const ALL = '__all__'
 
-export function UsersPage() {
+export function PlatformOrganizationsListPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const { page, limit, setPage, setLimit } = usePagination()
   const [filters, setFilters] = useQueryParams({
     search: '',
-    role: undefined as Role | undefined,
-    sortBy: 'createdAt' as 'name' | 'email' | 'createdAt' | 'role',
+    status: undefined as OrganizationStatus | undefined,
+    sortBy: 'createdAt' as 'name' | 'status' | 'createdAt',
     sortOrder: 'desc' as 'asc' | 'desc',
   })
 
   const query = { page, limit, ...filters }
-  const { data, isLoading, isError, error, refetch } = useUsers(query)
-  const createUser = useCreateUser()
+  const { data, isLoading, isError, error, refetch } = useOrganizations(query)
+  const createOrganization = useCreateOrganization()
   const { showToast } = useToast()
 
-  const hasActiveFilters = !!filters.search || !!filters.role
+  const hasActiveFilters = !!filters.search || !!filters.status
 
   function handleClear() {
-    setFilters({ search: '', role: undefined })
+    setFilters({ search: '', status: undefined })
     setPage(1)
   }
 
-  async function handleCreate(values: CreateUserFormValues) {
+  async function handleCreate(values: CreateOrganizationFormValues) {
     try {
-      await createUser.mutateAsync(values)
-      showToast({ title: 'User created', variant: 'success' })
+      await createOrganization.mutateAsync(values)
+      showToast({ title: 'Organization created', variant: 'success' })
       setCreateOpen(false)
     } catch (err) {
       if (isConflictError(err)) {
         throw new Error('DUPLICATE_EMAIL')
       }
       showToast({
-        title: 'Could not create user',
+        title: 'Could not create organization',
         description: toApiError(err).message,
         variant: 'destructive',
       })
@@ -67,11 +67,11 @@ export function UsersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Users"
-        description="Manage accounts, roles, and access"
+        title="Organizations"
+        description="Manage tenant organizations and their admins"
         actions={
           <Button onClick={() => setCreateOpen(true)} className="gap-1">
-            <Plus className="h-4 w-4" /> New User
+            <Plus className="h-4 w-4" /> New Organization
           </Button>
         }
       />
@@ -83,32 +83,32 @@ export function UsersPage() {
             setFilters({ search })
             setPage(1)
           }}
-          placeholder="Search by name or email…"
+          placeholder="Search by name or slug…"
           className="w-64"
         />
         <Select
-          value={filters.role ?? ALL}
+          value={filters.status ?? ALL}
           onValueChange={(v) => {
-            setFilters({ role: v === ALL ? undefined : (v as Role) })
+            setFilters({ status: v === ALL ? undefined : (v as OrganizationStatus) })
             setPage(1)
           }}
         >
-          <SelectTrigger className="w-40" aria-label="Filter by role">
-            <SelectValue placeholder="All roles" />
+          <SelectTrigger className="w-40" aria-label="Filter by status">
+            <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>All roles</SelectItem>
-            {ORG_ROLES.map((role) => (
-              <SelectItem key={role} value={role}>
-                {role}
+            <SelectItem value={ALL}>All statuses</SelectItem>
+            {ORGANIZATION_STATUSES.map((status) => (
+              <SelectItem key={status} value={status}>
+                {status}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      <UserTable
-        users={data?.data ?? []}
+      <OrganizationTable
+        organizations={data?.data ?? []}
         isLoading={isLoading}
         isError={isError}
         errorMessage={isError ? toApiError(error).message : undefined}
@@ -133,8 +133,8 @@ export function UsersPage() {
         />
       )}
 
-      <Modal open={createOpen} onOpenChange={setCreateOpen} title="New user">
-        <UserForm onSubmit={handleCreate} onCancel={() => setCreateOpen(false)} />
+      <Modal open={createOpen} onOpenChange={setCreateOpen} title="New organization">
+        <OrganizationForm onSubmit={handleCreate} onCancel={() => setCreateOpen(false)} />
       </Modal>
     </div>
   )

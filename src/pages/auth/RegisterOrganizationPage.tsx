@@ -9,10 +9,13 @@ import { AuthLayout } from '@/components/layout/AuthLayout'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
 import { isConflictError, toApiError } from '@/lib/error'
-import { registerSchema, type RegisterFormValues } from '@/schemas/auth.schema'
+import {
+  registerOrganizationSchema,
+  type RegisterOrganizationFormValues,
+} from '@/schemas/auth.schema'
 
-export function RegisterPage() {
-  const { register: registerUser, isAuthenticated } = useAuth()
+export function RegisterOrganizationPage() {
+  const { registerOrganization, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -21,20 +24,25 @@ export function RegisterPage() {
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterFormValues>({ resolver: zodResolver(registerSchema) })
+  } = useForm<RegisterOrganizationFormValues>({ resolver: zodResolver(registerOrganizationSchema) })
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />
   }
 
-  async function onSubmit(values: RegisterFormValues) {
+  async function onSubmit(values: RegisterOrganizationFormValues) {
     setFormError(null)
     try {
-      await registerUser({ name: values.name, email: values.email, password: values.password })
+      await registerOrganization({
+        organizationName: values.organizationName,
+        adminName: values.adminName,
+        adminEmail: values.adminEmail,
+        adminPassword: values.adminPassword,
+      })
       navigate('/dashboard', { replace: true })
     } catch (err) {
       if (isConflictError(err)) {
-        setError('email', { message: 'An account with this email already exists' })
+        setError('adminEmail', { message: 'An account with this email already exists' })
         return
       }
       setFormError(toApiError(err).message)
@@ -43,7 +51,7 @@ export function RegisterPage() {
 
   return (
     <AuthLayout
-      title="Create your account"
+      title="Create your organization"
       subtitle="Get started in a few seconds"
       footer={
         <>
@@ -66,26 +74,49 @@ export function RegisterPage() {
           </motion.div>
         )}
 
-        <FormField label="Name" htmlFor="name" error={errors.name?.message} required>
-          <Input id="name" autoComplete="name" {...register('name')} />
-        </FormField>
-
-        <FormField label="Email" htmlFor="email" error={errors.email?.message} required>
-          <Input id="email" type="email" autoComplete="email" {...register('email')} />
+        <FormField
+          label="Organization name"
+          htmlFor="organizationName"
+          error={errors.organizationName?.message}
+          required
+        >
+          <Input
+            id="organizationName"
+            autoComplete="organization"
+            {...register('organizationName')}
+          />
         </FormField>
 
         <FormField
-          label="Password"
-          htmlFor="password"
-          error={errors.password?.message}
+          label="Admin name"
+          htmlFor="adminName"
+          error={errors.adminName?.message}
+          required
+        >
+          <Input id="adminName" autoComplete="name" {...register('adminName')} />
+        </FormField>
+
+        <FormField
+          label="Admin email"
+          htmlFor="adminEmail"
+          error={errors.adminEmail?.message}
+          required
+        >
+          <Input id="adminEmail" type="email" autoComplete="email" {...register('adminEmail')} />
+        </FormField>
+
+        <FormField
+          label="Admin password"
+          htmlFor="adminPassword"
+          error={errors.adminPassword?.message}
           hint="At least 8 characters, with a letter and a number"
           required
         >
           <Input
-            id="password"
+            id="adminPassword"
             type="password"
             autoComplete="new-password"
-            {...register('password')}
+            {...register('adminPassword')}
           />
         </FormField>
 
@@ -104,7 +135,7 @@ export function RegisterPage() {
         </FormField>
 
         <p className="text-xs text-muted-foreground">
-          New accounts are created as Developer. An Admin can assign a different role later.
+          You&apos;ll be the Admin of your new organization.
         </p>
 
         <Button type="submit" className="w-full" loading={isSubmitting}>

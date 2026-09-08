@@ -1,7 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { setAccessToken, setRefreshHandler, setUnauthorizedHandler } from '@/services/api-client'
 import { authService } from '@/services/auth.service'
-import type { LoginPayload, RegisterPayload } from '@/types/auth.types'
+import type { LoginPayload, RegisterOrganizationPayload } from '@/types/auth.types'
 import type { Role, User } from '@/types/user.types'
 
 const REFRESH_TOKEN_STORAGE_KEY = 'ptm.refreshToken'
@@ -12,7 +12,7 @@ export interface AuthContextValue {
   /** True only during the initial boot-time refresh; protected routes must wait on this. */
   isLoading: boolean
   login: (payload: LoginPayload) => Promise<void>
-  register: (payload: RegisterPayload) => Promise<void>
+  registerOrganization: (payload: RegisterOrganizationPayload) => Promise<void>
   logout: () => Promise<void>
   hasRole: (...roles: Role[]) => boolean
 }
@@ -108,9 +108,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   )
 
-  const register = useCallback(
-    async (payload: RegisterPayload) => {
-      const session = await authService.register(payload)
+  const registerOrganization = useCallback(
+    async (payload: RegisterOrganizationPayload) => {
+      const session = await authService.registerOrganization(payload)
       applySession(session)
     },
     [applySession],
@@ -132,11 +132,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!user,
       isLoading,
       login,
-      register,
+      registerOrganization,
       logout,
       hasRole,
     }),
-    [user, isLoading, login, register, logout, hasRole],
+    [user, isLoading, login, registerOrganization, logout, hasRole],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

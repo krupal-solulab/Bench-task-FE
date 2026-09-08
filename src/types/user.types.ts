@@ -1,5 +1,9 @@
-export const ROLES = ['Admin', 'Manager', 'Developer'] as const
+export const ROLES = ['Admin', 'Manager', 'Developer', 'PlatformAdmin'] as const
 export type Role = (typeof ROLES)[number]
+
+/** Org-scoped roles only — never offer PlatformAdmin in a role picker for an org user (the backend rejects it). */
+export const ORG_ROLES = ['Admin', 'Manager', 'Developer'] as const
+export type OrgRole = (typeof ORG_ROLES)[number]
 
 export interface User {
   id: string
@@ -7,6 +11,7 @@ export interface User {
   email: string
   role: Role
   isActive: boolean
+  organizationId: string | null
   createdAt: string
   updatedAt: string
 }

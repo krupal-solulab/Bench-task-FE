@@ -67,6 +67,14 @@ export const queryKeys = {
   comments: {
     list: (taskId: string, filters: unknown) => ['comments', taskId, 'list', filters] as const,
   },
+  organizations: {
+    all: ['organizations'] as const,
+    list: (filters: unknown) => ['organizations', 'list', filters] as const,
+    detail: (id: string) => ['organizations', 'detail', id] as const,
+  },
+  platform: {
+    stats: ['platform', 'stats'] as const,
+  },
   dashboard: {
     all: ['dashboard'] as const,
     summary: (scope: unknown) => ['dashboard', 'summary', scope] as const,

@@ -13,19 +13,23 @@ const passwordRule = z
   .regex(/[A-Za-z]/, 'Password must contain at least one letter')
   .regex(/\d/, 'Password must contain at least one number')
 
-export const registerSchema = z
+export const registerOrganizationSchema = z
   .object({
-    name: z.string().min(2, 'Name must be at least 2 characters').max(60, 'Name is too long'),
-    email: z.string().min(1, 'Email is required').email('Enter a valid email address'),
-    password: passwordRule,
+    organizationName: z
+      .string()
+      .min(2, 'Organization name must be at least 2 characters')
+      .max(120, 'Organization name is too long'),
+    adminName: z.string().min(2, 'Name must be at least 2 characters').max(60, 'Name is too long'),
+    adminEmail: z.string().min(1, 'Email is required').email('Enter a valid email address'),
+    adminPassword: passwordRule,
     confirmPassword: z.string().min(1, 'Please confirm your password'),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine((data) => data.adminPassword === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   })
 
-export type RegisterFormValues = z.infer<typeof registerSchema>
+export type RegisterOrganizationFormValues = z.infer<typeof registerOrganizationSchema>
 
 export const changePasswordSchema = z
   .object({

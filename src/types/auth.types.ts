@@ -5,10 +5,11 @@ export interface LoginPayload {
   password: string
 }
 
-export interface RegisterPayload {
-  name: string
-  email: string
-  password: string
+export interface RegisterOrganizationPayload {
+  organizationName: string
+  adminName: string
+  adminEmail: string
+  adminPassword: string
 }
 
 export interface AuthTokens {
