@@ -16,6 +16,7 @@ import { UsersPage } from '@/pages/admin/UsersPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { PlatformOrganizationsListPage } from '@/pages/platform/PlatformOrganizationsListPage'
 import { PlatformOrganizationDetailPage } from '@/pages/platform/PlatformOrganizationDetailPage'
+import { PlatformApiLogsPage } from '@/pages/platform/PlatformApiLogsPage'
 import { ForbiddenPage } from '@/pages/errors/ForbiddenPage'
 import { NotFoundPage } from '@/pages/errors/NotFoundPage'
 
@@ -51,6 +52,7 @@ export function AppRouter() {
               path="/platform/organizations/:id"
               element={<PlatformOrganizationDetailPage />}
             />
+            <Route path="/platform/logs" element={<PlatformApiLogsPage />} />
           </Route>
         </Route>
       </Route>

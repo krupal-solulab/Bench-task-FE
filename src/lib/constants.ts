@@ -78,6 +78,7 @@ export const queryKeys = {
   },
   platform: {
     stats: ['platform', 'stats'] as const,
+    logs: (filters: unknown) => ['platform', 'logs', filters] as const,
   },
   dashboard: {
     all: ['dashboard'] as const,
