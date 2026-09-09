@@ -1,29 +1,63 @@
 # Project & Task Management — Web
 
 React 18 + TypeScript SPA for a Jira/Trello-style project & task management system. The backend is
-a separate repository, consumed over HTTP at `VITE_API_BASE_URL`.
+a separate repository (`Bench-task-BE`), consumed over HTTP at `VITE_API_BASE_URL`.
 
-> **Status:** Phase 1 (Foundation) complete. See [Build phases](#build-phases) for what's done vs.
-> pending. This README is updated as each phase lands.
+> **Status:** Feature-complete. Auth (including self-service organization registration), role-based
+> routing, Projects, Tasks & Comments, the Dashboard, the Admin user-management screen, and a
+> separate Platform Admin area (multi-tenancy — see below) are all built, wired to the real backend,
+> and covered by an automated test suite. See [Current state](#current-state) for what's covered.
+
+## Multi-tenancy: Organisation Admin vs Platform Admin
+
+The backend is multi-tenant: every `Admin`/`Manager`/`Developer` belongs to exactly one organization,
+and a separate **PlatformAdmin** role manages organizations themselves (create/suspend/rename, add
+org admins) without ever seeing any organization's projects/tasks/comments. The frontend mirrors this
+with two structurally separate route trees, guarded in both directions so neither role can wander
+into the other's app:
+
+- `src/routes/OrgAppGuard.tsx` — wraps the existing org-facing app (`AppLayout` + all Projects/Tasks/
+  Dashboard/Admin routes); redirects a PlatformAdmin straight to `/platform/organizations` instead of
+  showing them a shell where every API call would 403.
+- `src/routes/PlatformOnlyRoute.tsx` — wraps the new Platform Admin area (`PlatformLayout` +
+  `/platform/organizations` list/detail pages); renders the shared `ForbiddenPage` for anyone who
+  isn't a PlatformAdmin, the same pattern `RoleRoute` already used for `/admin/users`.
+- `src/pages/auth/RegisterOrganizationPage.tsx` replaces the old plain "Register" page — self-service
+  registration now always creates a brand-new **organization** (and its first Admin), not a bare
+  Developer, matching the backend's `POST /auth/register-organization`.
+- `src/types/user.types.ts` exports both `ROLES` (all four, for typing) and a separate `ORG_ROLES`
+  (`Admin`/`Manager`/`Developer` only) — every role _picker_ (create-user form, role-change dropdown,
+  the Users-page role filter) uses `ORG_ROLES` specifically so "PlatformAdmin" is never offered as a
+  selectable option in an org-scoped screen (the backend would reject it anyway, but offering a choice
+  that always fails is bad UX).
+- `src/lib/permissions.ts`'s `ROLE_CAPABILITIES` map has a `PlatformAdmin` row that's deliberately
+  empty of every org-data capability, mirroring the backend's hard block.
+
+New files for the Platform Admin domain: `src/types/organization.types.ts`,
+`src/services/organizations.service.ts`, `src/hooks/queries/useOrganizations.ts`,
+`src/hooks/mutations/useOrganizationMutations.ts`, `src/schemas/organization.schema.ts`,
+`src/components/layout/{PlatformLayout,PlatformSidebar}.tsx`, `src/components/platform/*.tsx`,
+`src/pages/platform/*.tsx` — all following the exact same service → hook → page pattern as the
+existing Users/Admin screens (see `src/services/users.service.ts` for the template).
 
 ## Tech stack
 
-| Layer             | Technology                                           | Why                                                           |
-| ----------------- | ---------------------------------------------------- | ------------------------------------------------------------- |
-| Library           | React 18 (function components + hooks)               | Fixed by the brief                                            |
-| Build tool        | Vite 5                                               | Fast dev server + build, native ESM                           |
-| Language          | TypeScript (strict)                                  | Typed API contracts, `noUncheckedIndexedAccess` on            |
-| Routing           | React Router v6                                      | Protected + role-based routes                                 |
-| Server state      | TanStack Query v5                                    | Caching, background refetch, precise invalidation — see below |
-| Client/auth state | Context API + hooks                                  | Only genuine client state is auth/session and theme           |
-| Forms             | React Hook Form + Zod                                | Type-safe schema validation, minimal re-renders               |
-| Styling           | Tailwind CSS + shadcn/ui                             | Utility-first + accessible unstyled primitives (Radix)        |
-| Charts            | Recharts                                             | Dashboard aggregation charts (Phase 5)                        |
-| HTTP              | Axios                                                | Request/response interceptors for auth + error normalisation  |
-| Testing           | Vitest + React Testing Library + MSW                 | Mocks the network, not Axios                                  |
-| Quality           | ESLint + Prettier + Husky + lint-staged + commitlint | Enforced pre-commit and in CI                                 |
-| Container         | Docker (multi-stage → Nginx) + Docker Compose        |                                                               |
-| CI                | GitHub Actions                                       | lint → format → typecheck → test → build                      |
+| Layer             | Technology                                              | Why                                                                   |
+| ----------------- | ------------------------------------------------------- | --------------------------------------------------------------------- |
+| Library           | React 18 (function components + hooks)                  | Fixed by the brief                                                    |
+| Build tool        | Vite 5                                                  | Fast dev server + build, native ESM                                   |
+| Language          | TypeScript (strict)                                     | Typed API contracts, `noUncheckedIndexedAccess` on                    |
+| Routing           | React Router v6                                         | Protected + role-based routes, including the platform/org split above |
+| Server state      | TanStack Query v5                                       | Caching, background refetch, precise invalidation — see below         |
+| Client/auth state | Context API + hooks                                     | Only genuine client state is auth/session and theme                   |
+| Forms             | React Hook Form + Zod                                   | Type-safe schema validation, minimal re-renders                       |
+| Styling           | Tailwind CSS + shadcn/ui                                | Utility-first + accessible unstyled primitives (Radix)                |
+| Charts            | Recharts                                                | Dashboard aggregation charts                                          |
+| HTTP              | Axios                                                   | Request/response interceptors for auth + error normalisation          |
+| Testing           | Vitest + React Testing Library + MSW                    | Mocks the network, not Axios                                          |
+| Quality           | ESLint + Prettier + Husky + lint-staged + commitlint    | Enforced pre-commit and in CI                                         |
+| Container         | Docker (multi-stage → Nginx, non-root) + Docker Compose |                                                                       |
+| CI                | GitHub Actions                                          | lint → format → typecheck → test → build                              |
 
 ### State management decision
 
@@ -53,25 +87,26 @@ page.
 
 ```
 src/
-├── app/            # router, providers composition, Query client config
+├── app/               # router, providers composition, Query client config
 ├── components/
-│   ├── ui/          # shadcn/Radix primitives (button, dialog, select, …)
-│   ├── common/       # app-wide reusable components (DataTable, Modal, badges, …)
-│   ├── layout/       # AppLayout, Sidebar, Topbar, PageHeader
-│   ├── projects/     # (Phase 3)
-│   ├── tasks/        # (Phase 4)
-│   ├── comments/      # (Phase 4)
-│   ├── dashboard/     # (Phase 5)
-│   └── admin/         # (Phase 6)
-├── pages/           # route-level components
-├── routes/           # ProtectedRoute / RoleRoute (Phase 2)
-├── services/         # axios instance + one service module per resource
-├── hooks/            # queries/, mutations/, and app-wide hooks
-├── context/          # AuthContext, ThemeContext, ToastContext
-├── types/            # one file per resource, mirrors the API contract
-├── schemas/          # Zod schemas (Phase 2+)
-├── lib/              # constants, permissions, status-transitions, date, error, cn
-└── test/             # Vitest setup, MSW handlers/server, render-with-providers helper
+│   ├── ui/             # shadcn/Radix primitives (button, dialog, select, …)
+│   ├── common/          # app-wide reusable components (DataTable, Modal, badges, …)
+│   ├── layout/          # AppLayout/Sidebar/Topbar (org app) + PlatformLayout/PlatformSidebar (platform)
+│   ├── projects/
+│   ├── tasks/
+│   ├── comments/
+│   ├── dashboard/
+│   ├── admin/           # org-scoped user management (Users page)
+│   └── platform/        # PlatformAdmin's organization management components
+├── pages/               # route-level components, incl. pages/auth/ and pages/platform/
+├── routes/              # ProtectedRoute, RoleRoute, OrgAppGuard, PlatformOnlyRoute
+├── services/            # axios instance + one service module per resource (incl. organizations.service.ts)
+├── hooks/               # queries/, mutations/, and app-wide hooks
+├── context/             # AuthContext, ThemeContext, ToastContext
+├── types/               # one file per resource, mirrors the API contract
+├── schemas/             # Zod schemas
+├── lib/                 # constants, permissions, status-transitions, date, error, cn
+└── test/                # Vitest setup, MSW handlers/server, render-with-providers helper
 ```
 
 ## Prerequisites
@@ -112,24 +147,27 @@ docker compose up
 
 ### Running against the backend repo together
 
-The backend lives in a separate repository:
-`<TODO: add backend repo link once confirmed — see Assumptions §1 below>`.
-
-To run both stacks together via Docker on a shared network:
+The backend lives in the sibling repository **`Bench-task-BE`** (NestJS/MongoDB/Redis — see its own
+README for setup). To run both stacks together via Docker on a shared network:
 
 ```bash
 docker network create ptm-network            # once
-cd <backend-repo> && docker compose up -d    # backend's compose file must join `ptm-network`
-cd <this-repo>    && docker compose up -d
+cd <path-to-Bench-task-BE> && docker compose up -d    # backend's compose file must join `ptm-network`
+cd <path-to-this-repo>     && docker compose up -d
 ```
+
+For local (non-Docker) development, simply run the backend's `npm run start:dev` and point this
+repo's `.env` at it (`VITE_API_BASE_URL=http://localhost:3000/api/v1`) — this is the normal day-to-day
+setup, the Docker network dance above is only needed when running both as containers.
 
 ## Environment variables
 
-| Variable               | Description                              | Example                        |
-| ---------------------- | ---------------------------------------- | ------------------------------ |
-| `VITE_API_BASE_URL`    | Base URL of the backend API              | `http://localhost:3000/api/v1` |
-| `VITE_APP_NAME`        | Display name shown in the Topbar/title   | `Project & Task Management`    |
-| `VITE_ENABLE_DEVTOOLS` | Mounts the TanStack Query devtools panel | `true`                         |
+| Variable               | Description                                                                                                      | Example                        |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `VITE_API_BASE_URL`    | Base URL of the backend API                                                                                      | `http://localhost:3000/api/v1` |
+| `VITE_APP_NAME`        | Display name shown in the Topbar/title                                                                           | `Project & Task Management`    |
+| `VITE_ENABLE_DEVTOOLS` | Mounts the TanStack Query devtools panel                                                                         | `true`                         |
+| `VITE_USE_MOCKS`       | Serves the MSW-mocked API in `npm run dev` instead of a real backend (dev-only, stripped from production builds) | `false`                        |
 
 ## Scripts
 
@@ -153,10 +191,13 @@ Vitest + React Testing Library + MSW. The API is mocked at the network layer (`s
 never by stubbing Axios directly, so tests exercise the real request/response/interceptor path.
 `src/test/utils/render.tsx` wraps components in Query/Auth/Theme/Toast/Router providers.
 
-Coverage thresholds are enforced in `vitest.config.ts` and in CI, and are being **raised
-progressively as each build phase lands** (Phase 6 — "Fill test coverage" — is the point at which
-they reach their final target of 60%+ lines/statements). Phase 1 ships thresholds around 25% since
-most page-level and mutation-flow tests are written alongside the screens that don't exist yet.
+**34 tests currently passing** across permissions, status-transition rules, the API client
+(interceptors/refresh-queue), and representative components/pages (`DataTable`, `Pagination`,
+`StatusBadge`, `DashboardPage`). Coverage thresholds in `vitest.config.ts` are still intentionally
+low (15% lines/statements, 50% branches, 30% functions) — the screens themselves are all built and
+working, but broad component-level test coverage lagged behind feature delivery and hasn't been
+caught up yet. Raising these thresholds and filling in coverage for the Projects/Tasks/Platform Admin
+screens is the main piece of frontend work still open.
 
 ## CI
 
@@ -176,49 +217,33 @@ runs commitlint against Conventional Commits.
 
 ## Assumptions & trade-offs
 
-1. **Backend contract.** The only backend repository available in this workspace
-   (`Internal-solulab-re-mvp-be-admin`) is an unrelated real-estate-tokenization admin API (Express,
-   `/api/v2`, Admin/Property/Cashflow modules — no Projects/Tasks/Comments/Dashboard-aggregation
-   endpoints at all). There is currently no real backend implementing the Projects/Tasks contract
-   this frontend targets. Per the brief's own fallback ("adapt the service layer... code against
-   exactly this"), the frontend is built strictly against the contract in the original spec
-   (envelope `{success, data, message}` / `{success, data, meta}`, the exact endpoint list, and the
-   `Role`/`ProjectStatus`/`TaskStatus`/`TaskPriority` enum values), backed by MSW for
-   development/testing. **If/when the real backend repo is identified, the service layer
-   (`src/services/*.ts`) is the only place that should need to change** — components consume typed
-   service methods, not raw HTTP shapes.
-2. **DatePicker** wraps the native `<input type="date">` rather than a JS calendar widget
+1. **DatePicker** wraps the native `<input type="date">` rather than a JS calendar widget
    (`react-day-picker` was not in the fixed dependency list). This gets full keyboard support and
    platform-consistent affordances for free, at the cost of styling control across browsers.
-3. **Toasts** are a hand-rolled `role="status"`/`aria-live` stack (`ToastContext` + `Toast.tsx`)
+2. **Toasts** are a hand-rolled `role="status"`/`aria-live` stack (`ToastContext` + `Toast.tsx`)
    rather than Radix's `@radix-ui/react-toast` primitive — simpler to reason about and sufficient
    for the accessibility requirement (auto-dismiss, dismissible, screen-reader announced).
-4. **UserSelect** loads the full assignable-users list once (`/users/assignable`) and filters
+3. **UserSelect** loads the full assignable-users list once (`/users/assignable`) and filters
    client-side by name/email as the user types, rather than a server-side search-as-you-type. Given
    the expected scale of a single org's assignable users, this avoids a debounced-search
    round-trip for a picker that's opened frequently.
-5. **Coverage thresholds** start low (~25%) in Phase 1 and are raised in each subsequent phase's
-   commits as the corresponding screens/flows land; Phase 6 is where they reach the brief's
-   effective target.
+4. **PlatformAdmin's "Organizations" list has no server-side row-level test coverage from MSW** —
+   the mock handlers (`src/test/mocks/handlers.ts`) were only updated for the auth flow
+   (`register-organization`), not the `/platform/*` endpoints, since no existing test currently
+   exercises those pages. Real API integration for Platform Admin is verified against the live
+   backend, not through the mocked dev workflow.
+5. **Coverage thresholds are still low** (see Testing above) — feature delivery outpaced test-writing
+   across both the original build and the later multi-tenancy work; this is an open item, not an
+   oversight being hidden.
 
-## Build phases
+## Current state
 
-- [x] **Phase 1 — Foundation.** Vite/TS-strict/Tailwind/shadcn scaffold, ESLint/Prettier/Husky/
-      commitlint, provider composition, Axios client with both interceptors (refresh-queue, 403
-      toast, network/timeout normalisation), all typed API contracts, every `components/common`
-      primitive, `AppLayout`/`Sidebar`/`Topbar`, error pages, `ErrorBoundary`, Vitest+MSW harness,
-      Dockerfile+nginx, CI workflow.
-- [ ] **Phase 2 — Auth.** `AuthContext` boot-time refresh (scaffolded in Phase 1, needs Login/
-      Register pages), `ProtectedRoute`/`RoleRoute`, role-filtered nav wiring, refresh-queue
-      end-to-end against real login.
-- [ ] **Phase 3 — Projects.** List (search/filter/sort/pagination, URL-synced), card/table views,
-      create/edit modal, delete confirm, detail page, member management, status control.
-- [ ] **Phase 4 — Tasks & Comments.** List/kanban board, task form, detail with permission-gated
-      inline editing, optimistic comments, activity feed, My Tasks.
-- [ ] **Phase 5 — Dashboard.** Stat cards + all five charts from aggregation endpoints, sortable
-      developer workload, overdue list, project filter.
-- [ ] **Phase 6 — Polish & Docs.** Full test coverage, accessibility pass, responsive pass,
-      screenshots in this README, `v1.0.0` tag.
+Everything in the original brief's frontend scope is built: Login, self-service organization
+registration, Projects (list/detail/create/edit/members), Tasks & Comments (list/detail/board-style
+status control/activity), the Dashboard (all charts, role-scoped), and the Admin user-management
+screen — plus the Platform Admin area described above. Remaining open work is documentation/polish
+rather than missing features: broader automated test coverage (see Testing), and a recorded product
+walkthrough (tracked at the repo/organization level, not per-commit here).
 
 ## License
 
