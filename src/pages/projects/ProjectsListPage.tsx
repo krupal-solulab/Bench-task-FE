@@ -17,10 +17,10 @@ import { ProjectFilters, type ProjectFiltersValue } from '@/components/projects/
 import { ProjectForm } from '@/components/projects/ProjectForm'
 import { useProjects } from '@/hooks/queries/useProjects'
 import { useCreateProject } from '@/hooks/mutations/useProjectMutations'
-import { usePagination } from '@/hooks/usePagination'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useToast } from '@/hooks/useToast'
+import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
 import { toApiError } from '@/lib/error'
 import { formatDate } from '@/lib/date'
 import type { Project, ProjectStatus } from '@/types/project.types'
@@ -31,8 +31,13 @@ type ViewMode = 'grid' | 'table'
 export function ProjectsListPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [createOpen, setCreateOpen] = useState(false)
-  const { page, limit, setPage, setLimit } = usePagination()
-  const [filters, setFilters] = useQueryParams({
+  // Pagination and filters share a single useQueryParams call - two independent hook instances
+  // (e.g. usePagination() plus a separate useQueryParams() for filters) each capture their own
+  // stale snapshot of the URL, so calling their setters back-to-back (as a filter change needs
+  // to, to also reset the page) makes the second call silently overwrite the first's change.
+  const [state, setState] = useQueryParams({
+    page: 1,
+    limit: DEFAULT_PAGE_SIZE,
     search: '',
     status: undefined as ProjectStatus | undefined,
     owner: undefined as string | undefined,
@@ -40,13 +45,13 @@ export function ProjectsListPage() {
     sortBy: 'createdAt' as 'name' | 'dueDate' | 'createdAt' | 'status',
     sortOrder: 'desc' as 'asc' | 'desc',
   })
+  const filters = state
   const { can } = usePermissions()
   const { showToast } = useToast()
   const navigate = useNavigate()
   const createProject = useCreateProject()
 
-  const query = { page, limit, ...filters }
-  const { data, isLoading, isError, error, refetch } = useProjects(query)
+  const { data, isLoading, isError, error, refetch } = useProjects(state)
 
   // No user-directory endpoint is available to every role, so the owner filter's option list is
   // derived from the projects the caller can already see (role-scoped by the API) rather than a
@@ -65,13 +70,19 @@ export function ProjectsListPage() {
     !!filters.search || !!filters.status || !!filters.owner || !!filters.member
 
   function handleFilterChange(update: Partial<ProjectFiltersValue>) {
-    setFilters(update)
-    setPage(1)
+    setState({ ...update, page: 1 })
   }
 
   function handleClearFilters() {
-    setFilters({ search: '', status: undefined, owner: undefined, member: undefined })
-    setPage(1)
+    setState({ search: '', status: undefined, owner: undefined, member: undefined, page: 1 })
+  }
+
+  function setPage(nextPage: number) {
+    setState({ page: nextPage })
+  }
+
+  function setLimit(nextLimit: number) {
+    setState({ limit: nextLimit, page: 1 })
   }
 
   async function handleCreate(values: ProjectFormValues) {
@@ -190,7 +201,7 @@ export function ProjectsListPage() {
               sortBy={filters.sortBy}
               sortOrder={filters.sortOrder}
               onSortChange={(sortBy, sortOrder) =>
-                setFilters({ sortBy: sortBy as typeof filters.sortBy, sortOrder })
+                setState({ sortBy: sortBy as typeof filters.sortBy, sortOrder })
               }
               onRowClick={(p) => navigate(`/projects/${p.id}`)}
             />

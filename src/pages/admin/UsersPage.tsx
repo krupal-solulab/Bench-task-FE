@@ -16,9 +16,9 @@ import { UserForm } from '@/components/admin/UserForm'
 import { UserTable } from '@/components/admin/UserTable'
 import { useUsers } from '@/hooks/queries/useUsers'
 import { useCreateUser } from '@/hooks/mutations/useUserMutations'
-import { usePagination } from '@/hooks/usePagination'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { useToast } from '@/hooks/useToast'
+import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
 import { isConflictError, toApiError } from '@/lib/error'
 import { ORG_ROLES, type Role } from '@/types/user.types'
 import type { CreateUserFormValues } from '@/schemas/user.schema'
@@ -27,24 +27,35 @@ const ALL = '__all__'
 
 export function UsersPage() {
   const [createOpen, setCreateOpen] = useState(false)
-  const { page, limit, setPage, setLimit } = usePagination()
-  const [filters, setFilters] = useQueryParams({
+  // Pagination and filters share a single useQueryParams call - see ProjectsListPage for why two
+  // separate useQueryParams-backed hooks (e.g. usePagination() + a filters one) would silently
+  // discard whichever one's URL update loses the race when their setters fire back-to-back.
+  const [state, setState] = useQueryParams({
+    page: 1,
+    limit: DEFAULT_PAGE_SIZE,
     search: '',
     role: undefined as Role | undefined,
     sortBy: 'createdAt' as 'name' | 'email' | 'createdAt' | 'role',
     sortOrder: 'desc' as 'asc' | 'desc',
   })
+  const filters = state
 
-  const query = { page, limit, ...filters }
-  const { data, isLoading, isError, error, refetch } = useUsers(query)
+  const { data, isLoading, isError, error, refetch } = useUsers(state)
   const createUser = useCreateUser()
   const { showToast } = useToast()
 
   const hasActiveFilters = !!filters.search || !!filters.role
 
+  function setPage(nextPage: number) {
+    setState({ page: nextPage })
+  }
+
+  function setLimit(nextLimit: number) {
+    setState({ limit: nextLimit, page: 1 })
+  }
+
   function handleClear() {
-    setFilters({ search: '', role: undefined })
-    setPage(1)
+    setState({ search: '', role: undefined, page: 1 })
   }
 
   async function handleCreate(values: CreateUserFormValues) {
@@ -79,19 +90,13 @@ export function UsersPage() {
       <div className="flex flex-wrap items-center gap-3">
         <SearchInput
           value={filters.search}
-          onChange={(search) => {
-            setFilters({ search })
-            setPage(1)
-          }}
+          onChange={(search) => setState({ search, page: 1 })}
           placeholder="Search by name or email…"
           className="w-64"
         />
         <Select
           value={filters.role ?? ALL}
-          onValueChange={(v) => {
-            setFilters({ role: v === ALL ? undefined : (v as Role) })
-            setPage(1)
-          }}
+          onValueChange={(v) => setState({ role: v === ALL ? undefined : (v as Role), page: 1 })}
         >
           <SelectTrigger className="w-40" aria-label="Filter by role">
             <SelectValue placeholder="All roles" />
@@ -116,7 +121,7 @@ export function UsersPage() {
         sortBy={filters.sortBy}
         sortOrder={filters.sortOrder}
         onSortChange={(sortBy, sortOrder) =>
-          setFilters({ sortBy: sortBy as typeof filters.sortBy, sortOrder })
+          setState({ sortBy: sortBy as typeof filters.sortBy, sortOrder })
         }
         hasActiveFilters={hasActiveFilters}
         onClearFilters={handleClear}

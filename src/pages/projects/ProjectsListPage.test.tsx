@@ -86,6 +86,37 @@ describe('ProjectsListPage', () => {
     expect(await screen.findByText('No projects yet')).toBeInTheDocument()
   })
 
+  it('typing in the search filter sends it as a query param and resets to page 1 (regression: filters must not be discarded by the page-reset)', async () => {
+    const seenSearches: Array<string | null> = []
+    const seenPages: Array<string | null> = []
+    server.use(
+      http.get(url('/projects'), ({ request }) => {
+        const reqUrl = new URL(request.url)
+        seenSearches.push(reqUrl.searchParams.get('search'))
+        seenPages.push(reqUrl.searchParams.get('page'))
+        return HttpResponse.json({
+          success: true,
+          data: [],
+          meta: {
+            total: 0,
+            page: 1,
+            limit: 20,
+            totalPages: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        })
+      }),
+    )
+    const user = userEvent.setup()
+    renderPage(makeAuthValue())
+
+    await waitFor(() => expect(screen.getByText('No projects yet')).toBeInTheDocument())
+    await user.type(screen.getByPlaceholderText('Search projects…'), 'revamp')
+
+    await waitFor(() => expect(seenSearches.at(-1)).toBe('revamp'))
+  })
+
   it('switches to table view', async () => {
     const user = userEvent.setup()
     renderPage(makeAuthValue())

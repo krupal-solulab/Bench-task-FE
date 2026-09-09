@@ -3,15 +3,19 @@ import { Pagination } from '@/components/common/Pagination'
 import { TaskFilters } from '@/components/tasks/TaskFilters'
 import { TaskList } from '@/components/tasks/TaskList'
 import { useMyTasks } from '@/hooks/queries/useTasks'
-import { usePagination } from '@/hooks/usePagination'
 import { useQueryParams } from '@/hooks/useQueryParams'
+import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
 import { toApiError } from '@/lib/error'
 import type { SortOrder } from '@/types/api.types'
 import type { TaskListQuery, TaskStatus } from '@/types/task.types'
 
 export function MyTasksPage() {
-  const { page, limit, setPage, setLimit } = usePagination()
-  const [filters, setFilters] = useQueryParams({
+  // Pagination and filters share a single useQueryParams call - see ProjectsListPage for why two
+  // separate useQueryParams-backed hooks (e.g. usePagination() + a filters one) would silently
+  // discard whichever one's URL update loses the race when their setters fire back-to-back.
+  const [state, setState] = useQueryParams({
+    page: 1,
+    limit: DEFAULT_PAGE_SIZE,
     search: '',
     status: undefined as TaskStatus | undefined,
     priority: undefined as TaskListQuery['priority'],
@@ -21,9 +25,9 @@ export function MyTasksPage() {
     sortBy: 'dueDate' as 'dueDate' | 'priority' | 'createdAt' | 'status',
     sortOrder: 'asc' as SortOrder,
   })
+  const filters = state
 
-  const query = { page, limit, ...filters }
-  const { data, isLoading, isError, error, refetch } = useMyTasks(query)
+  const { data, isLoading, isError, error, refetch } = useMyTasks(state)
 
   const hasActiveFilters = !!(
     filters.search ||
@@ -34,16 +38,24 @@ export function MyTasksPage() {
     filters.overdue
   )
 
+  function setPage(nextPage: number) {
+    setState({ page: nextPage })
+  }
+
+  function setLimit(nextLimit: number) {
+    setState({ limit: nextLimit, page: 1 })
+  }
+
   function handleClear() {
-    setFilters({
+    setState({
       search: '',
       status: undefined,
       priority: undefined,
       dueDateFrom: undefined,
       dueDateTo: undefined,
       overdue: undefined,
+      page: 1,
     })
-    setPage(1)
   }
 
   return (
@@ -52,10 +64,7 @@ export function MyTasksPage() {
 
       <TaskFilters
         value={filters}
-        onChange={(update) => {
-          setFilters(update)
-          setPage(1)
-        }}
+        onChange={(update) => setState({ ...update, page: 1 })}
         onClear={handleClear}
         hideAssignee
       />
@@ -69,7 +78,7 @@ export function MyTasksPage() {
         sortBy={filters.sortBy}
         sortOrder={filters.sortOrder}
         onSortChange={(sortBy, sortOrder) =>
-          setFilters({ sortBy: sortBy as typeof filters.sortBy, sortOrder })
+          setState({ sortBy: sortBy as typeof filters.sortBy, sortOrder })
         }
         hasActiveFilters={hasActiveFilters}
         onClearFilters={handleClear}
