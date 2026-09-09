@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/common/Button'
@@ -24,6 +24,7 @@ import {
 } from '@/hooks/mutations/useTaskMutations'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
+import { useSocket } from '@/hooks/useSocket'
 import { useToast } from '@/hooks/useToast'
 import { formatDate, formatDateTime } from '@/lib/date'
 import { toApiError } from '@/lib/error'
@@ -35,6 +36,7 @@ export function TaskDetailPage() {
   const { showToast } = useToast()
   const { user } = useAuth()
   const { canEditTaskField } = usePermissions()
+  const { joinProject, leaveProject } = useSocket()
 
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -45,6 +47,13 @@ export function TaskDetailPage() {
   const updateTask = useUpdateTask(id ?? '')
   const updateAssignee = useUpdateTaskAssignee(id ?? '')
   const deleteTask = useDeleteTask()
+
+  const taskProjectId = task?.project.id
+  useEffect(() => {
+    if (!taskProjectId) return
+    joinProject(taskProjectId)
+    return () => leaveProject(taskProjectId)
+  }, [taskProjectId, joinProject, leaveProject])
 
   if (isLoading) return <CardSkeleton />
   if (isError || !task) {

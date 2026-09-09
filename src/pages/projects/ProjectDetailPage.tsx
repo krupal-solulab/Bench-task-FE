@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/common/Button'
@@ -23,6 +23,7 @@ import { useDeleteProject, useUpdateProject } from '@/hooks/mutations/useProject
 import { useCreateTask } from '@/hooks/mutations/useTaskMutations'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { useAuth } from '@/hooks/useAuth'
+import { useSocket } from '@/hooks/useSocket'
 import { useToast } from '@/hooks/useToast'
 import { formatDate } from '@/lib/date'
 import { toApiError } from '@/lib/error'
@@ -35,6 +36,7 @@ export function ProjectDetailPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const { hasRole, user } = useAuth()
+  const { joinProject, leaveProject } = useSocket()
 
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -56,6 +58,12 @@ export function ProjectDetailPage() {
   const updateProject = useUpdateProject(id ?? '')
   const deleteProject = useDeleteProject()
   const createTask = useCreateTask()
+
+  useEffect(() => {
+    if (!id) return
+    joinProject(id)
+    return () => leaveProject(id)
+  }, [id, joinProject, leaveProject])
 
   if (isLoading) {
     return <CardSkeleton />

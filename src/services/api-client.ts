@@ -35,6 +35,11 @@ export function setAccessToken(token: string | null): void {
   accessToken = token
 }
 
+/** Lets code outside this file (the socket handshake) read the current token on demand. */
+export function getAccessToken(): string | null {
+  return accessToken
+}
+
 type UnauthorizedHandler = () => void
 let onUnauthorized: UnauthorizedHandler | null = null
 /** AuthContext registers a callback that clears the session and redirects to /login. */

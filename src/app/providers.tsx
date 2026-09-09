@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { BrowserRouter } from 'react-router-dom'
 import { ToastViewport } from '@/components/common/Toast'
 import { AuthProvider } from '@/context/AuthContext'
+import { SocketProvider } from '@/context/SocketContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { ToastProvider } from '@/context/ToastContext'
 import { queryClient } from './query-client'
@@ -17,8 +18,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
         <ThemeProvider>
           <ToastProvider>
             <AuthProvider>
-              {children}
-              <ToastViewport />
+              <SocketProvider>
+                {children}
+                <ToastViewport />
+              </SocketProvider>
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>
