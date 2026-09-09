@@ -60,6 +60,36 @@ export function useUpdateTaskStatus(id: string) {
   })
 }
 
+/**
+ * Same shape as useUpdateTaskStatus, but takes the task id per-call instead of fixed at hook
+ * creation time - needed by the Kanban board's drag handler, which can't call a hook
+ * conditionally once per card. useUpdateTaskStatus/TaskStatusControl are untouched.
+ */
+export function useUpdateAnyTaskStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: TaskStatus }) =>
+      tasksService.updateStatus(id, { status }),
+    onMutate: async ({ id, status }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(id) })
+      const previous = queryClient.getQueryData<Task>(queryKeys.tasks.detail(id))
+      if (previous) {
+        queryClient.setQueryData<Task>(queryKeys.tasks.detail(id), { ...previous, status })
+      }
+      return { previous, id }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.tasks.detail(context.id), context.previous)
+      }
+    },
+    onSuccess: (task) => {
+      queryClient.setQueryData(queryKeys.tasks.detail(task.id), task)
+      invalidateAfterTaskChange(queryClient, task)
+    },
+  })
+}
+
 export function useUpdateTaskAssignee(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
