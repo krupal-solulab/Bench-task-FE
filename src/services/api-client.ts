@@ -94,12 +94,20 @@ apiClient.interceptors.response.use(
       return Promise.reject(toApiError(error))
     }
 
-    const isAuthEndpoint = originalRequest?.url?.includes('/auth/refresh')
+    // These are the pre-authentication endpoints - a 401 from any of them means "bad
+    // credentials" or "expired refresh token", never "my access token expired", so none of
+    // them should trigger the refresh-and-retry flow below (which would mask the real error
+    // behind a generic one and could redirect away from the login/register form itself).
+    const isPublicAuthEndpoint = [
+      '/auth/login',
+      '/auth/register-organization',
+      '/auth/refresh',
+    ].some((path) => originalRequest?.url?.includes(path))
     if (
       error.response?.status === 401 &&
       originalRequest &&
       !originalRequest._retry &&
-      !isAuthEndpoint
+      !isPublicAuthEndpoint
     ) {
       if (!refreshFn) {
         onUnauthorized?.()

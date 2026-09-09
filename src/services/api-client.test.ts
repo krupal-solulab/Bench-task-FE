@@ -139,4 +139,34 @@ describe('apiClient 401 refresh flow', () => {
     await expect(apiClient.post('/auth/refresh', { refreshToken: 'x' })).rejects.toBeTruthy()
     expect(refreshFn).not.toHaveBeenCalled()
   })
+
+  it('surfaces a 401 from /auth/login as-is, without attempting a refresh or calling onUnauthorized', async () => {
+    server.use(
+      http.post(`${BASE_URL}/auth/login`, () =>
+        HttpResponse.json(
+          {
+            statusCode: 401,
+            message: 'Invalid email or password',
+            error: 'Unauthorized',
+            timestamp: '',
+            path: '',
+          },
+          { status: 401 },
+        ),
+      ),
+    )
+    const refreshFn = vi.fn()
+    const onUnauthorized = vi.fn()
+    setRefreshHandler(refreshFn)
+    setUnauthorizedHandler(onUnauthorized)
+
+    const error = await apiClient
+      .post('/auth/login', { email: 'a@a.com', password: 'wrong' })
+      .catch((err: unknown) => err)
+
+    expect(refreshFn).not.toHaveBeenCalled()
+    expect(onUnauthorized).not.toHaveBeenCalled()
+    // The interceptor's final fallthrough normalises via toApiError before rejecting.
+    expect((error as { statusCode?: number }).statusCode).toBe(401)
+  })
 })
