@@ -13,6 +13,7 @@ import { UserSelect } from '@/components/common/UserSelect'
 import { TaskStatusControl } from '@/components/tasks/TaskStatusControl'
 import { TaskForm } from '@/components/tasks/TaskForm'
 import { TaskActivityFeed } from '@/components/tasks/TaskActivityFeed'
+import { AttachmentList } from '@/components/tasks/AttachmentList'
 import { CommentList } from '@/components/comments/CommentList'
 import { useTask } from '@/hooks/queries/useTasks'
 import { useProject } from '@/hooks/queries/useProjects'
@@ -204,6 +205,8 @@ export function TaskDetailPage() {
           </div>
 
           <TaskActivityFeed taskId={task.id} />
+
+          <AttachmentList taskId={task.id} />
         </div>
 
         <div className="rounded-xl border bg-card p-5 shadow-soft">

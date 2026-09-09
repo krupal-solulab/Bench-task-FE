@@ -164,3 +164,10 @@ export async function apiDelete<T>(url: string, params?: object): Promise<T> {
   const response = await apiClient.delete<T>(url, { params })
   return response.data
 }
+
+export async function apiUpload<T>(url: string, formData: FormData): Promise<T> {
+  const response = await apiClient.post<T>(url, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return response.data
+}
