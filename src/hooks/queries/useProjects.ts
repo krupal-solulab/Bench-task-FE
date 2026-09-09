@@ -47,3 +47,11 @@ export function useProjectStats(id: string | undefined) {
     enabled: !!id,
   })
 }
+
+export function useProjectActivity(id: string | undefined, page: number, limit: number) {
+  return useQuery({
+    queryKey: queryKeys.projects.activity(id ?? ''),
+    queryFn: () => projectsService.activity(id!, { page, limit }),
+    enabled: !!id,
+  })
+}

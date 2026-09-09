@@ -52,3 +52,12 @@ export interface ProjectStats {
   overdueCount: number
   completionRate: number
 }
+
+export interface ProjectActivityEntry {
+  id: string
+  action: string
+  from: string | null
+  to: string | null
+  actor: User
+  createdAt: string
+}

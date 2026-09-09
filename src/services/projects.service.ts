@@ -2,6 +2,7 @@ import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost } from './api-cli
 import type {
   CreateProjectPayload,
   Project,
+  ProjectActivityEntry,
   ProjectListQuery,
   ProjectMember,
   ProjectStats,
@@ -39,4 +40,7 @@ export const projectsService = {
     apiGetPaginated<Task>(`/projects/${id}/tasks`, query),
 
   stats: (id: string) => apiGet<ProjectStats>(`/projects/${id}/stats`),
+
+  activity: (id: string, query: { page?: number; limit?: number }) =>
+    apiGetPaginated<ProjectActivityEntry>(`/projects/${id}/activity`, query),
 }

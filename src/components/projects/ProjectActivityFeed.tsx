@@ -3,24 +3,23 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronDown, History } from 'lucide-react'
 import { Spinner } from '@/components/common/Spinner'
 import { ErrorState } from '@/components/common/ErrorState'
-import { useTaskActivity } from '@/hooks/queries/useTasks'
+import { useProjectActivity } from '@/hooks/queries/useProjects'
 import { formatDateTime } from '@/lib/date'
 import { toApiError } from '@/lib/error'
 
 const ACTION_LABELS: Record<string, string> = {
-  created: 'created the task',
+  created: 'created the project',
   status_changed: 'changed status',
-  reassigned: 'reassigned the task',
-  priority_changed: 'changed priority',
-  due_date_changed: 'changed the due date',
-  updated: 'updated the task',
-  deleted: 'deleted the task',
+  member_added: 'added a member',
+  member_removed: 'removed a member',
+  updated: 'updated the project',
+  deleted: 'deleted the project',
 }
 
-export function TaskActivityFeed({ taskId }: { taskId: string }) {
+export function ProjectActivityFeed({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false)
-  const { data, isLoading, isError, error, refetch } = useTaskActivity(
-    open ? taskId : undefined,
+  const { data, isLoading, isError, error, refetch } = useProjectActivity(
+    open ? projectId : undefined,
     1,
     20,
   )

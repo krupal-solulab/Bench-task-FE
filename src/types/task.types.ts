@@ -63,9 +63,8 @@ export interface UpdateTaskAssigneePayload {
 export interface TaskActivityEntry {
   id: string
   action: string
-  field?: string
-  oldValue?: string
-  newValue?: string
+  from: string | null
+  to: string | null
   actor: User
   createdAt: string
 }

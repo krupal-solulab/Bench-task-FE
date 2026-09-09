@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ProjectForm } from '@/components/projects/ProjectForm'
 import { ProjectStatusControl } from '@/components/projects/ProjectStatusControl'
 import { MemberManager } from '@/components/projects/MemberManager'
+import { ProjectActivityFeed } from '@/components/projects/ProjectActivityFeed'
 import { TaskBoard } from '@/components/tasks/TaskBoard'
 import { TaskList } from '@/components/tasks/TaskList'
 import { TaskFilters } from '@/components/tasks/TaskFilters'
@@ -149,6 +150,7 @@ export function ProjectDetailPage() {
             <TabsTrigger value="list">List</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="stats">Stats</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
           {canManage && (
             <Button size="sm" onClick={() => setCreateTaskOpen(true)}>
@@ -204,6 +206,8 @@ export function ProjectDetailPage() {
             </StaggerContainer>
           )}
         </TabsContent>
+
+        <TabsContent value="activity">{id && <ProjectActivityFeed projectId={id} />}</TabsContent>
       </Tabs>
 
       <Modal open={editOpen} onOpenChange={setEditOpen} title="Edit project">
