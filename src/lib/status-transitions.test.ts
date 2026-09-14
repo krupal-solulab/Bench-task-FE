@@ -34,6 +34,8 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     priority: 'P2',
     dueDate: null,
     createdBy: makeUser({ id: 'manager-1', role: 'Manager' }),
+    sprint: null,
+    rank: 1024,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
@@ -45,8 +47,8 @@ describe('status-transitions', () => {
     expect(legalTaskTransitions('Todo')).toEqual(['In Progress'])
   })
 
-  it('offers no further transitions once a task is Done', () => {
-    expect(legalTaskTransitions('Done')).toEqual([])
+  it('allows reopening a Done task back to In Progress (regression: this drifted out of sync with the backend, which has always allowed it, and silently blocked every reopen/drag from Done)', () => {
+    expect(legalTaskTransitions('Done')).toEqual(['In Progress'])
   })
 
   it('allows moving a Review task back to In Progress or forward to Done', () => {
@@ -103,6 +105,11 @@ describe('status-transitions', () => {
     it('rejects when role is undefined (logged out / loading)', () => {
       const task = makeTask({ status: 'Todo' })
       expect(canDragTaskTo(task, 'In Progress', undefined, undefined)).toBe(false)
+    })
+
+    it('allows dragging a Done task back to In Progress', () => {
+      const task = makeTask({ status: 'Done' })
+      expect(canDragTaskTo(task, 'In Progress', 'Manager', 'manager-1')).toBe(true)
     })
   })
 })

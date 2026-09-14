@@ -12,6 +12,11 @@ export interface TaskProjectSummary {
   name: string
 }
 
+export interface TaskSprintSummary {
+  id: string
+  name: string
+}
+
 export interface Task {
   id: string
   title: string
@@ -22,6 +27,8 @@ export interface Task {
   priority: TaskPriority
   dueDate: string | null
   createdBy: User
+  sprint: TaskSprintSummary | null
+  rank: number
   createdAt: string
   updatedAt: string
 }
@@ -37,7 +44,9 @@ export interface TaskListQuery {
   dueDateTo?: string
   overdue?: boolean
   search?: string
-  sortBy?: 'dueDate' | 'priority' | 'createdAt' | 'status'
+  sprintId?: string
+  unassignedSprint?: boolean
+  sortBy?: 'dueDate' | 'priority' | 'createdAt' | 'status' | 'rank'
   sortOrder?: SortOrder
 }
 
@@ -58,6 +67,15 @@ export interface UpdateTaskStatusPayload {
 
 export interface UpdateTaskAssigneePayload {
   assignee: string | null
+}
+
+export interface UpdateTaskSprintPayload {
+  sprintId: string | null
+}
+
+export interface UpdateTaskRankPayload {
+  beforeTaskId?: string
+  afterTaskId?: string
 }
 
 export interface TaskActivityEntry {

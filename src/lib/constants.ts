@@ -12,6 +12,11 @@ export const STATUS_COLORS = {
     Review: 'bg-amber-100 text-amber-700 border-amber-200',
     Done: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   },
+  sprint: {
+    Planned: 'bg-slate-100 text-slate-700 border-slate-200',
+    Active: 'bg-blue-100 text-blue-700 border-blue-200',
+    Completed: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  },
 } as const
 
 export const PRIORITY_COLORS = {
@@ -24,6 +29,7 @@ export const PRIORITY_COLORS = {
 export const CHART_COLORS = {
   projectStatus: { Planning: '#64748b', 'In Progress': '#3b82f6', Completed: '#10b981' },
   taskStatus: { Todo: '#64748b', 'In Progress': '#3b82f6', Review: '#f59e0b', Done: '#10b981' },
+  sprintStatus: { Planned: '#64748b', Active: '#3b82f6', Completed: '#10b981' },
   priority: { P1: '#ef4444', P2: '#f59e0b', P3: '#94a3b8' },
   trend: { created: '#3b82f6', completed: '#10b981' },
   single: '#3b82f6',
@@ -67,6 +73,13 @@ export const queryKeys = {
   },
   comments: {
     list: (taskId: string, filters: unknown) => ['comments', taskId, 'list', filters] as const,
+  },
+  sprints: {
+    all: ['sprints'] as const,
+    list: (projectId: string, filters: unknown) => ['sprints', 'list', projectId, filters] as const,
+    detail: (id: string) => ['sprints', 'detail', id] as const,
+    active: (projectId: string) => ['sprints', 'active', projectId] as const,
+    activity: (id: string) => ['sprints', 'detail', id, 'activity'] as const,
   },
   attachments: {
     list: (taskId: string, filters: unknown) => ['attachments', taskId, 'list', filters] as const,

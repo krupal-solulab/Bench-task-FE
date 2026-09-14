@@ -11,7 +11,15 @@ export const TabsList = forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      'inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground',
+      // min-w-0 lets this shrink below its content width inside a flex row (the default
+      // min-width:auto on flex items would otherwise force the row itself to overflow instead of
+      // scrolling here) - together with overflow-x-auto, a tab bar with more tabs than fit on a
+      // narrow/mobile viewport scrolls horizontally instead of clipping the later tabs entirely.
+      // justify-start (not -center): centering an overflowing flex row spills content evenly past
+      // both edges, so scrollLeft 0 would land in the middle of the tabs instead of on the first
+      // one - the active tab could be scrolled out of view on load. No visual change when
+      // everything already fits, since this row is inline-flex (sized to its content either way).
+      'inline-flex h-10 min-w-0 max-w-full items-center justify-start overflow-x-auto whitespace-nowrap rounded-md bg-muted p-1 text-muted-foreground',
       className,
     )}
     {...props}

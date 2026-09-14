@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import type { ReactNode } from 'react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext, type AuthContextValue } from '@/context/AuthContext'
 import { ToastProvider } from '@/context/ToastContext'
@@ -52,14 +52,24 @@ function makeAuthValue(overrides: Partial<AuthContextValue> = {}): AuthContextVa
   }
 }
 
-function renderProjectDetail(authValue: AuthContextValue) {
+/** Exposes the router's current search string so a test can assert on it (MemoryRouter never
+ * touches the real window.location, so that's not observable directly). */
+function LocationProbe() {
+  const location = useLocation()
+  return <div data-testid="location-probe">{location.search}</div>
+}
+
+function renderProjectDetail(authValue: AuthContextValue, initialEntry = '/projects/p-1') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={['/projects/p-1']}>
+        <MemoryRouter initialEntries={[initialEntry]}>
           <ToastProvider>
-            <AuthContext.Provider value={authValue}>{children}</AuthContext.Provider>
+            <AuthContext.Provider value={authValue}>
+              {children}
+              <LocationProbe />
+            </AuthContext.Provider>
           </ToastProvider>
         </MemoryRouter>
       </QueryClientProvider>
@@ -117,5 +127,67 @@ describe('ProjectDetailPage', () => {
 
     await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
     expect(await screen.findByText('Design homepage hero')).toBeInTheDocument()
+  })
+
+  it('opens directly to the tab named in the URL (regression: a refresh on any non-Board tab used to always bounce back to Board)', async () => {
+    renderProjectDetail(makeAuthValue(), '/projects/p-1?tab=members')
+
+    await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+    expect(screen.getByRole('tab', { name: 'Members' })).toHaveAttribute('aria-selected', 'true')
+    expect(await screen.findAllByText('Mona Manager')).not.toHaveLength(0)
+  })
+
+  it('updates the URL when switching tabs, so a refresh would reopen the same tab', async () => {
+    const user = userEvent.setup()
+    renderProjectDetail(makeAuthValue())
+
+    await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+    await user.click(screen.getByRole('tab', { name: 'Calendar' }))
+
+    expect(screen.getByRole('tab', { name: 'Calendar' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByTestId('location-probe')).toHaveTextContent('tab=calendar')
+  })
+
+  it('shows a Start sprint button for a Planned sprint on the Backlog tab (regression: there was previously no way to start a sprint from the UI)', async () => {
+    server.use(
+      http.get(url('/projects/:id/sprints'), () =>
+        HttpResponse.json({
+          success: true,
+          data: [
+            {
+              id: 's-1',
+              name: 'Sprint 1',
+              goal: '',
+              project: 'p-1',
+              status: 'Planned',
+              startDate: '2026-01-01',
+              endDate: '2026-01-14',
+              startedAt: null,
+              completedAt: null,
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-01-01T00:00:00.000Z',
+            },
+          ],
+          meta: {
+            total: 1,
+            page: 1,
+            limit: 100,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        }),
+      ),
+    )
+    const user = userEvent.setup()
+    renderProjectDetail(
+      makeAuthValue({ user: ADMIN, hasRole: (...roles) => roles.includes('Admin') }),
+    )
+
+    await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+    await user.click(screen.getByRole('tab', { name: 'Backlog' }))
+
+    expect(await screen.findByText('Sprint 1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start sprint' })).toBeInTheDocument()
   })
 })

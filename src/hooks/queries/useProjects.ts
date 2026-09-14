@@ -30,11 +30,15 @@ export function useProjectMembers(id: string | undefined, query: PageQuery = {})
   })
 }
 
-export function useProjectTasks(id: string | undefined, query: TaskListQuery) {
+export function useProjectTasks(
+  id: string | undefined,
+  query: TaskListQuery,
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: queryKeys.projects.tasks(id ?? '', query),
     queryFn: () => projectsService.tasks(id!, query),
-    enabled: !!id,
+    enabled: !!id && (options.enabled ?? true),
     staleTime: QUERY_STALE_TIME.list,
     placeholderData: (prev) => prev,
   })

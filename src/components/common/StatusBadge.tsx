@@ -1,19 +1,29 @@
 import { CHART_COLORS, STATUS_COLORS } from '@/lib/constants'
 import { cn } from '@/lib/cn'
 import type { ProjectStatus } from '@/types/project.types'
+import type { SprintStatus } from '@/types/sprint.types'
 import type { TaskStatus } from '@/types/task.types'
 
+const COLOR_MAP = {
+  project: STATUS_COLORS.project,
+  task: STATUS_COLORS.task,
+  sprint: STATUS_COLORS.sprint,
+}
+const DOT_MAP = {
+  project: CHART_COLORS.projectStatus,
+  task: CHART_COLORS.taskStatus,
+  sprint: CHART_COLORS.sprintStatus,
+}
+
 interface StatusBadgeProps {
-  status: ProjectStatus | TaskStatus
-  kind: 'project' | 'task'
+  status: ProjectStatus | TaskStatus | SprintStatus
+  kind: 'project' | 'task' | 'sprint'
   className?: string
 }
 
 export function StatusBadge({ status, kind, className }: StatusBadgeProps) {
-  const colorMap = kind === 'project' ? STATUS_COLORS.project : STATUS_COLORS.task
-  const dotMap = kind === 'project' ? CHART_COLORS.projectStatus : CHART_COLORS.taskStatus
-  const colorClass = (colorMap as Record<string, string>)[status] ?? STATUS_COLORS.task.Todo
-  const dotColor = (dotMap as Record<string, string>)[status] ?? CHART_COLORS.single
+  const colorClass = (COLOR_MAP[kind] as Record<string, string>)[status] ?? STATUS_COLORS.task.Todo
+  const dotColor = (DOT_MAP[kind] as Record<string, string>)[status] ?? CHART_COLORS.single
 
   return (
     <span

@@ -6,6 +6,8 @@ import type {
   TaskListQuery,
   UpdateTaskAssigneePayload,
   UpdateTaskPayload,
+  UpdateTaskRankPayload,
+  UpdateTaskSprintPayload,
   UpdateTaskStatusPayload,
 } from '@/types/task.types'
 
@@ -27,6 +29,12 @@ export const tasksService = {
 
   updateAssignee: (id: string, payload: UpdateTaskAssigneePayload) =>
     apiPatch<Task>(`/tasks/${id}/assignee`, payload),
+
+  updateSprint: (id: string, payload: UpdateTaskSprintPayload) =>
+    apiPatch<Task>(`/tasks/${id}/sprint`, payload),
+
+  updateRank: (id: string, payload: UpdateTaskRankPayload) =>
+    apiPatch<Task>(`/tasks/${id}/rank`, payload),
 
   remove: (id: string) => apiDelete<void>(`/tasks/${id}`),
 

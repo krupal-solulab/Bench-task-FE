@@ -65,6 +65,8 @@ describe('TaskForm', () => {
           createdAt: '',
           updatedAt: '',
         },
+        sprint: null,
+        rank: 1024,
         createdAt: '2026-01-01T00:00:00.000Z',
         updatedAt: '2026-01-01T00:00:00.000Z',
       },

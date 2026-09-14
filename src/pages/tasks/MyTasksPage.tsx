@@ -22,7 +22,7 @@ export function MyTasksPage() {
     dueDateFrom: undefined as string | undefined,
     dueDateTo: undefined as string | undefined,
     overdue: undefined as boolean | undefined,
-    sortBy: 'dueDate' as 'dueDate' | 'priority' | 'createdAt' | 'status',
+    sortBy: 'dueDate' as NonNullable<TaskListQuery['sortBy']>,
     sortOrder: 'asc' as SortOrder,
   })
   const filters = state

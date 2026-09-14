@@ -30,7 +30,7 @@ describe('ProjectForm', () => {
     )
   })
 
-  it('pre-fills fields from initialValues when editing', () => {
+  it('pre-fills fields (including dates) from initialValues when editing (regression: the API returns full ISO datetimes, which a native date input silently rejects unless trimmed to YYYY-MM-DD)', () => {
     render(
       <ProjectForm
         initialValues={{
@@ -63,6 +63,7 @@ describe('ProjectForm', () => {
 
     expect(screen.getByDisplayValue('Existing Project')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Existing description')).toBeInTheDocument()
+    expect(screen.getByLabelText('Start date', { exact: false })).toHaveValue('2026-01-01')
     expect(screen.getByRole('button', { name: 'Update' })).toBeInTheDocument()
   })
 

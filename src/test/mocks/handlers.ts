@@ -122,6 +122,8 @@ export const handlers = [
   http.get(url('/projects/:id/tasks'), ({ params }) =>
     HttpResponse.json(paginated(mockTasks.filter((t) => t.project.id === params.id))),
   ),
+  http.get(url('/projects/:id/sprints'), () => HttpResponse.json(paginated([]))),
+  http.get(url('/projects/:id/sprints/active'), () => HttpResponse.json(ok(null))),
 
   http.get(url('/tasks'), () => HttpResponse.json(paginated(mockTasks))),
   http.get(url('/tasks/my-tasks'), () => HttpResponse.json(paginated(mockTasks))),

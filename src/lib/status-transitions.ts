@@ -14,7 +14,7 @@ const TASK_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   Todo: ['In Progress'],
   'In Progress': ['Review', 'Todo'],
   Review: ['Done', 'In Progress'],
-  Done: [],
+  Done: ['In Progress'],
 }
 
 export function legalProjectTransitions(current: ProjectStatus): ProjectStatus[] {

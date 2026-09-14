@@ -7,6 +7,8 @@ import type {
   TaskStatus,
   UpdateTaskAssigneePayload,
   UpdateTaskPayload,
+  UpdateTaskRankPayload,
+  UpdateTaskSprintPayload,
 } from '@/types/task.types'
 
 function invalidateAfterTaskChange(queryClient: ReturnType<typeof useQueryClient>, task?: Task) {
@@ -15,6 +17,12 @@ function invalidateAfterTaskChange(queryClient: ReturnType<typeof useQueryClient
   if (task) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(task.project.id) })
   }
+}
+
+/** Moving a task in/out of a sprint changes both the Backlog and Sprint Board views at once. */
+function invalidateAfterSprintMove(queryClient: ReturnType<typeof useQueryClient>, task: Task) {
+  invalidateAfterTaskChange(queryClient, task)
+  void queryClient.invalidateQueries({ queryKey: queryKeys.sprints.all })
 }
 
 export function useCreateTask() {
@@ -76,6 +84,44 @@ export function useUpdateAnyTaskStatus() {
       if (previous) {
         queryClient.setQueryData<Task>(queryKeys.tasks.detail(id), { ...previous, status })
       }
+      return { previous, id }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.tasks.detail(context.id), context.previous)
+      }
+    },
+    onSuccess: (task) => {
+      queryClient.setQueryData(queryKeys.tasks.detail(task.id), task)
+      invalidateAfterTaskChange(queryClient, task)
+    },
+  })
+}
+
+export function useUpdateTaskSprint(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: UpdateTaskSprintPayload) => tasksService.updateSprint(id, payload),
+    onSuccess: (task) => {
+      queryClient.setQueryData(queryKeys.tasks.detail(id), task)
+      invalidateAfterSprintMove(queryClient, task)
+    },
+  })
+}
+
+/**
+ * Same "id passed per-call" shape as useUpdateAnyTaskStatus, needed because the backlog's drag
+ * handler can't call a hook conditionally once per row. Uses the same onMutate optimistic-update
+ * pattern for instant drag feedback.
+ */
+export function useUpdateAnyTaskRank() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...payload }: { id: string } & UpdateTaskRankPayload) =>
+      tasksService.updateRank(id, payload),
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(id) })
+      const previous = queryClient.getQueryData<Task>(queryKeys.tasks.detail(id))
       return { previous, id }
     },
     onError: (_err, _vars, context) => {

@@ -6,6 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { projectSchema, type ProjectFormValues } from '@/schemas/project.schema'
+import { toDateInputValue } from '@/lib/date'
 import type { Project } from '@/types/project.types'
 
 export interface ProjectFormProps {
@@ -32,8 +33,10 @@ export function ProjectForm({
     defaultValues: {
       name: initialValues?.name ?? '',
       description: initialValues?.description ?? '',
-      startDate: initialValues?.startDate ?? null,
-      dueDate: initialValues?.dueDate ?? null,
+      // null (not '') when unset - startDate/dueDate are optional at the API, and an empty
+      // string (rather than null/undefined) would fail its @IsISO8601() validation on submit.
+      startDate: initialValues?.startDate ? toDateInputValue(initialValues.startDate) : null,
+      dueDate: initialValues?.dueDate ? toDateInputValue(initialValues.dueDate) : null,
     },
   })
 
