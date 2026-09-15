@@ -3,6 +3,7 @@ import { SearchInput } from '@/components/common/SearchInput'
 import { UserSelect } from '@/components/common/UserSelect'
 import { DatePicker } from '@/components/common/DatePicker'
 import { TagInput } from '@/components/common/TagInput'
+import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { TASK_PRIORITIES, TASK_STATUSES, type TaskListQuery } from '@/types/task.types'
 import type { WorkflowStatus } from '@/types/workflow.types'
+import type { CustomFieldDefinition } from '@/types/project.types'
 
 const DEFAULT_STATUS_OPTIONS: WorkflowStatus[] = TASK_STATUSES.map((name) => ({
   name,
@@ -33,6 +35,9 @@ export interface TaskFiltersProps {
   /** The current project's defined components - omitted (no filter shown) for cross-project
    * views like "My Tasks". */
   componentOptions?: string[]
+  /** The current project's Text/Dropdown custom fields - omitted (no filter shown) for
+   * cross-project views like "My Tasks", same convention as labelOptions/componentOptions. */
+  customFieldOptions?: CustomFieldDefinition[]
 }
 
 const ALL = '__all__'
@@ -45,7 +50,14 @@ export function TaskFilters({
   statuses = DEFAULT_STATUS_OPTIONS,
   labelOptions,
   componentOptions,
+  customFieldOptions,
 }: TaskFiltersProps) {
+  function updateCustomFieldFilter(fieldId: string, fieldValue: string) {
+    const rest = (value.customFieldFilters ?? []).filter((f) => f.fieldId !== fieldId)
+    const next = fieldValue ? [...rest, { fieldId, value: fieldValue }] : rest
+    onChange({ customFieldFilters: next.length ? next : undefined })
+  }
+
   const hasActiveFilters = !!(
     value.search ||
     value.status ||
@@ -55,7 +67,8 @@ export function TaskFilters({
     value.dueDateTo ||
     value.overdue ||
     value.labels?.length ||
-    value.components?.length
+    value.components?.length ||
+    value.customFieldFilters?.length
   )
 
   return (
@@ -162,6 +175,41 @@ export function TaskFilters({
           />
         </div>
       )}
+
+      {customFieldOptions?.map((field) => {
+        const current = value.customFieldFilters?.find((f) => f.fieldId === field.id)?.value ?? ''
+        if (field.type === 'Dropdown') {
+          return (
+            <Select
+              key={field.id}
+              value={current || ALL}
+              onValueChange={(v) => updateCustomFieldFilter(field.id, v === ALL ? '' : v)}
+            >
+              <SelectTrigger className="w-40" aria-label={`Filter by ${field.name}`}>
+                <SelectValue placeholder={field.name} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{field.name}: All</SelectItem>
+                {(field.options ?? []).map((o) => (
+                  <SelectItem key={o} value={o}>
+                    {o}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )
+        }
+        return (
+          <Input
+            key={field.id}
+            value={current}
+            onChange={(e) => updateCustomFieldFilter(field.id, e.target.value)}
+            placeholder={field.name}
+            aria-label={`Filter by ${field.name}`}
+            className="w-40"
+          />
+        )
+      })}
     </FilterBar>
   )
 }

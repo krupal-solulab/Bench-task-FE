@@ -105,5 +105,9 @@ export const queryKeys = {
     developerWorkload: (scope: unknown) => ['dashboard', 'developer-workload', scope] as const,
     overdueSummary: (scope: unknown) => ['dashboard', 'overdue-summary', scope] as const,
     taskTrend: (scope: unknown) => ['dashboard', 'task-trend', scope] as const,
+    preferences: ['dashboard', 'preferences'] as const,
+  },
+  savedFilters: {
+    list: (query: unknown) => ['saved-filters', 'list', query] as const,
   },
 } as const

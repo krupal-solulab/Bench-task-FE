@@ -207,4 +207,12 @@ export const handlers = [
       ),
     ),
   ),
+  http.get(url('/dashboard/preferences'), () =>
+    HttpResponse.json(ok({ hiddenWidgets: [], widgetOrder: [] })),
+  ),
+  http.put(url('/dashboard/preferences'), async ({ request }) =>
+    HttpResponse.json(ok(await request.json())),
+  ),
+
+  http.get(url('/saved-filters'), () => HttpResponse.json(ok([]))),
 ]

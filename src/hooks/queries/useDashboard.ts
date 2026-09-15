@@ -58,3 +58,11 @@ export function useTaskTrend(scope: DashboardScopeQuery & { days: number }) {
     staleTime: QUERY_STALE_TIME.dashboard,
   })
 }
+
+export function useDashboardPreferences() {
+  return useQuery({
+    queryKey: queryKeys.dashboard.preferences,
+    queryFn: () => dashboardService.getPreferences(),
+    staleTime: QUERY_STALE_TIME.dashboard,
+  })
+}

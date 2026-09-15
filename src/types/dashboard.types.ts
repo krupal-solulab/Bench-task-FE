@@ -58,3 +58,20 @@ export interface OverdueSummaryItem {
   dueDate: string
   priority: TaskPriority
 }
+
+// The dashboard's customizable widgets - the top stat-card row is always shown and isn't part of
+// this set. Order here doubles as the default order for anyone with no saved preference.
+export const DASHBOARD_WIDGET_IDS = [
+  'projectsByStatus',
+  'tasksStatus',
+  'tasksByPriority',
+  'taskTrend',
+  'developerWorkload',
+  'overdueList',
+] as const
+export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number]
+
+export interface DashboardPreference {
+  hiddenWidgets: DashboardWidgetId[]
+  widgetOrder: DashboardWidgetId[]
+}

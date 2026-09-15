@@ -18,6 +18,7 @@ import { ProjectActivityFeed } from '@/components/projects/ProjectActivityFeed'
 import { TaskBoard } from '@/components/tasks/TaskBoard'
 import { TaskList } from '@/components/tasks/TaskList'
 import { TaskFilters } from '@/components/tasks/TaskFilters'
+import { SavedFiltersMenu } from '@/components/tasks/SavedFiltersMenu'
 import { TaskForm } from '@/components/tasks/TaskForm'
 import { SprintForm } from '@/components/sprints/SprintForm'
 import { SprintLifecycleControls } from '@/components/sprints/SprintLifecycleControls'
@@ -81,6 +82,9 @@ export function ProjectDetailPage() {
   // pages and typed for scalar values only; these are string arrays.
   const [labelFilter, setLabelFilter] = useState<string[]>([])
   const [componentFilter, setComponentFilter] = useState<string[]>([])
+  const [customFieldFilters, setCustomFieldFilters] = useState<
+    Array<{ fieldId: string; value: string }>
+  >([])
 
   const { data: project, isLoading, isError, error, refetch } = useProject(id)
   const { data: labelOptions } = useProjectLabels(id)
@@ -91,6 +95,7 @@ export function ProjectDetailPage() {
     ...filters,
     labels: labelFilter.length ? labelFilter : undefined,
     components: componentFilter.length ? componentFilter : undefined,
+    customFieldFilters: customFieldFilters.length ? customFieldFilters : undefined,
   })
   const { data: stats } = useProjectStats(id)
   const { data: sprintsData } = useSprints(id, { page: 1, limit: 100 })
@@ -349,19 +354,56 @@ export function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="list" className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SavedFiltersMenu
+              scope="project"
+              projectId={id}
+              currentQuery={{
+                ...filters,
+                labels: labelFilter,
+                components: componentFilter,
+                customFieldFilters,
+              }}
+              onApply={(query) => {
+                const q = query as Partial<TaskListQuery>
+                setLabelFilter(q.labels ?? [])
+                setComponentFilter(q.components ?? [])
+                setCustomFieldFilters(q.customFieldFilters ?? [])
+                setFilters({
+                  search: q.search ?? '',
+                  status: q.status,
+                  priority: q.priority,
+                  assignee: q.assignee,
+                  dueDateFrom: q.dueDateFrom,
+                  dueDateTo: q.dueDateTo,
+                  overdue: q.overdue,
+                })
+              }}
+            />
+          </div>
           <TaskFilters
-            value={{ ...filters, labels: labelFilter, components: componentFilter }}
+            value={{
+              ...filters,
+              labels: labelFilter,
+              components: componentFilter,
+              customFieldFilters,
+            }}
             onChange={(update) => {
               if ('labels' in update) setLabelFilter(update.labels ?? [])
               if ('components' in update) setComponentFilter(update.components ?? [])
+              if ('customFieldFilters' in update) {
+                setCustomFieldFilters(update.customFieldFilters ?? [])
+              }
               const rest = { ...update }
               delete rest.labels
               delete rest.components
+              delete rest.customFieldFilters
               if (Object.keys(rest).length) setFilters(rest)
             }}
             onClear={() => {
               setLabelFilter([])
               setComponentFilter([])
+              setCustomFieldFilters([])
               setFilters({
                 search: '',
                 status: undefined,
@@ -375,6 +417,9 @@ export function ProjectDetailPage() {
             statuses={workflow?.statuses}
             labelOptions={labelOptions}
             componentOptions={project?.components}
+            customFieldOptions={project?.customFields.filter(
+              (f) => f.type === 'Text' || f.type === 'Dropdown',
+            )}
           />
           <TaskList
             tasks={tasksData?.data ?? []}

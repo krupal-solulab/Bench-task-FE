@@ -40,3 +40,16 @@ if (!Element.prototype.releasePointerCapture) {
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {}
 }
+
+// jsdom has no ResizeObserver - Recharts' ResponsiveContainer (used by every dashboard chart)
+// requires one to measure its container, so any test that actually waits for chart content to
+// render needs this stub or it crashes with a ReferenceError.
+if (!('ResizeObserver' in window)) {
+  class ResizeObserverStub {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(window as any).ResizeObserver = ResizeObserverStub
+}

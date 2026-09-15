@@ -12,12 +12,26 @@ import type {
   UpdateTaskStatusPayload,
 } from '@/types/task.types'
 
+/** axios sends an array-of-objects query param as bracketed keys (`customFieldFilters[0][fieldId]`),
+ * which the backend doesn't parse - it expects one JSON-encoded string, so this is built here
+ * rather than relying on axios's default array/object serialization. */
+export function toTaskListParams(query: TaskListQuery): Record<string, unknown> {
+  return {
+    ...query,
+    customFieldFilters: query.customFieldFilters?.length
+      ? JSON.stringify(query.customFieldFilters)
+      : undefined,
+  }
+}
+
 export const tasksService = {
-  list: (query: TaskListQuery) => apiGetPaginated<Task>('/tasks', query),
+  list: (query: TaskListQuery) => apiGetPaginated<Task>('/tasks', toTaskListParams(query)),
 
-  overdue: (query: TaskListQuery) => apiGetPaginated<Task>('/tasks/overdue', query),
+  overdue: (query: TaskListQuery) =>
+    apiGetPaginated<Task>('/tasks/overdue', toTaskListParams(query)),
 
-  myTasks: (query: TaskListQuery) => apiGetPaginated<Task>('/tasks/my-tasks', query),
+  myTasks: (query: TaskListQuery) =>
+    apiGetPaginated<Task>('/tasks/my-tasks', toTaskListParams(query)),
 
   get: (id: string) => apiGet<Task>(`/tasks/${id}`),
 

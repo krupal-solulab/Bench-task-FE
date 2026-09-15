@@ -14,6 +14,7 @@ import type {
 import type { ProjectStatus } from '@/types/project.types'
 import type { PageQuery } from '@/types/api.types'
 import type { Task, TaskListQuery } from '@/types/task.types'
+import { toTaskListParams } from './tasks.service'
 import type { Workflow } from '@/types/workflow.types'
 
 export const projectsService = {
@@ -44,7 +45,7 @@ export const projectsService = {
     apiPatch<Project>(`/projects/${id}/members/${userId}/permissions`, patch),
 
   tasks: (id: string, query: TaskListQuery) =>
-    apiGetPaginated<Task>(`/projects/${id}/tasks`, query),
+    apiGetPaginated<Task>(`/projects/${id}/tasks`, toTaskListParams(query)),
 
   stats: (id: string) => apiGet<ProjectStats>(`/projects/${id}/stats`),
 

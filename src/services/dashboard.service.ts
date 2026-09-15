@@ -1,5 +1,6 @@
-import { apiGet } from './api-client'
+import { apiGet, apiPut } from './api-client'
 import type {
+  DashboardPreference,
   DashboardScopeQuery,
   DashboardSummary,
   DeveloperWorkloadPoint,
@@ -31,4 +32,9 @@ export const dashboardService = {
 
   taskTrend: (query: DashboardScopeQuery & { days?: number }) =>
     apiGet<TaskTrendPoint[]>('/dashboard/task-trend', query),
+
+  getPreferences: () => apiGet<DashboardPreference>('/dashboard/preferences'),
+
+  updatePreferences: (payload: DashboardPreference) =>
+    apiPut<DashboardPreference>('/dashboard/preferences', payload),
 }

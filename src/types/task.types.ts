@@ -78,6 +78,8 @@ export interface TaskListQuery {
   parent?: string
   labels?: string[]
   components?: string[]
+  // Equals-match against a custom field's value (Text/Dropdown only), ANDed.
+  customFieldFilters?: Array<{ fieldId: string; value: string }>
   sortBy?: 'dueDate' | 'priority' | 'createdAt' | 'status' | 'rank'
   sortOrder?: SortOrder
 }

@@ -1,6 +1,7 @@
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Pagination } from '@/components/common/Pagination'
 import { TaskFilters } from '@/components/tasks/TaskFilters'
+import { SavedFiltersMenu } from '@/components/tasks/SavedFiltersMenu'
 import { TaskList } from '@/components/tasks/TaskList'
 import { useMyTasks } from '@/hooks/queries/useTasks'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -61,6 +62,21 @@ export function MyTasksPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="My Tasks" description="Tasks assigned to you across all projects" />
+
+      <div className="flex justify-end">
+        <SavedFiltersMenu
+          scope="myTasks"
+          currentQuery={{
+            search: filters.search,
+            status: filters.status,
+            priority: filters.priority,
+            dueDateFrom: filters.dueDateFrom,
+            dueDateTo: filters.dueDateTo,
+            overdue: filters.overdue,
+          }}
+          onApply={(query) => setState({ ...(query as Partial<typeof filters>), page: 1 })}
+        />
+      </div>
 
       <TaskFilters
         value={filters}
