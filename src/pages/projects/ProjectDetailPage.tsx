@@ -25,8 +25,10 @@ import { BacklogBoard } from '@/components/sprints/BacklogBoard'
 import { CalendarView } from '@/components/sprints/CalendarView'
 import { EpicsList } from '@/components/tasks/EpicsList'
 import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm'
+import { FieldsSettingsForm } from '@/components/projects/FieldsSettingsForm'
 import {
   useProject,
+  useProjectLabels,
   useProjectStats,
   useProjectTasks,
   useProjectWorkflow,
@@ -74,13 +76,20 @@ export function ProjectDetailPage() {
     overdue: undefined as boolean | undefined,
   })
   const { tab, ...filters } = state
+  // Not persisted to the URL, unlike the rest of `filters` - useQueryParams is shared with several
+  // pages and typed for scalar values only; these are string arrays.
+  const [labelFilter, setLabelFilter] = useState<string[]>([])
+  const [componentFilter, setComponentFilter] = useState<string[]>([])
 
   const { data: project, isLoading, isError, error, refetch } = useProject(id)
+  const { data: labelOptions } = useProjectLabels(id)
   const { data: tasksData } = useProjectTasks(id, {
     page: 1,
     limit: 100,
     issueType: STANDARD_ISSUE_TYPES,
     ...filters,
+    labels: labelFilter.length ? labelFilter : undefined,
+    components: componentFilter.length ? componentFilter : undefined,
   })
   const { data: stats } = useProjectStats(id)
   const { data: sprintsData } = useSprints(id, { page: 1, limit: 100 })
@@ -246,6 +255,7 @@ export function ProjectDetailPage() {
             <TabsTrigger value="stats">Stats</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="workflow">Workflow</TabsTrigger>
+            <TabsTrigger value="fields">Fields</TabsTrigger>
           </TabsList>
           {(canManageSprintsHere || canCreateTaskHere) && (
             <div className="flex shrink-0 items-center gap-2">
@@ -338,9 +348,18 @@ export function ProjectDetailPage() {
 
         <TabsContent value="list" className="space-y-4">
           <TaskFilters
-            value={filters}
-            onChange={(update) => setFilters(update)}
-            onClear={() =>
+            value={{ ...filters, labels: labelFilter, components: componentFilter }}
+            onChange={(update) => {
+              if ('labels' in update) setLabelFilter(update.labels ?? [])
+              if ('components' in update) setComponentFilter(update.components ?? [])
+              const rest = { ...update }
+              delete rest.labels
+              delete rest.components
+              if (Object.keys(rest).length) setFilters(rest)
+            }}
+            onClear={() => {
+              setLabelFilter([])
+              setComponentFilter([])
               setFilters({
                 search: '',
                 status: undefined,
@@ -350,8 +369,10 @@ export function ProjectDetailPage() {
                 dueDateTo: undefined,
                 overdue: undefined,
               })
-            }
+            }}
             statuses={workflow?.statuses}
+            labelOptions={labelOptions}
+            componentOptions={project?.components}
           />
           <TaskList
             tasks={tasksData?.data ?? []}
@@ -389,6 +410,10 @@ export function ProjectDetailPage() {
           ) : (
             <CardSkeleton />
           )}
+        </TabsContent>
+
+        <TabsContent value="fields">
+          <FieldsSettingsForm projectId={id ?? ''} project={project} canManage={canManage} />
         </TabsContent>
       </Tabs>
 

@@ -2,6 +2,7 @@ import { FilterBar } from '@/components/common/FilterBar'
 import { SearchInput } from '@/components/common/SearchInput'
 import { UserSelect } from '@/components/common/UserSelect'
 import { DatePicker } from '@/components/common/DatePicker'
+import { TagInput } from '@/components/common/TagInput'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
@@ -26,6 +27,12 @@ export interface TaskFiltersProps {
   /** The status options to offer - defaults to the system default workflow's 4 statuses. Pass a
    * project's actual workflow statuses when filtering is scoped to a single project. */
   statuses?: WorkflowStatus[]
+  /** Labels already in use on the current project - omitted (no filter shown) for cross-project
+   * views like "My Tasks" where there's no single project's labels to offer. */
+  labelOptions?: string[]
+  /** The current project's defined components - omitted (no filter shown) for cross-project
+   * views like "My Tasks". */
+  componentOptions?: string[]
 }
 
 const ALL = '__all__'
@@ -36,6 +43,8 @@ export function TaskFilters({
   onClear,
   hideAssignee,
   statuses = DEFAULT_STATUS_OPTIONS,
+  labelOptions,
+  componentOptions,
 }: TaskFiltersProps) {
   const hasActiveFilters = !!(
     value.search ||
@@ -44,7 +53,9 @@ export function TaskFilters({
     value.assignee ||
     value.dueDateFrom ||
     value.dueDateTo ||
-    value.overdue
+    value.overdue ||
+    value.labels?.length ||
+    value.components?.length
   )
 
   return (
@@ -127,6 +138,30 @@ export function TaskFilters({
         />
         Overdue only
       </label>
+
+      {!!labelOptions?.length && (
+        <div className="w-48">
+          <TagInput
+            value={value.labels ?? []}
+            onChange={(labels) => onChange({ labels: labels.length ? labels : undefined })}
+            suggestions={labelOptions}
+            placeholder="Labels"
+          />
+        </div>
+      )}
+
+      {!!componentOptions?.length && (
+        <div className="w-48">
+          <TagInput
+            value={value.components ?? []}
+            onChange={(components) =>
+              onChange({ components: components.length ? components : undefined })
+            }
+            suggestions={componentOptions}
+            placeholder="Components"
+          />
+        </div>
+      )}
     </FilterBar>
   )
 }

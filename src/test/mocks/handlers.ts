@@ -124,6 +124,14 @@ export const handlers = [
   ),
   http.get(url('/projects/:id/sprints'), () => HttpResponse.json(paginated([]))),
   http.get(url('/projects/:id/sprints/active'), () => HttpResponse.json(ok(null))),
+  http.get(url('/projects/:id/labels'), ({ params }) => {
+    const project = mockProjects.find((p) => p.id === params.id)
+    const labels = new Set<string>()
+    for (const task of mockTasks) {
+      if (task.project.id === project?.id) task.labels.forEach((l) => labels.add(l))
+    }
+    return HttpResponse.json(ok([...labels]))
+  }),
 
   http.get(url('/tasks'), () => HttpResponse.json(paginated(mockTasks))),
   http.get(url('/tasks/my-tasks'), () => HttpResponse.json(paginated(mockTasks))),

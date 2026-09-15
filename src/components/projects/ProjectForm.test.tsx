@@ -52,6 +52,8 @@ describe('ProjectForm', () => {
           startDate: '2026-01-01T00:00:00.000Z',
           dueDate: null,
           taskCount: 0,
+          components: [],
+          customFields: [],
           createdAt: '2026-01-01T00:00:00.000Z',
           updatedAt: '2026-01-01T00:00:00.000Z',
         }}

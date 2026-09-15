@@ -3,6 +3,7 @@ import { queryKeys } from '@/lib/constants'
 import { projectsService } from '@/services/projects.service'
 import type {
   CreateProjectPayload,
+  CustomFieldDefinition,
   MemberPermissions,
   ProjectStatus,
   UpdateProjectPayload,
@@ -106,6 +107,37 @@ export function useResetWorkflow(id: string) {
     onSuccess: (workflow) => {
       queryClient.setQueryData(queryKeys.projects.workflow(id), workflow)
       invalidateAfterWorkflowChange(queryClient, id)
+    },
+  })
+}
+
+/** Components/custom-field changes affect any task form or filter that reads the project's
+ * definitions, alongside the project detail response they're embedded in. */
+function invalidateAfterFieldsChange(queryClient: ReturnType<typeof useQueryClient>, id: string) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(id) })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+}
+
+export function useUpdateComponents(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (names: string[]) => projectsService.updateComponents(id, names),
+    onSuccess: (project) => {
+      queryClient.setQueryData(queryKeys.projects.detail(id), project)
+      invalidateAfterFieldsChange(queryClient, id)
+    },
+  })
+}
+
+export function useUpdateCustomFields(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (fields: Array<Partial<CustomFieldDefinition>>) =>
+      projectsService.updateCustomFields(id, fields),
+    onSuccess: (project) => {
+      queryClient.setQueryData(queryKeys.projects.detail(id), project)
+      invalidateAfterFieldsChange(queryClient, id)
     },
   })
 }

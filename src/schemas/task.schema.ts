@@ -12,6 +12,11 @@ export const taskSchema = z
     issueType: z.enum(ISSUE_TYPES).optional().default('Task'),
     parent: z.string().nullable().optional(),
     storyPoints: z.number().min(0).max(1000).nullable().optional(),
+    labels: z.array(z.string()).optional().default([]),
+    components: z.array(z.string()).optional().default([]),
+    // Required-field enforcement for custom fields happens server-side - the project's field
+    // definitions aren't known to this static schema.
+    customFieldValues: z.record(z.unknown()).optional().default({}),
   })
   .refine((data) => data.issueType !== 'Sub-task' || !!data.parent, {
     message: 'A Sub-task requires a parent issue',

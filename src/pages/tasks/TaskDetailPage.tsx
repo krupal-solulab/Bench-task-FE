@@ -32,6 +32,12 @@ import { formatDate, formatDateTime } from '@/lib/date'
 import { toApiError } from '@/lib/error'
 import type { TaskFormValues } from '@/schemas/task.schema'
 
+function formatCustomFieldValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '—'
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  return String(value)
+}
+
 export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -82,6 +88,9 @@ export function TaskDetailPage() {
         priority: values.priority,
         dueDate: values.dueDate,
         storyPoints: values.storyPoints,
+        labels: values.labels,
+        components: values.components,
+        customFieldValues: values.customFieldValues,
       })
       showToast({ title: 'Task updated', variant: 'success' })
       setEditOpen(false)
@@ -228,7 +237,56 @@ export function TaskDetailPage() {
                 </dt>
                 <dd className="mt-1">{formatDateTime(task.updatedAt)}</dd>
               </div>
+              {project?.customFields.map((field) => (
+                <div key={field.id}>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {field.name}
+                  </dt>
+                  <dd className="mt-1">
+                    {formatCustomFieldValue(task.customFieldValues[field.id])}
+                  </dd>
+                </div>
+              ))}
             </dl>
+
+            {(task.labels.length > 0 || task.components.length > 0) && (
+              <div className="mt-5 flex flex-wrap gap-4 border-t pt-4">
+                {task.labels.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Labels
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {task.labels.map((label) => (
+                        <span
+                          key={label}
+                          className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {task.components.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Components
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {task.components.map((component) => (
+                        <span
+                          key={component}
+                          className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+                        >
+                          {component}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="mt-5 max-w-xs space-y-1.5 border-t pt-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

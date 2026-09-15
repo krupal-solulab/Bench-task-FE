@@ -29,6 +29,20 @@ export interface ProjectMember {
   permissions: MemberPermissions | null
 }
 
+export const CUSTOM_FIELD_TYPES = ['Text', 'Number', 'Date', 'Dropdown', 'Checkbox'] as const
+export type CustomFieldType = (typeof CUSTOM_FIELD_TYPES)[number]
+
+export interface CustomFieldDefinition {
+  // Stable identity, assigned once by the server - stored task values are keyed by this, not by
+  // `name`, so renaming a field never orphans data already stored under its id.
+  id: string
+  name: string
+  type: CustomFieldType
+  required: boolean
+  // Only meaningful (and only ever set) for type === 'Dropdown'.
+  options: string[] | null
+}
+
 export interface Project {
   id: string
   name: string
@@ -39,6 +53,9 @@ export interface Project {
   startDate: string
   dueDate: string | null
   taskCount: number
+  // Project-defined pick-list (e.g. "Frontend", "API") - names are the identity.
+  components: string[]
+  customFields: CustomFieldDefinition[]
   createdAt: string
   updatedAt: string
 }

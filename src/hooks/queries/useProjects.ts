@@ -67,3 +67,11 @@ export function useProjectWorkflow(id: string | undefined) {
     enabled: !!id,
   })
 }
+
+export function useProjectLabels(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.projects.labels(id ?? ''),
+    queryFn: () => projectsService.listLabels(id!),
+    enabled: !!id,
+  })
+}

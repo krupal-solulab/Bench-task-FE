@@ -1,6 +1,7 @@
 import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost, apiPut } from './api-client'
 import type {
   CreateProjectPayload,
+  CustomFieldDefinition,
   MemberPermissions,
   Project,
   ProjectActivityEntry,
@@ -55,4 +56,12 @@ export const projectsService = {
     apiPut<Workflow>(`/projects/${id}/workflow`, workflow),
 
   resetWorkflow: (id: string) => apiDelete<Workflow>(`/projects/${id}/workflow`),
+
+  listLabels: (id: string) => apiGet<string[]>(`/projects/${id}/labels`),
+
+  updateComponents: (id: string, names: string[]) =>
+    apiPut<Project>(`/projects/${id}/components`, { names }),
+
+  updateCustomFields: (id: string, fields: Array<Partial<CustomFieldDefinition>>) =>
+    apiPut<Project>(`/projects/${id}/custom-fields`, { fields }),
 }

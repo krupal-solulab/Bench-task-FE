@@ -53,6 +53,10 @@ export interface Task {
   parent: TaskParentSummary | null
   storyPoints: number | null
   issueKey: string | null
+  labels: string[]
+  components: string[]
+  // Keyed by the project's CustomFieldDefinition.id, not name.
+  customFieldValues: Record<string, unknown>
   createdAt: string
   updatedAt: string
 }
@@ -72,6 +76,8 @@ export interface TaskListQuery {
   unassignedSprint?: boolean
   issueType?: IssueType[]
   parent?: string
+  labels?: string[]
+  components?: string[]
   sortBy?: 'dueDate' | 'priority' | 'createdAt' | 'status' | 'rank'
   sortOrder?: SortOrder
 }
@@ -86,6 +92,9 @@ export interface CreateTaskPayload {
   issueType?: IssueType
   parent?: string | null
   storyPoints?: number | null
+  labels?: string[]
+  components?: string[]
+  customFieldValues?: Record<string, unknown>
 }
 
 export type UpdateTaskPayload = Partial<Omit<CreateTaskPayload, 'project'>>
