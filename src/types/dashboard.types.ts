@@ -1,5 +1,6 @@
 import type { ProjectStatus } from './project.types'
-import type { TaskPriority, TaskStatus } from './task.types'
+import type { TaskPriority } from './task.types'
+import type { StatusCategory } from './workflow.types'
 
 export interface DashboardScopeQuery {
   projectId?: string
@@ -21,7 +22,10 @@ export interface ProjectsByStatusPoint {
 }
 
 export interface TasksStatusPoint {
-  status: TaskStatus
+  status: string
+  // A best-effort hint for coloring a status name the fixed CHART_COLORS.taskStatus map doesn't
+  // recognize (a custom workflow's status) - see TaskStatusChart's fallback fill.
+  category?: StatusCategory
   count: number
 }
 

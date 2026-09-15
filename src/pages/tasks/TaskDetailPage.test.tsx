@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import type { ReactNode } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -7,8 +7,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext, type AuthContextValue } from '@/context/AuthContext'
 import { ToastProvider } from '@/context/ToastContext'
 import { server } from '@/test/mocks/server'
-import { mockUsers } from '@/test/mocks/fixtures'
+import { mockProjects, mockUsers } from '@/test/mocks/fixtures'
 import { TaskDetailPage } from '@/pages/tasks/TaskDetailPage'
+import { NO_MEMBER_PERMISSIONS, type MemberPermissions } from '@/types/project.types'
 
 vi.mock('@/hooks/useSocket', () => ({
   useSocket: () => ({ joinProject: vi.fn(), leaveProject: vi.fn() }),
@@ -39,8 +40,28 @@ beforeEach(() => {
 })
 
 const ADMIN = mockUsers[0]! // Ada Admin
-const ASSIGNEE = mockUsers[2]! // Dev One - assignee of task t-1
+const ASSIGNEE = mockUsers[2]! // Dev One - assignee of task t-1, and a member of project p-1
 const OTHER_DEV = mockUsers[3]! // Dev Two - not the assignee
+
+/** Overrides GET /projects/p-1 so the given member has a specific per-project grant (Phase 3). */
+function withMemberPermissions(userId: string, permissions: Partial<MemberPermissions>) {
+  server.use(
+    http.get(url('/projects/p-1'), () => {
+      const project = mockProjects.find((p) => p.id === 'p-1')!
+      return HttpResponse.json({
+        success: true,
+        data: {
+          ...project,
+          members: project.members.map((m) =>
+            m.user.id === userId
+              ? { ...m, permissions: { ...NO_MEMBER_PERMISSIONS, ...permissions } }
+              : m,
+          ),
+        },
+      })
+    }),
+  )
+}
 
 function makeAuthValue(overrides: Partial<AuthContextValue> = {}): AuthContextValue {
   return {
@@ -53,6 +74,13 @@ function makeAuthValue(overrides: Partial<AuthContextValue> = {}): AuthContextVa
     hasRole: (...roles) => roles.includes('Admin'),
     ...overrides,
   }
+}
+
+/** The page-header actions area (Edit/Delete/status control) - scoped away from CommentList,
+ * which can render its own "Edit"/"Delete" links for a comment the viewer authored. */
+function pageHeaderActions() {
+  const heading = screen.getByRole('heading', { level: 1 })
+  return within(heading.parentElement!.parentElement!)
 }
 
 function renderTaskDetail(authValue: AuthContextValue) {
@@ -98,6 +126,37 @@ describe('TaskDetailPage', () => {
 
     await waitFor(() => expect(screen.getByText('Design homepage hero')).toBeInTheDocument())
     expect(screen.getAllByText(ASSIGNEE.name).length).toBeGreaterThan(0)
+  })
+
+  it('a canEditAnyTask grant shows Edit but not Delete (Phase 3)', async () => {
+    withMemberPermissions(ASSIGNEE.id, { canEditAnyTask: true })
+    renderTaskDetail(makeAuthValue({ user: ASSIGNEE, hasRole: () => false }))
+
+    await waitFor(() => expect(screen.getByText('Design homepage hero')).toBeInTheDocument())
+    expect(await pageHeaderActions().findByRole('button', { name: 'Edit' })).toBeInTheDocument()
+    expect(pageHeaderActions().queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+  })
+
+  it('a canDeleteTask grant shows Delete but not Edit (Phase 3)', async () => {
+    withMemberPermissions(ASSIGNEE.id, { canDeleteTask: true })
+    renderTaskDetail(makeAuthValue({ user: ASSIGNEE, hasRole: () => false }))
+
+    await waitFor(() => expect(screen.getByText('Design homepage hero')).toBeInTheDocument())
+    expect(await pageHeaderActions().findByRole('button', { name: 'Delete' })).toBeInTheDocument()
+    expect(pageHeaderActions().queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+  })
+
+  it('a grant never enables reassignment - only task:editAny does (Phase 3)', async () => {
+    withMemberPermissions(ASSIGNEE.id, {
+      canEditAnyTask: true,
+      canDeleteTask: true,
+      canChangeAnyTaskStatus: true,
+    })
+    renderTaskDetail(makeAuthValue({ user: ASSIGNEE, hasRole: () => false }))
+
+    await waitFor(() => expect(screen.getByText('Design homepage hero')).toBeInTheDocument())
+    await pageHeaderActions().findByRole('button', { name: 'Edit' })
+    expect(screen.queryByRole('combobox', { name: 'Select assignee' })).not.toBeInTheDocument()
   })
 
   it('links back to the parent project', async () => {

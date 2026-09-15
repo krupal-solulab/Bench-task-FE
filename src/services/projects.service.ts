@@ -1,6 +1,7 @@
-import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost } from './api-client'
+import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost, apiPut } from './api-client'
 import type {
   CreateProjectPayload,
+  MemberPermissions,
   Project,
   ProjectActivityEntry,
   ProjectListQuery,
@@ -11,6 +12,7 @@ import type {
 import type { ProjectStatus } from '@/types/project.types'
 import type { PageQuery } from '@/types/api.types'
 import type { Task, TaskListQuery } from '@/types/task.types'
+import type { Workflow } from '@/types/workflow.types'
 
 export const projectsService = {
   list: (query: ProjectListQuery) => apiGetPaginated<Project>('/projects', query),
@@ -36,6 +38,9 @@ export const projectsService = {
   removeMember: (id: string, userId: string, reassignTo?: string) =>
     apiDelete<Project>(`/projects/${id}/members/${userId}`, reassignTo ? { reassignTo } : {}),
 
+  setMemberPermissions: (id: string, userId: string, patch: Partial<MemberPermissions>) =>
+    apiPatch<Project>(`/projects/${id}/members/${userId}/permissions`, patch),
+
   tasks: (id: string, query: TaskListQuery) =>
     apiGetPaginated<Task>(`/projects/${id}/tasks`, query),
 
@@ -43,4 +48,11 @@ export const projectsService = {
 
   activity: (id: string, query: { page?: number; limit?: number }) =>
     apiGetPaginated<ProjectActivityEntry>(`/projects/${id}/activity`, query),
+
+  getWorkflow: (id: string) => apiGet<Workflow>(`/projects/${id}/workflow`),
+
+  updateWorkflow: (id: string, workflow: Workflow) =>
+    apiPut<Workflow>(`/projects/${id}/workflow`, workflow),
+
+  resetWorkflow: (id: string) => apiDelete<Workflow>(`/projects/${id}/workflow`),
 }

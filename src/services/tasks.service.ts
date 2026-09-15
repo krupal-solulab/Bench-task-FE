@@ -1,6 +1,7 @@
 import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost } from './api-client'
 import type {
   CreateTaskPayload,
+  EpicProgress,
   Task,
   TaskActivityEntry,
   TaskListQuery,
@@ -40,4 +41,6 @@ export const tasksService = {
 
   activity: (id: string, query: { page?: number; limit?: number }) =>
     apiGetPaginated<TaskActivityEntry>(`/tasks/${id}/activity`, query),
+
+  epicProgress: (id: string) => apiGet<EpicProgress>(`/tasks/${id}/epic-progress`),
 }

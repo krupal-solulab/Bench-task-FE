@@ -1,3 +1,4 @@
+import type { MemberPermissions } from '@/types/project.types'
 import type { Role } from '@/types/user.types'
 
 export type Capability =
@@ -49,15 +50,33 @@ export function can(role: Role | undefined, capability: Capability): boolean {
   return ROLE_CAPABILITIES[role].includes(capability)
 }
 
-/** A Developer may edit only the status of a task assigned to them; everything else is read-only. */
+/**
+ * A Developer may edit only the status of a task assigned to them; everything else is read-only -
+ * unless a project-level grant (see Phase 3's per-project member permissions) extends one of
+ * these fields to them specifically for that project. `grant` is optional and additive: omitting
+ * it behaves exactly as before this feature existed.
+ */
 export function canEditTaskField(
   role: Role | undefined,
-  field: 'status' | 'other',
+  field: 'status' | 'other' | 'delete',
   isAssignee: boolean,
+  grant?: MemberPermissions | null,
 ): boolean {
   if (!role) return false
   if (can(role, 'task:editAny')) return true
-  return role === 'Developer' && field === 'status' && isAssignee
+  if (field === 'status')
+    return (role === 'Developer' && isAssignee) || !!grant?.canChangeAnyTaskStatus
+  if (field === 'other') return !!grant?.canEditAnyTask
+  return !!grant?.canDeleteTask
+}
+
+/** Whether the user can create a task in a specific project - their global role, or a project-level grant. */
+export function canCreateTaskInProject(
+  role: Role | undefined,
+  grant?: MemberPermissions | null,
+): boolean {
+  if (!role) return false
+  return can(role, 'task:create') || !!grant?.canCreateTask
 }
 
 export function isOwnResource(userId: string | undefined, resourceOwnerId: string): boolean {

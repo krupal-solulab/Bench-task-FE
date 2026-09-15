@@ -15,6 +15,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     project: { id: 'p-1', name: 'A project' },
     assignee: null,
     status: 'Todo',
+    statusCategory: 'To Do',
     priority: 'P2',
     dueDate: null,
     createdBy: {
@@ -29,6 +30,10 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     },
     sprint: null,
     rank: 1024,
+    issueType: 'Task',
+    parent: null,
+    storyPoints: null,
+    issueKey: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,

@@ -59,3 +59,11 @@ export function useProjectActivity(id: string | undefined, page: number, limit: 
     enabled: !!id,
   })
 }
+
+export function useProjectWorkflow(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.projects.workflow(id ?? ''),
+    queryFn: () => projectsService.getWorkflow(id!),
+    enabled: !!id,
+  })
+}

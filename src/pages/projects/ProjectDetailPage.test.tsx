@@ -8,8 +8,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext, type AuthContextValue } from '@/context/AuthContext'
 import { ToastProvider } from '@/context/ToastContext'
 import { server } from '@/test/mocks/server'
-import { mockUsers } from '@/test/mocks/fixtures'
+import { mockProjects, mockUsers } from '@/test/mocks/fixtures'
 import { ProjectDetailPage } from '@/pages/projects/ProjectDetailPage'
+import { NO_MEMBER_PERMISSIONS, type MemberPermissions } from '@/types/project.types'
 
 vi.mock('@/hooks/useSocket', () => ({
   useSocket: () => ({ joinProject: vi.fn(), leaveProject: vi.fn() }),
@@ -20,7 +21,28 @@ const url = (path: string) => `${BASE_URL}${path}`
 
 const ADMIN = mockUsers[0]! // Ada Admin
 const MANAGER = mockUsers[1]! // Mona Manager - owns project p-1
+const DEV_ONE = mockUsers[2]! // Dev One - a project member of p-1
 const OTHER_DEV = mockUsers[3]! // Dev Two - a project member, not the owner
+
+/** Overrides GET /projects/p-1 so the given member has a specific per-project grant (Phase 3). */
+function withMemberPermissions(userId: string, permissions: Partial<MemberPermissions>) {
+  server.use(
+    http.get(url('/projects/p-1'), () => {
+      const project = mockProjects.find((p) => p.id === 'p-1')!
+      return HttpResponse.json({
+        success: true,
+        data: {
+          ...project,
+          members: project.members.map((m) =>
+            m.user.id === userId
+              ? { ...m, permissions: { ...NO_MEMBER_PERMISSIONS, ...permissions } }
+              : m,
+          ),
+        },
+      })
+    }),
+  )
+}
 
 beforeEach(() => {
   server.use(
@@ -112,6 +134,32 @@ describe('ProjectDetailPage', () => {
     expect(screen.queryByRole('button', { name: 'New Task' })).not.toBeInTheDocument()
   })
 
+  it('a Developer member with a canCreateTask grant sees New Task but not New Sprint (Phase 3)', async () => {
+    withMemberPermissions(DEV_ONE.id, { canCreateTask: true })
+    renderProjectDetail(makeAuthValue({ user: DEV_ONE, hasRole: () => false }))
+
+    await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+    expect(await screen.findByRole('button', { name: 'New Task' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'New Sprint' })).not.toBeInTheDocument()
+  })
+
+  it('a Developer member with a canManageSprints grant sees New Sprint but not New Task (Phase 3)', async () => {
+    withMemberPermissions(DEV_ONE.id, { canManageSprints: true })
+    renderProjectDetail(makeAuthValue({ user: DEV_ONE, hasRole: () => false }))
+
+    await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+    expect(await screen.findByRole('button', { name: 'New Sprint' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'New Task' })).not.toBeInTheDocument()
+  })
+
+  it('a Developer member with no grant sees neither New Task nor New Sprint (regression)', async () => {
+    renderProjectDetail(makeAuthValue({ user: DEV_ONE, hasRole: () => false }))
+
+    await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: 'New Task' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'New Sprint' })).not.toBeInTheDocument()
+  })
+
   it('switches to the Members tab and shows project members', async () => {
     const user = userEvent.setup()
     renderProjectDetail(makeAuthValue())
@@ -127,6 +175,38 @@ describe('ProjectDetailPage', () => {
 
     await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
     expect(await screen.findByText('Design homepage hero')).toBeInTheDocument()
+  })
+
+  it('scopes the Board task list to Story/Task/Bug (regression: Epics and Sub-tasks must not clutter the Board/Backlog)', async () => {
+    // Board/Backlog/Sprint Board/Epics all query this same endpoint in parallel on mount, so
+    // collect every request seen rather than relying on which one happens to resolve last.
+    const seenQueries: string[] = []
+    server.use(
+      http.get(url('/projects/:id/tasks'), ({ request }) => {
+        seenQueries.push(new URL(request.url).search)
+        return HttpResponse.json({
+          success: true,
+          data: [],
+          meta: {
+            total: 0,
+            page: 1,
+            limit: 100,
+            totalPages: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        })
+      }),
+    )
+    renderProjectDetail(makeAuthValue())
+
+    await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+    await waitFor(() => {
+      const standardIssueQuery = seenQueries.find(
+        (q) => q.includes('Story') && q.includes('Task') && q.includes('Bug'),
+      )
+      expect(standardIssueQuery).toBeDefined()
+    })
   })
 
   it('opens directly to the tab named in the URL (regression: a refresh on any non-Board tab used to always bounce back to Board)', async () => {

@@ -62,6 +62,7 @@ export const queryKeys = {
     tasks: (id: string, filters: unknown) => ['projects', 'detail', id, 'tasks', filters] as const,
     stats: (id: string) => ['projects', 'detail', id, 'stats'] as const,
     activity: (id: string) => ['projects', 'detail', id, 'activity'] as const,
+    workflow: (id: string) => ['projects', 'detail', id, 'workflow'] as const,
   },
   tasks: {
     all: ['tasks'] as const,
@@ -70,6 +71,7 @@ export const queryKeys = {
     overdue: ['tasks', 'overdue'] as const,
     myTasks: (filters: unknown) => ['tasks', 'my-tasks', filters] as const,
     activity: (id: string) => ['tasks', 'detail', id, 'activity'] as const,
+    epicProgress: (id: string) => ['tasks', 'detail', id, 'epic-progress'] as const,
   },
   comments: {
     list: (taskId: string, filters: unknown) => ['comments', taskId, 'list', filters] as const,

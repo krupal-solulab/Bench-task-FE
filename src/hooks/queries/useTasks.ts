@@ -36,3 +36,12 @@ export function useTaskActivity(id: string | undefined, page: number, limit: num
     enabled: !!id,
   })
 }
+
+/** Only meaningful for an Epic - pass its own issueType check up at the call site. */
+export function useEpicProgress(id: string | undefined, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.tasks.epicProgress(id ?? ''),
+    queryFn: () => tasksService.epicProgress(id!),
+    enabled: !!id && (options.enabled ?? true),
+  })
+}

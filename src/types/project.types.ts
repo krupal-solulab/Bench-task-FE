@@ -4,10 +4,29 @@ import type { User } from './user.types'
 export const PROJECT_STATUSES = ['Planning', 'In Progress', 'Completed'] as const
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number]
 
+export interface MemberPermissions {
+  canCreateTask: boolean
+  canEditAnyTask: boolean
+  canDeleteTask: boolean
+  canChangeAnyTaskStatus: boolean
+  canManageSprints: boolean
+}
+
+export const NO_MEMBER_PERMISSIONS: MemberPermissions = {
+  canCreateTask: false,
+  canEditAnyTask: false,
+  canDeleteTask: false,
+  canChangeAnyTaskStatus: false,
+  canManageSprints: false,
+}
+
 export interface ProjectMember {
   user: User
   role: 'owner' | 'member'
   joinedAt: string
+  // Extra per-project task/sprint capabilities granted beyond the member's global role - null on
+  // the owner row (owners already have full access) and for a member nobody has configured yet.
+  permissions: MemberPermissions | null
 }
 
 export interface Project {

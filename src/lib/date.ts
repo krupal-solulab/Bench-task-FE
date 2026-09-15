@@ -41,9 +41,18 @@ export function formatRelativeTime(value: string): string {
   return rtf.format(Math.round(diffMonths / 12), 'year')
 }
 
-export function isOverdue(dueDate: string | null | undefined, status?: string): boolean {
+/**
+ * `isDone` (a Task's category-based "is this done", not its literal status name) takes precedence
+ * when given, so a custom workflow's differently-named Done status (e.g. "Shipped") is still
+ * correctly treated as not-overdue. `status` stays for Project's fixed 'Completed' literal.
+ */
+export function isOverdue(
+  dueDate: string | null | undefined,
+  status?: string,
+  isDone?: boolean,
+): boolean {
   if (!dueDate) return false
-  if (status === 'Done' || status === 'Completed') return false
+  if (isDone ?? (status === 'Done' || status === 'Completed')) return false
   return new Date(dueDate).getTime() < Date.now()
 }
 

@@ -23,7 +23,14 @@ import { SprintForm } from '@/components/sprints/SprintForm'
 import { SprintLifecycleControls } from '@/components/sprints/SprintLifecycleControls'
 import { BacklogBoard } from '@/components/sprints/BacklogBoard'
 import { CalendarView } from '@/components/sprints/CalendarView'
-import { useProject, useProjectStats, useProjectTasks } from '@/hooks/queries/useProjects'
+import { EpicsList } from '@/components/tasks/EpicsList'
+import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm'
+import {
+  useProject,
+  useProjectStats,
+  useProjectTasks,
+  useProjectWorkflow,
+} from '@/hooks/queries/useProjects'
 import { useActiveSprint, useSprints } from '@/hooks/queries/useSprints'
 import { useDeleteProject, useUpdateProject } from '@/hooks/mutations/useProjectMutations'
 import { useCreateTask } from '@/hooks/mutations/useTaskMutations'
@@ -38,7 +45,7 @@ import type { ProjectFormValues } from '@/schemas/project.schema'
 import type { TaskFormValues } from '@/schemas/task.schema'
 import type { SprintFormValues } from '@/schemas/sprint.schema'
 import type { Sprint } from '@/types/sprint.types'
-import type { TaskListQuery, TaskStatus } from '@/types/task.types'
+import { STANDARD_ISSUE_TYPES, type TaskListQuery } from '@/types/task.types'
 
 export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -59,7 +66,7 @@ export function ProjectDetailPage() {
   const [state, setFilters] = useQueryParams({
     tab: 'board',
     search: '',
-    status: undefined as TaskStatus | undefined,
+    status: undefined as string | undefined,
     priority: undefined as TaskListQuery['priority'],
     assignee: undefined as string | undefined,
     dueDateFrom: undefined as string | undefined,
@@ -69,7 +76,12 @@ export function ProjectDetailPage() {
   const { tab, ...filters } = state
 
   const { data: project, isLoading, isError, error, refetch } = useProject(id)
-  const { data: tasksData } = useProjectTasks(id, { page: 1, limit: 100, ...filters })
+  const { data: tasksData } = useProjectTasks(id, {
+    page: 1,
+    limit: 100,
+    issueType: STANDARD_ISSUE_TYPES,
+    ...filters,
+  })
   const { data: stats } = useProjectStats(id)
   const { data: sprintsData } = useSprints(id, { page: 1, limit: 100 })
   const { data: activeSprint } = useActiveSprint(id)
@@ -77,14 +89,17 @@ export function ProjectDetailPage() {
     page: 1,
     limit: 100,
     unassignedSprint: true,
+    issueType: STANDARD_ISSUE_TYPES,
     sortBy: 'rank',
     sortOrder: 'asc',
   })
   const { data: sprintBoardData } = useProjectTasks(
     id,
-    { page: 1, limit: 100, sprintId: activeSprint?.id },
+    { page: 1, limit: 100, sprintId: activeSprint?.id, issueType: STANDARD_ISSUE_TYPES },
     { enabled: !!activeSprint },
   )
+  const { data: epicsData } = useProjectTasks(id, { page: 1, limit: 100, issueType: ['Epic'] })
+  const { data: workflow } = useProjectWorkflow(id)
 
   const updateProject = useUpdateProject(id ?? '')
   const deleteProject = useDeleteProject()
@@ -108,6 +123,11 @@ export function ProjectDetailPage() {
 
   const canManage = hasRole('Admin') || (hasRole('Manager') && project.owner.id === user?.id)
   const memberIds = project.members.map((m) => m.user.id)
+  // Per-project grants (see Phase 3's permission schemes) can only ever ADD capability beyond
+  // canManage, never replace it - canManage still gates every project-administration action.
+  const myGrant = project.members.find((m) => m.user.id === user?.id)?.permissions ?? null
+  const canCreateTaskHere = canManage || !!myGrant?.canCreateTask
+  const canManageSprintsHere = canManage || !!myGrant?.canManageSprints
 
   async function handleUpdate(values: ProjectFormValues) {
     try {
@@ -220,25 +240,31 @@ export function ProjectDetailPage() {
             <TabsTrigger value="backlog">Backlog</TabsTrigger>
             <TabsTrigger value="sprint-board">Sprint Board</TabsTrigger>
             <TabsTrigger value="calendar">Calendar</TabsTrigger>
+            <TabsTrigger value="epics">Epics</TabsTrigger>
             <TabsTrigger value="list">List</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="stats">Stats</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="workflow">Workflow</TabsTrigger>
           </TabsList>
-          {canManage && (
+          {(canManageSprintsHere || canCreateTaskHere) && (
             <div className="flex shrink-0 items-center gap-2">
-              <Button variant="outline" size="sm" onClick={openCreateSprint}>
-                New Sprint
-              </Button>
-              <Button size="sm" onClick={() => setCreateTaskOpen(true)}>
-                New Task
-              </Button>
+              {canManageSprintsHere && (
+                <Button variant="outline" size="sm" onClick={openCreateSprint}>
+                  New Sprint
+                </Button>
+              )}
+              {canCreateTaskHere && (
+                <Button size="sm" onClick={() => setCreateTaskOpen(true)}>
+                  New Task
+                </Button>
+              )}
             </div>
           )}
         </div>
 
         <TabsContent value="board">
-          <TaskBoard tasks={tasksData?.data ?? []} />
+          <TaskBoard tasks={tasksData?.data ?? []} workflow={workflow} grant={myGrant} />
         </TabsContent>
 
         <TabsContent value="backlog" className="space-y-4">
@@ -259,7 +285,7 @@ export function ProjectDetailPage() {
                 <SprintLifecycleControls
                   sprint={sprint}
                   projectId={id ?? ''}
-                  canManage={canManage}
+                  canManage={canManageSprintsHere}
                   onEdit={() => openEditSprint(sprint)}
                 />
               </div>
@@ -267,7 +293,7 @@ export function ProjectDetailPage() {
 
           <BacklogBoard
             tasks={backlogData?.data ?? []}
-            canManage={canManage}
+            canManage={canManageSprintsHere}
             assignableSprints={(sprintsData?.data ?? []).filter(
               (s) => s.status === 'Planned' || s.status === 'Active',
             )}
@@ -288,11 +314,11 @@ export function ProjectDetailPage() {
                 <SprintLifecycleControls
                   sprint={activeSprint}
                   projectId={id ?? ''}
-                  canManage={canManage}
+                  canManage={canManageSprintsHere}
                   onEdit={() => openEditSprint(activeSprint)}
                 />
               </div>
-              <TaskBoard tasks={sprintBoardData?.data ?? []} />
+              <TaskBoard tasks={sprintBoardData?.data ?? []} workflow={workflow} grant={myGrant} />
             </>
           ) : (
             <EmptyState
@@ -304,6 +330,10 @@ export function ProjectDetailPage() {
 
         <TabsContent value="calendar">
           <CalendarView sprints={sprintsData?.data ?? []} projectId={id ?? ''} />
+        </TabsContent>
+
+        <TabsContent value="epics">
+          <EpicsList epics={epicsData?.data ?? []} />
         </TabsContent>
 
         <TabsContent value="list" className="space-y-4">
@@ -321,6 +351,7 @@ export function ProjectDetailPage() {
                 overdue: undefined,
               })
             }
+            statuses={workflow?.statuses}
           />
           <TaskList
             tasks={tasksData?.data ?? []}
@@ -351,6 +382,14 @@ export function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="activity">{id && <ProjectActivityFeed projectId={id} />}</TabsContent>
+
+        <TabsContent value="workflow">
+          {id && workflow ? (
+            <WorkflowSettingsForm projectId={id} workflow={workflow} canManage={canManage} />
+          ) : (
+            <CardSkeleton />
+          )}
+        </TabsContent>
       </Tabs>
 
       <Modal open={editOpen} onOpenChange={setEditOpen} title="Edit project">

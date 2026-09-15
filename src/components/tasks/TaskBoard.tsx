@@ -22,19 +22,22 @@ import { useAuth } from '@/hooks/useAuth'
 import { useUpdateAnyTaskStatus } from '@/hooks/mutations/useTaskMutations'
 import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
-import { canDragTaskTo } from '@/lib/status-transitions'
+import { DEFAULT_WORKFLOW, canDragTaskTo } from '@/lib/status-transitions'
 import { cn } from '@/lib/cn'
 import { formatDate } from '@/lib/date'
-import { TASK_STATUSES, type Task, type TaskStatus } from '@/types/task.types'
+import type { Task } from '@/types/task.types'
+import type { MemberPermissions } from '@/types/project.types'
+import type { StatusCategory, Workflow } from '@/types/workflow.types'
 
-const COLUMN_ACCENT: Record<(typeof TASK_STATUSES)[number], string> = {
-  Todo: 'bg-slate-400',
+// Column accent color is driven by the status's category (3 buckets), not its literal name, so
+// any custom workflow status still gets a sensible, category-consistent color.
+const CATEGORY_ACCENT: Record<StatusCategory, string> = {
+  'To Do': 'bg-slate-400',
   'In Progress': 'bg-blue-500',
-  Review: 'bg-amber-500',
   Done: 'bg-emerald-500',
 }
 
-function BoardColumn({ status, children }: { status: TaskStatus; children: ReactNode }) {
+function BoardColumn({ status, children }: { status: string; children: ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
   return (
     <div
@@ -86,7 +89,18 @@ function DraggableCard({
   )
 }
 
-export function TaskBoard({ tasks }: { tasks: Task[] }) {
+export function TaskBoard({
+  tasks,
+  workflow = DEFAULT_WORKFLOW,
+  grant,
+}: {
+  tasks: Task[]
+  /** The project's workflow (custom, or the system default). Defaults to the system default
+   * when the caller hasn't fetched it yet, matching every existing project's behavior. */
+  workflow?: Workflow
+  /** The current user's per-project grant (see Phase 3's permission schemes), if any. */
+  grant?: MemberPermissions | null
+}) {
   const { canEditTaskField } = usePermissions()
   const { user } = useAuth()
   const updateStatus = useUpdateAnyTaskStatus()
@@ -108,10 +122,10 @@ export function TaskBoard({ tasks }: { tasks: Task[] }) {
     const { active, over } = event
     if (!over) return
     const task = active.data.current?.task as Task | undefined
-    const targetStatus = over.id as TaskStatus
+    const targetStatus = over.id as string
     if (!task || task.status === targetStatus) return
 
-    if (!canDragTaskTo(task, targetStatus, user?.role, user?.id)) {
+    if (!canDragTaskTo(task, targetStatus, user?.role, user?.id, workflow, grant)) {
       showToast({ title: 'That status change is not allowed', variant: 'destructive' })
       return
     }
@@ -133,12 +147,12 @@ export function TaskBoard({ tasks }: { tasks: Task[] }) {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {TASK_STATUSES.map((status) => {
+        {workflow.statuses.map(({ name: status, category }) => {
           const columnTasks = tasks.filter((t) => t.status === status)
           return (
             <div key={status} className="space-y-3">
               <div className="flex items-center gap-2 px-1">
-                <span className={cn('h-2 w-2 rounded-full', COLUMN_ACCENT[status])} />
+                <span className={cn('h-2 w-2 rounded-full', CATEGORY_ACCENT[category])} />
                 <h3 className="text-sm font-medium">{status}</h3>
                 <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                   {columnTasks.length}
@@ -148,7 +162,10 @@ export function TaskBoard({ tasks }: { tasks: Task[] }) {
                 <StaggerContainer className="space-y-2">
                   {columnTasks.map((task) => {
                     const isAssignee = task.assignee?.id === user?.id
-                    const canEdit = canEditTaskField(isAssignee ? 'status' : 'other', isAssignee)
+                    // Both the drag handle and TaskStatusControl below are exclusively about
+                    // status changes, so this always checks the 'status' capability (see
+                    // canDragTaskTo's identical reasoning in status-transitions.ts).
+                    const canEdit = canEditTaskField('status', isAssignee, grant)
                     return (
                       <StaggerItem key={task.id}>
                         <DraggableCard task={task} canDrag={canEdit}>
@@ -165,9 +182,13 @@ export function TaskBoard({ tasks }: { tasks: Task[] }) {
                             </div>
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               {formatDate(task.dueDate)}
-                              <OverdueBadge dueDate={task.dueDate} status={task.status} />
+                              <OverdueBadge
+                                dueDate={task.dueDate}
+                                status={task.status}
+                                isDone={task.statusCategory === 'Done'}
+                              />
                             </div>
-                            <TaskStatusControl task={task} canEdit={canEdit} />
+                            <TaskStatusControl task={task} canEdit={canEdit} workflow={workflow} />
                           </div>
                         </DraggableCard>
                       </StaggerItem>

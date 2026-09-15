@@ -11,17 +11,32 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { TASK_PRIORITIES, TASK_STATUSES, type TaskListQuery } from '@/types/task.types'
+import type { WorkflowStatus } from '@/types/workflow.types'
+
+const DEFAULT_STATUS_OPTIONS: WorkflowStatus[] = TASK_STATUSES.map((name) => ({
+  name,
+  category: name === 'Todo' ? 'To Do' : name === 'Done' ? 'Done' : 'In Progress',
+}))
 
 export interface TaskFiltersProps {
   value: TaskListQuery
   onChange: (value: Partial<TaskListQuery>) => void
   onClear: () => void
   hideAssignee?: boolean
+  /** The status options to offer - defaults to the system default workflow's 4 statuses. Pass a
+   * project's actual workflow statuses when filtering is scoped to a single project. */
+  statuses?: WorkflowStatus[]
 }
 
 const ALL = '__all__'
 
-export function TaskFilters({ value, onChange, onClear, hideAssignee }: TaskFiltersProps) {
+export function TaskFilters({
+  value,
+  onChange,
+  onClear,
+  hideAssignee,
+  statuses = DEFAULT_STATUS_OPTIONS,
+}: TaskFiltersProps) {
   const hasActiveFilters = !!(
     value.search ||
     value.status ||
@@ -52,9 +67,9 @@ export function TaskFilters({ value, onChange, onClear, hideAssignee }: TaskFilt
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>All statuses</SelectItem>
-          {TASK_STATUSES.map((s) => (
-            <SelectItem key={s} value={s}>
-              {s}
+          {statuses.map((s) => (
+            <SelectItem key={s.name} value={s.name}>
+              {s.name}
             </SelectItem>
           ))}
         </SelectContent>

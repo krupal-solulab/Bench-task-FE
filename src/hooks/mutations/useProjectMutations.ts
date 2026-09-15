@@ -3,9 +3,11 @@ import { queryKeys } from '@/lib/constants'
 import { projectsService } from '@/services/projects.service'
 import type {
   CreateProjectPayload,
+  MemberPermissions,
   ProjectStatus,
   UpdateProjectPayload,
 } from '@/types/project.types'
+import type { Workflow } from '@/types/workflow.types'
 
 export function useCreateProject() {
   const queryClient = useQueryClient()
@@ -72,6 +74,50 @@ export function useRemoveProjectMember(id: string) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(id) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.projects.members(id) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+    },
+  })
+}
+
+/** A workflow change affects every status name shown throughout the project - the task list
+ * queries, the Board's columns, and dashboard aggregation all need to refetch alongside it. */
+function invalidateAfterWorkflowChange(queryClient: ReturnType<typeof useQueryClient>, id: string) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.projects.workflow(id) })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(id) })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.projects.stats(id) })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+  void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
+}
+
+export function useUpdateWorkflow(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (workflow: Workflow) => projectsService.updateWorkflow(id, workflow),
+    onSuccess: (workflow) => {
+      queryClient.setQueryData(queryKeys.projects.workflow(id), workflow)
+      invalidateAfterWorkflowChange(queryClient, id)
+    },
+  })
+}
+
+export function useResetWorkflow(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => projectsService.resetWorkflow(id),
+    onSuccess: (workflow) => {
+      queryClient.setQueryData(queryKeys.projects.workflow(id), workflow)
+      invalidateAfterWorkflowChange(queryClient, id)
+    },
+  })
+}
+
+export function useSetMemberPermissions(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userId, patch }: { userId: string; patch: Partial<MemberPermissions> }) =>
+      projectsService.setMemberPermissions(id, userId, patch),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(id) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.members(id) })
     },
   })
 }

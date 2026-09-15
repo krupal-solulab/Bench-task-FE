@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import { UserPlus, X } from 'lucide-react'
+import { Settings, UserPlus, X } from 'lucide-react'
 import { Avatar } from '@/components/common/Avatar'
 import { Button } from '@/components/common/Button'
 import { Modal } from '@/components/common/Modal'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { UserSelect } from '@/components/common/UserSelect'
 import { FormField } from '@/components/common/FormField'
+import { MemberPermissionsEditor } from './MemberPermissionsEditor'
 import { useAddProjectMembers, useRemoveProjectMember } from '@/hooks/mutations/useProjectMutations'
 import { useToast } from '@/hooks/useToast'
 import { isConflictError, toApiError } from '@/lib/error'
-import type { Project } from '@/types/project.types'
+import type { Project, ProjectMember } from '@/types/project.types'
 
 export function MemberManager({ project, canManage }: { project: Project; canManage: boolean }) {
   const [addOpen, setAddOpen] = useState(false)
@@ -17,6 +18,7 @@ export function MemberManager({ project, canManage }: { project: Project; canMan
   const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null)
   const [reassignTo, setReassignTo] = useState<string | null>(null)
   const [needsReassign, setNeedsReassign] = useState(false)
+  const [permissionsTarget, setPermissionsTarget] = useState<ProjectMember | null>(null)
 
   const addMembers = useAddProjectMembers(project.id)
   const removeMember = useRemoveProjectMember(project.id)
@@ -94,14 +96,24 @@ export function MemberManager({ project, canManage }: { project: Project; canMan
               </div>
             </div>
             {canManage && member.role !== 'owner' && (
-              <button
-                type="button"
-                onClick={() => setRemoveTarget({ id: member.user.id, name: member.user.name })}
-                aria-label={`Remove ${member.user.name}`}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPermissionsTarget(member)}
+                  aria-label={`Edit ${member.user.name}'s permissions`}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Settings className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRemoveTarget({ id: member.user.id, name: member.user.name })}
+                  aria-label={`Remove ${member.user.name}`}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             )}
           </li>
         ))}
@@ -177,6 +189,15 @@ export function MemberManager({ project, canManage }: { project: Project; canMan
           />
         </FormField>
       </Modal>
+
+      {permissionsTarget && (
+        <MemberPermissionsEditor
+          projectId={project.id}
+          member={permissionsTarget}
+          open
+          onOpenChange={(open) => !open && setPermissionsTarget(null)}
+        />
+      )}
     </div>
   )
 }

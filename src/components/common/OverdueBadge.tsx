@@ -5,13 +5,15 @@ import { cn } from '@/lib/cn'
 export function OverdueBadge({
   dueDate,
   status,
+  isDone,
   className,
 }: {
   dueDate: string | null | undefined
   status?: string
+  isDone?: boolean
   className?: string
 }) {
-  if (!isOverdue(dueDate, status)) return null
+  if (!isOverdue(dueDate, status, isDone)) return null
 
   return (
     <span

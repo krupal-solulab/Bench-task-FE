@@ -4,7 +4,6 @@ import { tasksService } from '@/services/tasks.service'
 import type {
   CreateTaskPayload,
   Task,
-  TaskStatus,
   UpdateTaskAssigneePayload,
   UpdateTaskPayload,
   UpdateTaskRankPayload,
@@ -47,7 +46,7 @@ export function useUpdateTask(id: string) {
 export function useUpdateTaskStatus(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (status: TaskStatus) => tasksService.updateStatus(id, { status }),
+    mutationFn: (status: string) => tasksService.updateStatus(id, { status }),
     onMutate: async (status) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(id) })
       const previous = queryClient.getQueryData<Task>(queryKeys.tasks.detail(id))
@@ -76,7 +75,7 @@ export function useUpdateTaskStatus(id: string) {
 export function useUpdateAnyTaskStatus() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: TaskStatus }) =>
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
       tasksService.updateStatus(id, { status }),
     onMutate: async ({ id, status }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(id) })

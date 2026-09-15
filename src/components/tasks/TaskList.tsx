@@ -53,7 +53,7 @@ export function TaskList({
       key: 'status',
       header: 'Status',
       sortable: true,
-      render: (t) => <StatusBadge status={t.status} kind="task" />,
+      render: (t) => <StatusBadge status={t.status} kind="task" category={t.statusCategory} />,
     },
     {
       key: 'priority',
@@ -73,7 +73,11 @@ export function TaskList({
       render: (t) => (
         <span className="flex items-center gap-1">
           {formatDate(t.dueDate)}
-          <OverdueBadge dueDate={t.dueDate} status={t.status} />
+          <OverdueBadge
+            dueDate={t.dueDate}
+            status={t.status}
+            isDone={t.statusCategory === 'Done'}
+          />
         </span>
       ),
     },

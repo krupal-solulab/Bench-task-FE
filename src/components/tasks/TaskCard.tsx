@@ -18,7 +18,11 @@ export function TaskCard({ task }: { task: Task }) {
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           {formatDate(task.dueDate)}
-          <OverdueBadge dueDate={task.dueDate} status={task.status} />
+          <OverdueBadge
+            dueDate={task.dueDate}
+            status={task.status}
+            isDone={task.statusCategory === 'Done'}
+          />
         </span>
         {task.assignee && <Avatar name={task.assignee.name} size="sm" />}
       </div>

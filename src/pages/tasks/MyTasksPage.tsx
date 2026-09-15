@@ -7,7 +7,7 @@ import { useQueryParams } from '@/hooks/useQueryParams'
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
 import { toApiError } from '@/lib/error'
 import type { SortOrder } from '@/types/api.types'
-import type { TaskListQuery, TaskStatus } from '@/types/task.types'
+import type { TaskListQuery } from '@/types/task.types'
 
 export function MyTasksPage() {
   // Pagination and filters share a single useQueryParams call - see ProjectsListPage for why two
@@ -17,7 +17,7 @@ export function MyTasksPage() {
     page: 1,
     limit: DEFAULT_PAGE_SIZE,
     search: '',
-    status: undefined as TaskStatus | undefined,
+    status: undefined as string | undefined,
     priority: undefined as TaskListQuery['priority'],
     dueDateFrom: undefined as string | undefined,
     dueDateTo: undefined as string | undefined,

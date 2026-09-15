@@ -14,9 +14,11 @@ import { TaskStatusControl } from '@/components/tasks/TaskStatusControl'
 import { TaskForm } from '@/components/tasks/TaskForm'
 import { TaskActivityFeed } from '@/components/tasks/TaskActivityFeed'
 import { AttachmentList } from '@/components/tasks/AttachmentList'
+import { SubtaskChecklist } from '@/components/tasks/SubtaskChecklist'
+import { STANDARD_ISSUE_TYPES } from '@/types/task.types'
 import { CommentList } from '@/components/comments/CommentList'
 import { useTask } from '@/hooks/queries/useTasks'
-import { useProject } from '@/hooks/queries/useProjects'
+import { useProject, useProjectWorkflow } from '@/hooks/queries/useProjects'
 import {
   useDeleteTask,
   useUpdateTask,
@@ -35,7 +37,7 @@ export function TaskDetailPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const { user } = useAuth()
-  const { canEditTaskField } = usePermissions()
+  const { can, canEditTaskField, canCreateTaskInProject } = usePermissions()
   const { joinProject, leaveProject } = useSocket()
 
   const [editOpen, setEditOpen] = useState(false)
@@ -43,6 +45,7 @@ export function TaskDetailPage() {
 
   const { data: task, isLoading, isError, error, refetch } = useTask(id)
   const { data: project } = useProject(task?.project.id)
+  const { data: workflow } = useProjectWorkflow(task?.project.id)
 
   const updateTask = useUpdateTask(id ?? '')
   const updateAssignee = useUpdateTaskAssignee(id ?? '')
@@ -61,9 +64,14 @@ export function TaskDetailPage() {
   }
 
   const isAssignee = task.assignee?.id === user?.id
-  const canEditOther = canEditTaskField('other', isAssignee)
-  const canEditStatus = canEditTaskField('status', isAssignee)
-  const canDelete = canEditOther
+  // Per-project grants (see Phase 3's permission schemes) let these diverge for a Developer -
+  // Admin/Manager are unaffected since `can(role, 'task:editAny')` already covers every case.
+  const myGrant = project?.members.find((m) => m.user.id === user?.id)?.permissions ?? null
+  const canEditOther = canEditTaskField('other', isAssignee, myGrant)
+  const canDeleteTask = canEditTaskField('delete', isAssignee, myGrant)
+  const canEditStatus = canEditTaskField('status', isAssignee, myGrant)
+  const canReassign = can('task:editAny')
+  const canCreateSubtask = canCreateTaskInProject(myGrant)
 
   async function handleUpdate(values: TaskFormValues) {
     if (!id) return
@@ -73,6 +81,7 @@ export function TaskDetailPage() {
         description: values.description,
         priority: values.priority,
         dueDate: values.dueDate,
+        storyPoints: values.storyPoints,
       })
       showToast({ title: 'Task updated', variant: 'success' })
       setEditOpen(false)
@@ -120,13 +129,13 @@ export function TaskDetailPage() {
         description={task.description || undefined}
         actions={
           <div className="flex items-center gap-2">
-            <TaskStatusControl task={task} canEdit={canEditStatus} />
+            <TaskStatusControl task={task} canEdit={canEditStatus} workflow={workflow} />
             {canEditOther && (
               <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
                 Edit
               </Button>
             )}
-            {canDelete && (
+            {canDeleteTask && (
               <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
                 Delete
               </Button>
@@ -154,6 +163,34 @@ export function TaskDetailPage() {
               </div>
               <div>
                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Type
+                </dt>
+                <dd className="mt-1">
+                  {task.issueType}
+                  {task.issueKey && (
+                    <span className="ml-1.5 font-mono text-xs text-muted-foreground">
+                      {task.issueKey}
+                    </span>
+                  )}
+                </dd>
+              </div>
+              {task.parent && (
+                <div>
+                  <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {task.issueType === 'Sub-task' ? 'Parent' : 'Epic'}
+                  </dt>
+                  <dd className="mt-1">
+                    <Link
+                      to={`/tasks/${task.parent.id}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {task.parent.issueKey ?? task.parent.title}
+                    </Link>
+                  </dd>
+                </div>
+              )}
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Priority
                 </dt>
                 <dd className="mt-1">
@@ -166,7 +203,11 @@ export function TaskDetailPage() {
                 </dt>
                 <dd className="mt-1 flex items-center gap-1">
                   {formatDate(task.dueDate)}
-                  <OverdueBadge dueDate={task.dueDate} status={task.status} />
+                  <OverdueBadge
+                    dueDate={task.dueDate}
+                    status={task.status}
+                    isDone={task.statusCategory === 'Done'}
+                  />
                 </dd>
               </div>
               <div>
@@ -193,7 +234,7 @@ export function TaskDetailPage() {
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Assignee
               </p>
-              {canEditOther ? (
+              {canReassign ? (
                 <UserSelect
                   value={task.assignee?.id ?? null}
                   onChange={handleReassign}
@@ -212,6 +253,14 @@ export function TaskDetailPage() {
               )}
             </div>
           </div>
+
+          {STANDARD_ISSUE_TYPES.includes(task.issueType) && (
+            <SubtaskChecklist
+              parentTaskId={task.id}
+              projectId={task.project.id}
+              canManage={canCreateSubtask}
+            />
+          )}
 
           <TaskActivityFeed taskId={task.id} />
 
