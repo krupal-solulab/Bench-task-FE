@@ -128,5 +128,7 @@ export interface TaskActivityEntry {
   from: string | null
   to: string | null
   actor: User
+  // Set only when an automation rule's action produced this entry, rather than `actor` directly.
+  viaAutomationRule: string | null
   createdAt: string
 }

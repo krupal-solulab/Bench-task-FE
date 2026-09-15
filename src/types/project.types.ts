@@ -43,6 +43,48 @@ export interface CustomFieldDefinition {
   options: string[] | null
 }
 
+export const AUTOMATION_TRIGGER_TYPES = ['IssueCreated', 'StatusChanged'] as const
+export type AutomationTriggerType = (typeof AUTOMATION_TRIGGER_TYPES)[number]
+
+export const AUTOMATION_ACTION_TYPES = [
+  'SetStatus',
+  'SetPriority',
+  'SetAssignee',
+  'AddLabels',
+  'AddComment',
+] as const
+export type AutomationActionType = (typeof AUTOMATION_ACTION_TYPES)[number]
+
+export const AUTOMATION_CONDITION_FIELDS = ['IssueType', 'Priority', 'Component'] as const
+export type AutomationConditionField = (typeof AUTOMATION_CONDITION_FIELDS)[number]
+
+export interface AutomationCondition {
+  field: AutomationConditionField
+  value: string
+}
+
+export interface AutomationAction {
+  type: AutomationActionType
+  value: string
+}
+
+export interface AutomationTrigger {
+  type: AutomationTriggerType
+  // Only meaningful (and only ever set) for type === 'StatusChanged'.
+  toStatus: string | null
+}
+
+export interface AutomationRule {
+  // Stable identity, assigned once by the server - same convention as CustomFieldDefinition.id.
+  id: string
+  name: string
+  enabled: boolean
+  trigger: AutomationTrigger
+  // AND-combined; empty means "always match".
+  conditions: AutomationCondition[]
+  actions: AutomationAction[]
+}
+
 export interface Project {
   id: string
   name: string
@@ -56,6 +98,7 @@ export interface Project {
   // Project-defined pick-list (e.g. "Frontend", "API") - names are the identity.
   components: string[]
   customFields: CustomFieldDefinition[]
+  automationRules: AutomationRule[]
   createdAt: string
   updatedAt: string
 }

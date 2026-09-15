@@ -76,6 +76,12 @@ export function TaskActivityFeed({ taskId }: { taskId: string }) {
                       <span className="font-medium">{entry.actor.name}</span>{' '}
                       {ACTION_LABELS[entry.action] ?? entry.action}
                       {entry.from && entry.to ? ` (${entry.from} → ${entry.to})` : ''}
+                      {entry.viaAutomationRule && (
+                        <span className="text-muted-foreground">
+                          {' '}
+                          · via automation: {entry.viaAutomationRule}
+                        </span>
+                      )}
                     </span>
                   </div>
                 ))}

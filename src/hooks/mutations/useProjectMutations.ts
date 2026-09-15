@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/constants'
 import { projectsService } from '@/services/projects.service'
 import type {
+  AutomationRule,
   CreateProjectPayload,
   CustomFieldDefinition,
   MemberPermissions,
@@ -135,6 +136,18 @@ export function useUpdateCustomFields(id: string) {
   return useMutation({
     mutationFn: (fields: Array<Partial<CustomFieldDefinition>>) =>
       projectsService.updateCustomFields(id, fields),
+    onSuccess: (project) => {
+      queryClient.setQueryData(queryKeys.projects.detail(id), project)
+      invalidateAfterFieldsChange(queryClient, id)
+    },
+  })
+}
+
+export function useUpdateAutomationRules(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (rules: Array<Partial<AutomationRule>>) =>
+      projectsService.updateAutomationRules(id, rules),
     onSuccess: (project) => {
       queryClient.setQueryData(queryKeys.projects.detail(id), project)
       invalidateAfterFieldsChange(queryClient, id)

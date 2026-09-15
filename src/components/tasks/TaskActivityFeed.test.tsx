@@ -88,6 +88,54 @@ describe('TaskActivityFeed', () => {
     expect(screen.getByText('created the task', { exact: false })).toBeInTheDocument()
   })
 
+  it('shows a "via automation" note when an entry was produced by an automation rule', async () => {
+    server.use(
+      http.get(url(`/tasks/${TASK_ID}/activity`), () =>
+        HttpResponse.json({
+          success: true,
+          data: [
+            {
+              id: 'a-1',
+              action: 'reassigned',
+              from: null,
+              to: 'u-3',
+              actor: mockUsers[2],
+              viaAutomationRule: 'Route to QA on Review',
+              createdAt: '2026-01-05T00:00:00.000Z',
+            },
+            {
+              id: 'a-2',
+              action: 'created',
+              from: null,
+              to: null,
+              actor: mockUsers[1],
+              viaAutomationRule: null,
+              createdAt: '2026-01-01T00:00:00.000Z',
+            },
+          ],
+          meta: {
+            total: 2,
+            page: 1,
+            limit: 20,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        }),
+      ),
+    )
+    const user = userEvent.setup()
+    renderFeed()
+
+    await user.click(screen.getByRole('button', { name: /Activity/ }))
+
+    expect(await screen.findByText(/via automation: Route to QA on Review/)).toBeInTheDocument()
+    // The plain human-created entry shows no automation note (regression).
+    expect(screen.getByText('created the task', { exact: false }).textContent).not.toContain(
+      'via automation',
+    )
+  })
+
   it('shows an empty state when there is no activity yet', async () => {
     server.use(
       http.get(url(`/tasks/${TASK_ID}/activity`), () =>

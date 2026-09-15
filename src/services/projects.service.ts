@@ -1,5 +1,6 @@
 import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost, apiPut } from './api-client'
 import type {
+  AutomationRule,
   CreateProjectPayload,
   CustomFieldDefinition,
   MemberPermissions,
@@ -64,4 +65,7 @@ export const projectsService = {
 
   updateCustomFields: (id: string, fields: Array<Partial<CustomFieldDefinition>>) =>
     apiPut<Project>(`/projects/${id}/custom-fields`, { fields }),
+
+  updateAutomationRules: (id: string, rules: Array<Partial<AutomationRule>>) =>
+    apiPut<Project>(`/projects/${id}/automation-rules`, { rules }),
 }

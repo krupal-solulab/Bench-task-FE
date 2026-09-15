@@ -26,6 +26,7 @@ import { CalendarView } from '@/components/sprints/CalendarView'
 import { EpicsList } from '@/components/tasks/EpicsList'
 import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm'
 import { FieldsSettingsForm } from '@/components/projects/FieldsSettingsForm'
+import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
 import {
   useProject,
   useProjectLabels,
@@ -256,6 +257,7 @@ export function ProjectDetailPage() {
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="workflow">Workflow</TabsTrigger>
             <TabsTrigger value="fields">Fields</TabsTrigger>
+            <TabsTrigger value="automation">Automation</TabsTrigger>
           </TabsList>
           {(canManageSprintsHere || canCreateTaskHere) && (
             <div className="flex shrink-0 items-center gap-2">
@@ -414,6 +416,10 @@ export function ProjectDetailPage() {
 
         <TabsContent value="fields">
           <FieldsSettingsForm projectId={id ?? ''} project={project} canManage={canManage} />
+        </TabsContent>
+
+        <TabsContent value="automation">
+          <AutomationRulesForm projectId={id ?? ''} project={project} canManage={canManage} />
         </TabsContent>
       </Tabs>
 
