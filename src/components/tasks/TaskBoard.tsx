@@ -13,6 +13,7 @@ import {
 import { Link } from 'react-router-dom'
 import { Avatar } from '@/components/common/Avatar'
 import { PriorityBadge } from '@/components/common/PriorityBadge'
+import { IssueTypeBadge } from '@/components/common/IssueTypeBadge'
 import { OverdueBadge } from '@/components/common/OverdueBadge'
 import { EmptyState } from '@/components/common/EmptyState'
 import { StaggerContainer, StaggerItem } from '@/components/common/Stagger'
@@ -27,6 +28,7 @@ import { cn } from '@/lib/cn'
 import { formatDate } from '@/lib/date'
 import type { Task } from '@/types/task.types'
 import type { MemberPermissions } from '@/types/project.types'
+import type { IssueTypeDefinition } from '@/types/issue-type.types'
 import type { StatusCategory, Workflow } from '@/types/workflow.types'
 
 // Column accent color is driven by the status's category (3 buckets), not its literal name, so
@@ -93,6 +95,7 @@ export function TaskBoard({
   tasks,
   workflow = DEFAULT_WORKFLOW,
   grant,
+  issueTypeDefinitions,
 }: {
   tasks: Task[]
   /** The project's workflow (custom, or the system default). Defaults to the system default
@@ -100,6 +103,8 @@ export function TaskBoard({
   workflow?: Workflow
   /** The current user's per-project grant (see Phase 3's permission schemes), if any. */
   grant?: MemberPermissions | null
+  /** The owning project's resolved issue types, for icon/color - see IssueTypeBadge. */
+  issueTypeDefinitions?: IssueTypeDefinition[]
 }) {
   const { canEditTaskField } = usePermissions()
   const { user } = useAuth()
@@ -177,7 +182,13 @@ export function TaskBoard({
                               {task.title}
                             </Link>
                             <div className="flex items-center justify-between">
-                              <PriorityBadge priority={task.priority} />
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <IssueTypeBadge
+                                  issueType={task.issueType}
+                                  definitions={issueTypeDefinitions}
+                                />
+                                <PriorityBadge priority={task.priority} />
+                              </div>
                               {task.assignee && <Avatar name={task.assignee.name} size="sm" />}
                             </div>
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">

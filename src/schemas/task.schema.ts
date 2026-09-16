@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ISSUE_TYPES, TASK_PRIORITIES } from '@/types/task.types'
+import { TASK_PRIORITIES } from '@/types/task.types'
 
 export const taskSchema = z
   .object({
@@ -9,7 +9,10 @@ export const taskSchema = z
     assignee: z.string().nullable().optional(),
     priority: z.enum(TASK_PRIORITIES),
     dueDate: z.string().nullable().optional(),
-    issueType: z.enum(ISSUE_TYPES).optional().default('Task'),
+    // One of the project's enabled issue types - the 5 built-ins, or a custom Standard-level type
+    // (see issue-type.types.ts) - so this is a free-form string, validated by the server against
+    // the project's actual configuration, not a fixed enum here.
+    issueType: z.string().min(1).optional().default('Task'),
     parent: z.string().nullable().optional(),
     storyPoints: z.number().min(0).max(1000).nullable().optional(),
     labels: z.array(z.string()).optional().default([]),

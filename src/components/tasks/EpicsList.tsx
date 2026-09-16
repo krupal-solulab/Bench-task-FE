@@ -1,16 +1,25 @@
 import { Link } from 'react-router-dom'
 import { EmptyState } from '@/components/common/EmptyState'
+import { IssueTypeBadge } from '@/components/common/IssueTypeBadge'
 import { useEpicProgress } from '@/hooks/queries/useTasks'
 import type { Task } from '@/types/task.types'
+import type { IssueTypeDefinition } from '@/types/issue-type.types'
 
-function EpicCard({ epic }: { epic: Task }) {
+function EpicCard({
+  epic,
+  issueTypeDefinitions,
+}: {
+  epic: Task
+  issueTypeDefinitions?: IssueTypeDefinition[]
+}) {
   const { data: progress } = useEpicProgress(epic.id)
 
   return (
     <div className="space-y-3 rounded-xl border bg-card p-4 shadow-soft">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <Link to={`/tasks/${epic.id}`} className="font-medium hover:text-primary">
+        <div className="space-y-1">
+          <IssueTypeBadge issueType={epic.issueType} definitions={issueTypeDefinitions} />
+          <Link to={`/tasks/${epic.id}`} className="block font-medium hover:text-primary">
             {epic.title}
           </Link>
           {epic.issueKey && (
@@ -37,7 +46,13 @@ function EpicCard({ epic }: { epic: Task }) {
   )
 }
 
-export function EpicsList({ epics }: { epics: Task[] }) {
+export function EpicsList({
+  epics,
+  issueTypeDefinitions,
+}: {
+  epics: Task[]
+  issueTypeDefinitions?: IssueTypeDefinition[]
+}) {
   if (epics.length === 0) {
     return (
       <EmptyState
@@ -50,7 +65,7 @@ export function EpicsList({ epics }: { epics: Task[] }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {epics.map((epic) => (
-        <EpicCard key={epic.id} epic={epic} />
+        <EpicCard key={epic.id} epic={epic} issueTypeDefinitions={issueTypeDefinitions} />
       ))}
     </div>
   )

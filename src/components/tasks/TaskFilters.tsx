@@ -15,6 +15,7 @@ import {
 import { TASK_PRIORITIES, TASK_STATUSES, type TaskListQuery } from '@/types/task.types'
 import type { WorkflowStatus } from '@/types/workflow.types'
 import type { CustomFieldDefinition } from '@/types/project.types'
+import type { IssueTypeDefinition } from '@/types/issue-type.types'
 
 const DEFAULT_STATUS_OPTIONS: WorkflowStatus[] = TASK_STATUSES.map((name) => ({
   name,
@@ -38,6 +39,9 @@ export interface TaskFiltersProps {
   /** The current project's Text/Dropdown custom fields - omitted (no filter shown) for
    * cross-project views like "My Tasks", same convention as labelOptions/componentOptions. */
   customFieldOptions?: CustomFieldDefinition[]
+  /** The current project's resolved issue types - omitted (no filter shown) for cross-project
+   * views like "My Tasks", same convention as labelOptions/componentOptions. */
+  issueTypeOptions?: IssueTypeDefinition[]
 }
 
 const ALL = '__all__'
@@ -51,6 +55,7 @@ export function TaskFilters({
   labelOptions,
   componentOptions,
   customFieldOptions,
+  issueTypeOptions,
 }: TaskFiltersProps) {
   function updateCustomFieldFilter(fieldId: string, fieldValue: string) {
     const rest = (value.customFieldFilters ?? []).filter((f) => f.fieldId !== fieldId)
@@ -68,7 +73,8 @@ export function TaskFilters({
     value.overdue ||
     value.labels?.length ||
     value.components?.length ||
-    value.customFieldFilters?.length
+    value.customFieldFilters?.length ||
+    value.issueType?.length
   )
 
   return (
@@ -117,6 +123,25 @@ export function TaskFilters({
           ))}
         </SelectContent>
       </Select>
+
+      {!!issueTypeOptions?.length && (
+        <Select
+          value={value.issueType?.[0] ?? ALL}
+          onValueChange={(v) => onChange({ issueType: v === ALL ? undefined : [v] })}
+        >
+          <SelectTrigger className="w-36" aria-label="Filter by issue type">
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>All types</SelectItem>
+            {issueTypeOptions.map((t) => (
+              <SelectItem key={t.name} value={t.name}>
+                {t.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       {!hideAssignee && (
         <div className="w-48">

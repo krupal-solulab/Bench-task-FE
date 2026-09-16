@@ -27,6 +27,7 @@ import { CalendarView } from '@/components/sprints/CalendarView'
 import { EpicsList } from '@/components/tasks/EpicsList'
 import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm'
 import { FieldsSettingsForm } from '@/components/projects/FieldsSettingsForm'
+import { IssueTypesSettingsForm } from '@/components/projects/IssueTypesSettingsForm'
 import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
 import { PermissionSchemeAssignment } from '@/components/projects/PermissionSchemeAssignment'
 import {
@@ -51,6 +52,7 @@ import type { TaskFormValues } from '@/schemas/task.schema'
 import type { SprintFormValues } from '@/schemas/sprint.schema'
 import type { Sprint } from '@/types/sprint.types'
 import { STANDARD_ISSUE_TYPES, type TaskListQuery } from '@/types/task.types'
+import { resolveIssueTypes, standardIssueTypeNames } from '@/types/issue-type.types'
 
 export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -77,8 +79,9 @@ export function ProjectDetailPage() {
     dueDateFrom: undefined as string | undefined,
     dueDateTo: undefined as string | undefined,
     overdue: undefined as boolean | undefined,
+    issueType: undefined as string | undefined,
   })
-  const { tab, ...filters } = state
+  const { tab, issueType: issueTypeFilter, ...filters } = state
   // Not persisted to the URL, unlike the rest of `filters` - useQueryParams is shared with several
   // pages and typed for scalar values only; these are string arrays.
   const [labelFilter, setLabelFilter] = useState<string[]>([])
@@ -89,10 +92,16 @@ export function ProjectDetailPage() {
 
   const { data: project, isLoading, isError, error, refetch } = useProject(id)
   const { data: labelOptions } = useProjectLabels(id)
+  // A project's own Standard-level type names (the BRD's "extensible" level) - falls back to the
+  // 5 built-ins' Story/Task/Bug when the project hasn't customized its issue types. A user's
+  // explicit type-filter narrows to just that one type; otherwise every Standard-level task shows,
+  // exactly matching today's behavior for any project with no customization.
+  const standardTypeNames = project ? standardIssueTypeNames(project) : STANDARD_ISSUE_TYPES
+  const effectiveIssueTypes = issueTypeFilter ? [issueTypeFilter] : standardTypeNames
   const { data: tasksData } = useProjectTasks(id, {
     page: 1,
     limit: 100,
-    issueType: STANDARD_ISSUE_TYPES,
+    issueType: effectiveIssueTypes,
     ...filters,
     labels: labelFilter.length ? labelFilter : undefined,
     components: componentFilter.length ? componentFilter : undefined,
@@ -105,13 +114,13 @@ export function ProjectDetailPage() {
     page: 1,
     limit: 100,
     unassignedSprint: true,
-    issueType: STANDARD_ISSUE_TYPES,
+    issueType: effectiveIssueTypes,
     sortBy: 'rank',
     sortOrder: 'asc',
   })
   const { data: sprintBoardData } = useProjectTasks(
     id,
-    { page: 1, limit: 100, sprintId: activeSprint?.id, issueType: STANDARD_ISSUE_TYPES },
+    { page: 1, limit: 100, sprintId: activeSprint?.id, issueType: effectiveIssueTypes },
     { enabled: !!activeSprint },
   )
   const { data: epicsData } = useProjectTasks(id, { page: 1, limit: 100, issueType: ['Epic'] })
@@ -263,6 +272,7 @@ export function ProjectDetailPage() {
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="workflow">Workflow</TabsTrigger>
             <TabsTrigger value="fields">Fields</TabsTrigger>
+            <TabsTrigger value="issue-types">Issue Types</TabsTrigger>
             <TabsTrigger value="automation">Automation</TabsTrigger>
             <TabsTrigger value="permissions">Permissions</TabsTrigger>
           </TabsList>
@@ -283,7 +293,12 @@ export function ProjectDetailPage() {
         </div>
 
         <TabsContent value="board">
-          <TaskBoard tasks={tasksData?.data ?? []} workflow={workflow} grant={myGrant} />
+          <TaskBoard
+            tasks={tasksData?.data ?? []}
+            workflow={workflow}
+            grant={myGrant}
+            issueTypeDefinitions={resolveIssueTypes(project)}
+          />
         </TabsContent>
 
         <TabsContent value="backlog" className="space-y-4">
@@ -337,7 +352,12 @@ export function ProjectDetailPage() {
                   onEdit={() => openEditSprint(activeSprint)}
                 />
               </div>
-              <TaskBoard tasks={sprintBoardData?.data ?? []} workflow={workflow} grant={myGrant} />
+              <TaskBoard
+                tasks={sprintBoardData?.data ?? []}
+                workflow={workflow}
+                grant={myGrant}
+                issueTypeDefinitions={resolveIssueTypes(project)}
+              />
             </>
           ) : (
             <EmptyState
@@ -352,7 +372,10 @@ export function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="epics">
-          <EpicsList epics={epicsData?.data ?? []} />
+          <EpicsList
+            epics={epicsData?.data ?? []}
+            issueTypeDefinitions={resolveIssueTypes(project)}
+          />
         </TabsContent>
 
         <TabsContent value="list" className="space-y-4">
@@ -386,6 +409,7 @@ export function ProjectDetailPage() {
           <TaskFilters
             value={{
               ...filters,
+              issueType: issueTypeFilter ? [issueTypeFilter] : undefined,
               labels: labelFilter,
               components: componentFilter,
               customFieldFilters,
@@ -396,11 +420,13 @@ export function ProjectDetailPage() {
               if ('customFieldFilters' in update) {
                 setCustomFieldFilters(update.customFieldFilters ?? [])
               }
+              if ('issueType' in update) setFilters({ issueType: update.issueType?.[0] })
               const rest = { ...update }
               delete rest.labels
               delete rest.components
               delete rest.customFieldFilters
-              if (Object.keys(rest).length) setFilters(rest)
+              delete rest.issueType
+              if (Object.keys(rest).length) setFilters(rest as Partial<typeof filters>)
             }}
             onClear={() => {
               setLabelFilter([])
@@ -414,6 +440,7 @@ export function ProjectDetailPage() {
                 dueDateFrom: undefined,
                 dueDateTo: undefined,
                 overdue: undefined,
+                issueType: undefined,
               })
             }}
             statuses={workflow?.statuses}
@@ -422,12 +449,14 @@ export function ProjectDetailPage() {
             customFieldOptions={project?.customFields.filter(
               (f) => f.type === 'Text' || f.type === 'Dropdown',
             )}
+            issueTypeOptions={resolveIssueTypes(project)}
           />
           <TaskList
             tasks={tasksData?.data ?? []}
             isLoading={false}
             isError={false}
             onRetry={() => void refetch()}
+            issueTypeDefinitions={resolveIssueTypes(project)}
           />
         </TabsContent>
 
@@ -463,6 +492,10 @@ export function ProjectDetailPage() {
 
         <TabsContent value="fields">
           <FieldsSettingsForm projectId={id ?? ''} project={project} canManage={canManage} />
+        </TabsContent>
+
+        <TabsContent value="issue-types">
+          <IssueTypesSettingsForm projectId={id ?? ''} project={project} canManage={canManage} />
         </TabsContent>
 
         <TabsContent value="automation">

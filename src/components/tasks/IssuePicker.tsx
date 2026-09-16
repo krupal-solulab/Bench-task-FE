@@ -9,11 +9,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/common/Spinner'
 import { useProjectTasks } from '@/hooks/queries/useProjects'
-import type { IssueType } from '@/types/task.types'
 
 export interface IssuePickerProps {
   projectId: string
-  issueTypes: IssueType[]
+  issueTypes: string[]
   value: string | null
   onChange: (taskId: string | null) => void
   /** Exclude the issue being edited from its own picker (an issue can't be its own parent). */

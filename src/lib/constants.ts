@@ -25,6 +25,19 @@ export const PRIORITY_COLORS = {
   P3: 'bg-slate-100 text-slate-600 border-slate-200',
 } as const
 
+/** The fixed named palette an issue type's `color` field picks from - see IssueTypeBadge and the
+ * Issue Types settings form's color-swatch picker. */
+export const ISSUE_TYPE_COLOR_CLASSES = {
+  slate: 'bg-slate-100 text-slate-700 border-slate-200',
+  blue: 'bg-blue-100 text-blue-700 border-blue-200',
+  green: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  amber: 'bg-amber-100 text-amber-700 border-amber-200',
+  red: 'bg-red-100 text-red-700 border-red-200',
+  purple: 'bg-purple-100 text-purple-700 border-purple-200',
+  pink: 'bg-pink-100 text-pink-700 border-pink-200',
+  cyan: 'bg-cyan-100 text-cyan-700 border-cyan-200',
+} as const
+
 /** Raw hex for Recharts fills/strokes — mirrors STATUS_COLORS/PRIORITY_COLORS for visual continuity. */
 export const CHART_COLORS = {
   projectStatus: { Planning: '#64748b', 'In Progress': '#3b82f6', Completed: '#10b981' },

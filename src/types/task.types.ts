@@ -12,10 +12,16 @@ export type TaskStatus = (typeof TASK_STATUSES)[number]
 export const TASK_PRIORITIES = ['P1', 'P2', 'P3'] as const
 export type TaskPriority = (typeof TASK_PRIORITIES)[number]
 
+// The 5 built-in issue type names - still the fallback whenever a project hasn't configured its
+// own issue types (see issue-type.types.ts's DEFAULT_ISSUE_TYPES/resolveIssueTypes). A task's
+// actual `issueType` is a free-form string once a project has customized its issue types (the
+// BRD's "extensible" Standard level) - see Task.issueType below.
 export const ISSUE_TYPES = ['Epic', 'Story', 'Task', 'Bug', 'Sub-task'] as const
 export type IssueType = (typeof ISSUE_TYPES)[number]
 
-/** The "standard issue" level - the only level that can carry a Sprint or an Epic-link. */
+/** The "standard issue" level - the only level that can carry a Sprint or an Epic-link. Prefer
+ * `standardIssueTypeNames(project)` (issue-type.types.ts) when a project is in scope, since a
+ * project may have renamed/added to this set - this fixed list is only the built-in fallback. */
 export const STANDARD_ISSUE_TYPES: IssueType[] = ['Story', 'Task', 'Bug']
 
 export interface TaskProjectSummary {
@@ -49,7 +55,9 @@ export interface Task {
   createdBy: User
   sprint: TaskSprintSummary | null
   rank: number
-  issueType: IssueType
+  // One of the project's enabled issue types - the 5 built-ins, or a custom Standard-level type
+  // the Org Admin added (see issue-type.types.ts), so this is a free-form string, not `IssueType`.
+  issueType: string
   parent: TaskParentSummary | null
   storyPoints: number | null
   issueKey: string | null
@@ -74,7 +82,7 @@ export interface TaskListQuery {
   search?: string
   sprintId?: string
   unassignedSprint?: boolean
-  issueType?: IssueType[]
+  issueType?: string[]
   parent?: string
   labels?: string[]
   components?: string[]
@@ -91,7 +99,7 @@ export interface CreateTaskPayload {
   assignee?: string | null
   priority: TaskPriority
   dueDate?: string | null
-  issueType?: IssueType
+  issueType?: string
   parent?: string | null
   storyPoints?: number | null
   labels?: string[]

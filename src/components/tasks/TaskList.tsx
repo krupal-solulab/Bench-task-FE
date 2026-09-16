@@ -2,12 +2,14 @@ import { useNavigate } from 'react-router-dom'
 import { DataTable, type DataTableColumn } from '@/components/common/DataTable'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { PriorityBadge } from '@/components/common/PriorityBadge'
+import { IssueTypeBadge } from '@/components/common/IssueTypeBadge'
 import { OverdueBadge } from '@/components/common/OverdueBadge'
 import { Avatar } from '@/components/common/Avatar'
 import { EmptyState } from '@/components/common/EmptyState'
 import { formatDate } from '@/lib/date'
 import type { SortOrder } from '@/types/api.types'
 import type { Task, TaskListQuery } from '@/types/task.types'
+import type { IssueTypeDefinition } from '@/types/issue-type.types'
 
 export interface TaskListProps {
   tasks: Task[]
@@ -21,6 +23,9 @@ export interface TaskListProps {
   hasActiveFilters?: boolean
   onClearFilters?: () => void
   showProject?: boolean
+  /** The owning project's resolved issue types, for icon/color - omitted for cross-project lists
+   * (e.g. My Tasks), where IssueTypeBadge falls back to the built-in defaults. */
+  issueTypeDefinitions?: IssueTypeDefinition[]
 }
 
 export function TaskList({
@@ -35,11 +40,17 @@ export function TaskList({
   hasActiveFilters,
   onClearFilters,
   showProject,
+  issueTypeDefinitions,
 }: TaskListProps) {
   const navigate = useNavigate()
 
   const columns: DataTableColumn<Task>[] = [
     { key: 'title', header: 'Title', render: (t) => t.title },
+    {
+      key: 'issueType',
+      header: 'Type',
+      render: (t) => <IssueTypeBadge issueType={t.issueType} definitions={issueTypeDefinitions} />,
+    },
     ...(showProject
       ? [
           {

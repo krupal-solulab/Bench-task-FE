@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/select'
 import { useProject, useProjectLabels } from '@/hooks/queries/useProjects'
 import { taskSchema, type TaskFormValues } from '@/schemas/task.schema'
-import { ISSUE_TYPES, STANDARD_ISSUE_TYPES, TASK_PRIORITIES, type Task } from '@/types/task.types'
+import { TASK_PRIORITIES, type Task } from '@/types/task.types'
+import { resolveIssueTypes } from '@/types/issue-type.types'
 
 export interface TaskFormProps {
   projectId: string
@@ -77,7 +78,12 @@ export function TaskForm({
   // Hierarchy position is fixed at creation - the API doesn't accept issueType/parent changes on
   // an existing issue, so editing shows it read-only instead of a control nothing would apply.
   const isEditingExisting = !!initialValues
-  const isStandardIssue = STANDARD_ISSUE_TYPES.includes(issueType)
+  const issueTypeDefinitions = resolveIssueTypes(project ?? {})
+  const standardTypeNames = issueTypeDefinitions
+    .filter((t) => t.level === 'standard')
+    .map((t) => t.name)
+  const epicTypeNames = issueTypeDefinitions.filter((t) => t.level === 'epic').map((t) => t.name)
+  const isStandardIssue = standardTypeNames.includes(issueType)
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -115,9 +121,9 @@ export function TaskForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ISSUE_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
+                {issueTypeDefinitions.map((t) => (
+                  <SelectItem key={t.name} value={t.name}>
+                    {t.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -134,7 +140,7 @@ export function TaskForm({
               <IssuePicker
                 id="parent"
                 projectId={projectId}
-                issueTypes={STANDARD_ISSUE_TYPES}
+                issueTypes={standardTypeNames}
                 value={parent ?? null}
                 onChange={(v) => setValue('parent', v, { shouldValidate: true })}
                 placeholder="Select the parent Story/Task/Bug"
@@ -148,7 +154,7 @@ export function TaskForm({
               <IssuePicker
                 id="parent"
                 projectId={projectId}
-                issueTypes={['Epic']}
+                issueTypes={epicTypeNames}
                 value={parent ?? null}
                 onChange={(v) => setValue('parent', v)}
                 placeholder="Link to an Epic (optional)"

@@ -8,6 +8,7 @@ import { ErrorState } from '@/components/common/ErrorState'
 import { CardSkeleton } from '@/components/common/Skeleton'
 import { Avatar } from '@/components/common/Avatar'
 import { PriorityBadge } from '@/components/common/PriorityBadge'
+import { IssueTypeBadge } from '@/components/common/IssueTypeBadge'
 import { OverdueBadge } from '@/components/common/OverdueBadge'
 import { UserSelect } from '@/components/common/UserSelect'
 import { TaskStatusControl } from '@/components/tasks/TaskStatusControl'
@@ -15,7 +16,7 @@ import { TaskForm } from '@/components/tasks/TaskForm'
 import { TaskActivityFeed } from '@/components/tasks/TaskActivityFeed'
 import { AttachmentList } from '@/components/tasks/AttachmentList'
 import { SubtaskChecklist } from '@/components/tasks/SubtaskChecklist'
-import { STANDARD_ISSUE_TYPES } from '@/types/task.types'
+import { resolveIssueTypes, standardIssueTypeNames } from '@/types/issue-type.types'
 import { CommentList } from '@/components/comments/CommentList'
 import { useTask } from '@/hooks/queries/useTasks'
 import { useProject, useProjectWorkflow } from '@/hooks/queries/useProjects'
@@ -174,12 +175,13 @@ export function TaskDetailPage() {
                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Type
                 </dt>
-                <dd className="mt-1">
-                  {task.issueType}
+                <dd className="mt-1 flex items-center gap-1.5">
+                  <IssueTypeBadge
+                    issueType={task.issueType}
+                    definitions={project ? resolveIssueTypes(project) : undefined}
+                  />
                   {task.issueKey && (
-                    <span className="ml-1.5 font-mono text-xs text-muted-foreground">
-                      {task.issueKey}
-                    </span>
+                    <span className="font-mono text-xs text-muted-foreground">{task.issueKey}</span>
                   )}
                 </dd>
               </div>
@@ -312,7 +314,7 @@ export function TaskDetailPage() {
             </div>
           </div>
 
-          {STANDARD_ISSUE_TYPES.includes(task.issueType) && (
+          {standardIssueTypeNames(project ?? {}).includes(task.issueType) && (
             <SubtaskChecklist
               parentTaskId={task.id}
               projectId={task.project.id}

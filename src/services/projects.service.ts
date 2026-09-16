@@ -12,6 +12,7 @@ import type {
   UpdateProjectPayload,
 } from '@/types/project.types'
 import type { ProjectStatus } from '@/types/project.types'
+import type { IssueTypeDefinition } from '@/types/issue-type.types'
 import type { PageQuery } from '@/types/api.types'
 import type { Task, TaskListQuery } from '@/types/task.types'
 import { toTaskListParams } from './tasks.service'
@@ -69,6 +70,9 @@ export const projectsService = {
 
   updateAutomationRules: (id: string, rules: Array<Partial<AutomationRule>>) =>
     apiPut<Project>(`/projects/${id}/automation-rules`, { rules }),
+
+  updateIssueTypes: (id: string, issueTypes: IssueTypeDefinition[]) =>
+    apiPut<Project>(`/projects/${id}/issue-types`, { issueTypes }),
 
   assignPermissionScheme: (id: string, permissionSchemeId: string | null) =>
     apiPatch<Project>(`/projects/${id}/permission-scheme`, { permissionSchemeId }),
