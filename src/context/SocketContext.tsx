@@ -20,6 +20,11 @@ interface CommentCreatedEvent {
   authorId: string
 }
 
+interface NotificationCreatedEvent {
+  recipientId: string
+  notificationId: string
+}
+
 export interface SocketContextValue {
   /** Joins the room for a project's real-time events; safe to call before the socket connects. */
   joinProject: (projectId: string) => void
@@ -69,6 +74,12 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     socket.on('comment:created', (event: CommentCreatedEvent) => {
       void queryClient.invalidateQueries({ queryKey: ['comments', event.taskId] })
+    })
+
+    // The event only carries ids as a cache-invalidation signal - the bell refetches the list and
+    // unread count rather than trusting any content off the socket.
+    socket.on('notification:created', (_event: NotificationCreatedEvent) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all })
     })
 
     return () => {

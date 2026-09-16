@@ -110,4 +110,10 @@ export const queryKeys = {
   savedFilters: {
     list: (query: unknown) => ['saved-filters', 'list', query] as const,
   },
+  notifications: {
+    all: ['notifications'] as const,
+    list: (query: unknown) => ['notifications', 'list', query] as const,
+    unreadCount: ['notifications', 'unread-count'] as const,
+    preferences: ['notifications', 'preferences'] as const,
+  },
 } as const

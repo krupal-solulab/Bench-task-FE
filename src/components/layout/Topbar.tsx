@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
 import { useToast } from '@/hooks/useToast'
 import { APP_NAME } from '@/lib/constants'
+import { NotificationBell } from './NotificationBell'
 
 export function Topbar() {
   const { user, logout } = useAuth()
@@ -44,6 +45,7 @@ export function Topbar() {
         >
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
+        <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
