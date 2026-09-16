@@ -3,6 +3,7 @@ import {
   ChevronsRight,
   LayoutDashboard,
   ListChecks,
+  Lock,
   ShieldCheck,
   FolderKanban,
 } from 'lucide-react'
@@ -25,6 +26,12 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/projects', label: 'Projects', icon: FolderKanban },
   { to: '/tasks/my-tasks', label: 'My Tasks', icon: ListChecks },
   { to: '/admin/users', label: 'Admin', icon: ShieldCheck, roles: ['Admin'] },
+  {
+    to: '/admin/permission-schemes',
+    label: 'Permission Schemes',
+    icon: Lock,
+    roles: ['Admin'],
+  },
 ]
 
 export function Sidebar() {

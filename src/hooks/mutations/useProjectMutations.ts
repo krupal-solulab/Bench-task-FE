@@ -155,6 +155,17 @@ export function useUpdateAutomationRules(id: string) {
   })
 }
 
+export function useAssignPermissionScheme(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (permissionSchemeId: string | null) =>
+      projectsService.assignPermissionScheme(id, permissionSchemeId),
+    onSuccess: (project) => {
+      queryClient.setQueryData(queryKeys.projects.detail(id), project)
+    },
+  })
+}
+
 export function useSetMemberPermissions(id: string) {
   const queryClient = useQueryClient()
   return useMutation({

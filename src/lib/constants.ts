@@ -116,4 +116,7 @@ export const queryKeys = {
     unreadCount: ['notifications', 'unread-count'] as const,
     preferences: ['notifications', 'preferences'] as const,
   },
+  permissionSchemes: {
+    all: ['permission-schemes'] as const,
+  },
 } as const

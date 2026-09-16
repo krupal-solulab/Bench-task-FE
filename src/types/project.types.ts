@@ -99,6 +99,8 @@ export interface Project {
   components: string[]
   customFields: CustomFieldDefinition[]
   automationRules: AutomationRule[]
+  // Null means "use the legacy per-member permission flags" - see MemberPermissions above.
+  permissionSchemeId: string | null
   createdAt: string
   updatedAt: string
 }

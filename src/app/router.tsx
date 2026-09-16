@@ -13,6 +13,7 @@ import { ProjectDetailPage } from '@/pages/projects/ProjectDetailPage'
 import { MyTasksPage } from '@/pages/tasks/MyTasksPage'
 import { TaskDetailPage } from '@/pages/tasks/TaskDetailPage'
 import { UsersPage } from '@/pages/admin/UsersPage'
+import { PermissionSchemesPage } from '@/pages/admin/PermissionSchemesPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { PlatformOrganizationsListPage } from '@/pages/platform/PlatformOrganizationsListPage'
 import { PlatformOrganizationDetailPage } from '@/pages/platform/PlatformOrganizationDetailPage'
@@ -40,6 +41,7 @@ export function AppRouter() {
 
             <Route element={<RoleRoute roles={['Admin']} />}>
               <Route path="/admin/users" element={<UsersPage />} />
+              <Route path="/admin/permission-schemes" element={<PermissionSchemesPage />} />
             </Route>
           </Route>
         </Route>

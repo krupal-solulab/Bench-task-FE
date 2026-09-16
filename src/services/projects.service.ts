@@ -69,4 +69,7 @@ export const projectsService = {
 
   updateAutomationRules: (id: string, rules: Array<Partial<AutomationRule>>) =>
     apiPut<Project>(`/projects/${id}/automation-rules`, { rules }),
+
+  assignPermissionScheme: (id: string, permissionSchemeId: string | null) =>
+    apiPatch<Project>(`/projects/${id}/permission-scheme`, { permissionSchemeId }),
 }

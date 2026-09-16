@@ -28,6 +28,7 @@ import { EpicsList } from '@/components/tasks/EpicsList'
 import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm'
 import { FieldsSettingsForm } from '@/components/projects/FieldsSettingsForm'
 import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
+import { PermissionSchemeAssignment } from '@/components/projects/PermissionSchemeAssignment'
 import {
   useProject,
   useProjectLabels,
@@ -263,6 +264,7 @@ export function ProjectDetailPage() {
             <TabsTrigger value="workflow">Workflow</TabsTrigger>
             <TabsTrigger value="fields">Fields</TabsTrigger>
             <TabsTrigger value="automation">Automation</TabsTrigger>
+            <TabsTrigger value="permissions">Permissions</TabsTrigger>
           </TabsList>
           {(canManageSprintsHere || canCreateTaskHere) && (
             <div className="flex shrink-0 items-center gap-2">
@@ -465,6 +467,14 @@ export function ProjectDetailPage() {
 
         <TabsContent value="automation">
           <AutomationRulesForm projectId={id ?? ''} project={project} canManage={canManage} />
+        </TabsContent>
+
+        <TabsContent value="permissions">
+          <PermissionSchemeAssignment
+            projectId={id ?? ''}
+            permissionSchemeId={project.permissionSchemeId}
+            canManage={canManage}
+          />
         </TabsContent>
       </Tabs>
 
