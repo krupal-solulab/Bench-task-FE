@@ -18,6 +18,7 @@ import { ProfilePage } from '@/pages/ProfilePage'
 import { PlatformOrganizationsListPage } from '@/pages/platform/PlatformOrganizationsListPage'
 import { PlatformOrganizationDetailPage } from '@/pages/platform/PlatformOrganizationDetailPage'
 import { PlatformApiLogsPage } from '@/pages/platform/PlatformApiLogsPage'
+import { PlatformWorkflowTemplatesPage } from '@/pages/platform/PlatformWorkflowTemplatesPage'
 import { ForbiddenPage } from '@/pages/errors/ForbiddenPage'
 import { NotFoundPage } from '@/pages/errors/NotFoundPage'
 
@@ -55,6 +56,10 @@ export function AppRouter() {
               element={<PlatformOrganizationDetailPage />}
             />
             <Route path="/platform/logs" element={<PlatformApiLogsPage />} />
+            <Route
+              path="/platform/workflow-templates"
+              element={<PlatformWorkflowTemplatesPage />}
+            />
           </Route>
         </Route>
       </Route>

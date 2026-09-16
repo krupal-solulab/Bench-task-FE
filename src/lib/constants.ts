@@ -75,8 +75,12 @@ export const queryKeys = {
     tasks: (id: string, filters: unknown) => ['projects', 'detail', id, 'tasks', filters] as const,
     stats: (id: string) => ['projects', 'detail', id, 'stats'] as const,
     activity: (id: string) => ['projects', 'detail', id, 'activity'] as const,
-    workflow: (id: string) => ['projects', 'detail', id, 'workflow'] as const,
+    workflow: (id: string, issueType?: string) =>
+      ['projects', 'detail', id, 'workflow', issueType ?? null] as const,
     labels: (id: string) => ['projects', 'detail', id, 'labels'] as const,
+  },
+  workflowTemplates: {
+    all: ['workflow-templates'] as const,
   },
   tasks: {
     all: ['tasks'] as const,

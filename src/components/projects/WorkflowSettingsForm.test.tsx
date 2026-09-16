@@ -150,6 +150,48 @@ describe('WorkflowSettingsForm', () => {
     expect(screen.getByDisplayValue('Todo')).toBeInTheDocument()
   })
 
+  it('renders a Condition/Validator control block for every existing transition', () => {
+    renderForm()
+
+    expect(screen.getByLabelText('Allow Admin to make Todo to In Progress')).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('Require a comment before Todo to In Progress'),
+    ).toBeInTheDocument()
+  })
+
+  it('setting allowedRoles + requireComment on a transition and saving sends them (Condition/Validator)', async () => {
+    let sentBody: {
+      transitions: Array<{
+        from: string
+        to: string
+        allowedRoles?: string[]
+        requireComment?: boolean
+      }>
+    } | null = null
+    server.use(
+      http.put(url('/projects/p-1/workflow'), async ({ request }) => {
+        sentBody = (await request.json()) as typeof sentBody
+        return HttpResponse.json({ success: true, data: sentBody })
+      }),
+    )
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.click(screen.getByLabelText('Allow Manager to make In Progress to Review'))
+    await user.click(screen.getByLabelText('Require a comment before In Progress to Review'))
+    await user.click(screen.getByRole('button', { name: 'Save workflow' }))
+
+    await waitFor(() => expect(sentBody).not.toBeNull())
+    expect(sentBody!.transitions).toContainEqual({
+      from: 'In Progress',
+      to: 'Review',
+      allowedRoles: ['Manager'],
+      requireComment: true,
+    })
+    // Every other transition is unaffected - neither field set, exactly as before this feature.
+    expect(sentBody!.transitions).toContainEqual({ from: 'Todo', to: 'In Progress' })
+  })
+
   it('shows an error toast when the server rejects the save (e.g. an in-use status removed)', async () => {
     server.use(
       http.put(url('/projects/p-1/workflow'), () =>

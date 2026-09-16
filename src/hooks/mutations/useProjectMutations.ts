@@ -82,32 +82,35 @@ export function useRemoveProjectMember(id: string) {
 }
 
 /** A workflow change affects every status name shown throughout the project - the task list
- * queries, the Board's columns, and dashboard aggregation all need to refetch alongside it. */
+ * queries, the Board's columns, and dashboard aggregation all need to refetch alongside it.
+ * Invalidates the whole `workflow` key prefix (every issueType variant, not just the one just
+ * edited), since editing one type doesn't change the others but the project's resolved set of
+ * in-use statuses (stats/board) can still shift when tasks of any type see it applied. */
 function invalidateAfterWorkflowChange(queryClient: ReturnType<typeof useQueryClient>, id: string) {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.projects.workflow(id) })
+  void queryClient.invalidateQueries({ queryKey: ['projects', 'detail', id, 'workflow'] })
   void queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(id) })
   void queryClient.invalidateQueries({ queryKey: queryKeys.projects.stats(id) })
   void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
   void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
 }
 
-export function useUpdateWorkflow(id: string) {
+export function useUpdateWorkflow(id: string, issueType?: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (workflow: Workflow) => projectsService.updateWorkflow(id, workflow),
+    mutationFn: (workflow: Workflow) => projectsService.updateWorkflow(id, workflow, issueType),
     onSuccess: (workflow) => {
-      queryClient.setQueryData(queryKeys.projects.workflow(id), workflow)
+      queryClient.setQueryData(queryKeys.projects.workflow(id, issueType), workflow)
       invalidateAfterWorkflowChange(queryClient, id)
     },
   })
 }
 
-export function useResetWorkflow(id: string) {
+export function useResetWorkflow(id: string, issueType?: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => projectsService.resetWorkflow(id),
+    mutationFn: () => projectsService.resetWorkflow(id, issueType),
     onSuccess: (workflow) => {
-      queryClient.setQueryData(queryKeys.projects.workflow(id), workflow)
+      queryClient.setQueryData(queryKeys.projects.workflow(id, issueType), workflow)
       invalidateAfterWorkflowChange(queryClient, id)
     },
   })

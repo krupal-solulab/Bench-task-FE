@@ -53,12 +53,17 @@ export const projectsService = {
   activity: (id: string, query: { page?: number; limit?: number }) =>
     apiGetPaginated<ProjectActivityEntry>(`/projects/${id}/activity`, query),
 
-  getWorkflow: (id: string) => apiGet<Workflow>(`/projects/${id}/workflow`),
+  getWorkflow: (id: string, issueType?: string) =>
+    apiGet<Workflow>(`/projects/${id}/workflow`, issueType ? { issueType } : undefined),
 
-  updateWorkflow: (id: string, workflow: Workflow) =>
-    apiPut<Workflow>(`/projects/${id}/workflow`, workflow),
+  updateWorkflow: (id: string, workflow: Workflow, issueType?: string) =>
+    apiPut<Workflow>(
+      `/projects/${id}/workflow${issueType ? `?issueType=${encodeURIComponent(issueType)}` : ''}`,
+      workflow,
+    ),
 
-  resetWorkflow: (id: string) => apiDelete<Workflow>(`/projects/${id}/workflow`),
+  resetWorkflow: (id: string, issueType?: string) =>
+    apiDelete<Workflow>(`/projects/${id}/workflow`, issueType ? { issueType } : undefined),
 
   listLabels: (id: string) => apiGet<string[]>(`/projects/${id}/labels`),
 

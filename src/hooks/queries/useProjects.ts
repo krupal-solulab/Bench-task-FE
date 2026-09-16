@@ -60,10 +60,10 @@ export function useProjectActivity(id: string | undefined, page: number, limit: 
   })
 }
 
-export function useProjectWorkflow(id: string | undefined) {
+export function useProjectWorkflow(id: string | undefined, issueType?: string) {
   return useQuery({
-    queryKey: queryKeys.projects.workflow(id ?? ''),
-    queryFn: () => projectsService.getWorkflow(id!),
+    queryKey: queryKeys.projects.workflow(id ?? '', issueType),
+    queryFn: () => projectsService.getWorkflow(id!, issueType),
     enabled: !!id,
   })
 }

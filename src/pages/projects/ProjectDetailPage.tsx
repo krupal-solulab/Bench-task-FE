@@ -11,6 +11,14 @@ import { Avatar } from '@/components/common/Avatar'
 import { StaggerContainer, StaggerItem } from '@/components/common/Stagger'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { FormField } from '@/components/common/FormField'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ProjectForm } from '@/components/projects/ProjectForm'
 import { ProjectStatusControl } from '@/components/projects/ProjectStatusControl'
 import { MemberManager } from '@/components/projects/MemberManager'
@@ -26,6 +34,7 @@ import { BacklogBoard } from '@/components/sprints/BacklogBoard'
 import { CalendarView } from '@/components/sprints/CalendarView'
 import { EpicsList } from '@/components/tasks/EpicsList'
 import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm'
+import { WorkflowCanvas } from '@/components/projects/WorkflowCanvas'
 import { FieldsSettingsForm } from '@/components/projects/FieldsSettingsForm'
 import { IssueTypesSettingsForm } from '@/components/projects/IssueTypesSettingsForm'
 import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
@@ -37,6 +46,7 @@ import {
   useProjectTasks,
   useProjectWorkflow,
 } from '@/hooks/queries/useProjects'
+import { useWorkflowTemplates } from '@/hooks/queries/useWorkflowTemplates'
 import { useActiveSprint, useSprints } from '@/hooks/queries/useSprints'
 import { useDeleteProject, useUpdateProject } from '@/hooks/mutations/useProjectMutations'
 import { useCreateTask } from '@/hooks/mutations/useTaskMutations'
@@ -53,6 +63,11 @@ import type { SprintFormValues } from '@/schemas/sprint.schema'
 import type { Sprint } from '@/types/sprint.types'
 import { STANDARD_ISSUE_TYPES, type TaskListQuery } from '@/types/task.types'
 import { resolveIssueTypes, standardIssueTypeNames } from '@/types/issue-type.types'
+import type { Workflow } from '@/types/workflow.types'
+
+/** The issue-type selector's sentinel value for "the project-wide default workflow" - Select
+ * doesn't allow an empty-string item value, and `undefined` isn't a valid controlled value. */
+const DEFAULT_WORKFLOW_OPTION = '__default__'
 
 export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -125,6 +140,33 @@ export function ProjectDetailPage() {
   )
   const { data: epicsData } = useProjectTasks(id, { page: 1, limit: 100, issueType: ['Epic'] })
   const { data: workflow } = useProjectWorkflow(id)
+
+  // Workflow tab: an issue-type selector (Workflow Engine v2's per-issue-type workflows), a
+  // Visual/List view toggle (defaults to List, today's exact experience), and an optional
+  // "apply a template" action that only seeds the form's local draft - nothing is saved until
+  // the form's own Save button is clicked.
+  const [workflowIssueType, setWorkflowIssueType] = useState<string>(DEFAULT_WORKFLOW_OPTION)
+  const [workflowView, setWorkflowView] = useState<'list' | 'visual'>('list')
+  const [templateDraft, setTemplateDraft] = useState<Workflow | null>(null)
+  const effectiveWorkflowIssueType =
+    workflowIssueType === DEFAULT_WORKFLOW_OPTION ? undefined : workflowIssueType
+  const { data: tabWorkflow } = useProjectWorkflow(id, effectiveWorkflowIssueType)
+  const { data: workflowTemplates } = useWorkflowTemplates()
+
+  function handleWorkflowIssueTypeChange(value: string) {
+    setWorkflowIssueType(value)
+    setTemplateDraft(null)
+  }
+
+  function applyWorkflowTemplate(templateId: string) {
+    const template = workflowTemplates?.find((t) => t.id === templateId)
+    if (!template) return
+    setTemplateDraft(template.workflow)
+    showToast({
+      title: `Applied "${template.name}" - review and click Save to keep it`,
+      variant: 'success',
+    })
+  }
 
   const updateProject = useUpdateProject(id ?? '')
   const deleteProject = useDeleteProject()
@@ -483,8 +525,82 @@ export function ProjectDetailPage() {
         <TabsContent value="activity">{id && <ProjectActivityFeed projectId={id} />}</TabsContent>
 
         <TabsContent value="workflow">
-          {id && workflow ? (
-            <WorkflowSettingsForm projectId={id} workflow={workflow} canManage={canManage} />
+          {id && tabWorkflow ? (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-end gap-3">
+                  <FormField label="Issue type" htmlFor="workflow-issue-type-select">
+                    <Select value={workflowIssueType} onValueChange={handleWorkflowIssueTypeChange}>
+                      <SelectTrigger id="workflow-issue-type-select" className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={DEFAULT_WORKFLOW_OPTION}>
+                          Default (project-wide)
+                        </SelectItem>
+                        {resolveIssueTypes(project).map((t) => (
+                          <SelectItem key={t.name} value={t.name}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                  {canManage && workflowTemplates && workflowTemplates.length > 0 && (
+                    <FormField label="Use a template" htmlFor="workflow-template-select">
+                      <Select value="" onValueChange={applyWorkflowTemplate}>
+                        <SelectTrigger id="workflow-template-select" className="w-48">
+                          <SelectValue placeholder="Choose a template…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {workflowTemplates.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              {t.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormField>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 rounded-md border p-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={workflowView === 'list' ? 'default' : 'ghost'}
+                    onClick={() => setWorkflowView('list')}
+                  >
+                    List
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={workflowView === 'visual' ? 'default' : 'ghost'}
+                    onClick={() => setWorkflowView('visual')}
+                  >
+                    Visual
+                  </Button>
+                </div>
+              </div>
+
+              {workflowView === 'list' ? (
+                <WorkflowSettingsForm
+                  key={`${workflowIssueType}-${templateDraft ? 'template' : 'live'}-list`}
+                  projectId={id}
+                  workflow={templateDraft ?? tabWorkflow}
+                  canManage={canManage}
+                  issueType={effectiveWorkflowIssueType}
+                />
+              ) : (
+                <WorkflowCanvas
+                  key={`${workflowIssueType}-${templateDraft ? 'template' : 'live'}-visual`}
+                  projectId={id}
+                  workflow={templateDraft ?? tabWorkflow}
+                  canManage={canManage}
+                  issueType={effectiveWorkflowIssueType}
+                />
+              )}
+            </div>
           ) : (
             <CardSkeleton />
           )}

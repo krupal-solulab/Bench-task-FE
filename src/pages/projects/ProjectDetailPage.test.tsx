@@ -270,4 +270,68 @@ describe('ProjectDetailPage', () => {
     expect(await screen.findByText('Sprint 1')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start sprint' })).toBeInTheDocument()
   })
+
+  describe('Workflow tab (Workflow Engine v2)', () => {
+    const DEFAULT_WORKFLOW_BODY = {
+      statuses: [
+        { name: 'Todo', category: 'To Do' },
+        { name: 'Done', category: 'Done' },
+      ],
+      transitions: [{ from: 'Todo', to: 'Done' }],
+      initialStatus: 'Todo',
+    }
+
+    beforeEach(() => {
+      server.use(
+        http.get(url('/projects/:id/workflow'), () =>
+          HttpResponse.json({ success: true, data: DEFAULT_WORKFLOW_BODY }),
+        ),
+        http.get(url('/workflow-templates'), () => HttpResponse.json({ success: true, data: [] })),
+      )
+    })
+
+    // Opening a Radix Select's dropdown (to assert on its listed <option> items) reliably hangs
+    // under userEvent in this jsdom+vitest environment - a documented limitation from earlier in
+    // this project (see WorkflowSettingsForm/IssueTypesSettingsForm's own tests, which likewise
+    // never open a Select to enumerate its options). These tests stick to the selector's default
+    // rendered value and to plain button clicks (the List/Visual toggle), never opening the menu.
+    it('shows an issue-type selector defaulting to "Default (project-wide)", and a List/Visual toggle defaulting to List', async () => {
+      renderProjectDetail(
+        makeAuthValue({ user: ADMIN, hasRole: (...roles) => roles.includes('Admin') }),
+        '/projects/p-1?tab=workflow',
+      )
+
+      await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+      expect(await screen.findByText('Default (project-wide)')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Save workflow' })).toBeInTheDocument()
+      expect(screen.queryByTestId('workflow-canvas')).not.toBeInTheDocument()
+    })
+
+    it('switches to the Visual view and shows the workflow canvas', async () => {
+      const user = userEvent.setup()
+      renderProjectDetail(
+        makeAuthValue({ user: ADMIN, hasRole: (...roles) => roles.includes('Admin') }),
+        '/projects/p-1?tab=workflow',
+      )
+
+      await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+      await screen.findByText('Default (project-wide)')
+      await user.click(screen.getByRole('button', { name: 'Visual' }))
+
+      expect(await screen.findByTestId('workflow-canvas')).toBeInTheDocument()
+    })
+
+    it('a non-managing member sees the workflow read-only, with no Save/Reset/Visual controls', async () => {
+      renderProjectDetail(
+        makeAuthValue({ user: OTHER_DEV, hasRole: () => false }),
+        '/projects/p-1?tab=workflow',
+      )
+
+      await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+      await screen.findByText('Default (project-wide)')
+
+      expect(screen.queryByRole('button', { name: 'Save workflow' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Visual' })).toBeInTheDocument()
+    })
+  })
 })

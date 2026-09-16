@@ -16,11 +16,16 @@ import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
 import { STATUS_CATEGORIES } from '@/types/workflow.types'
 import type { Workflow, WorkflowStatus, WorkflowTransition } from '@/types/workflow.types'
+import { ORG_ROLES } from '@/types/user.types'
+import type { OrgRole } from '@/types/user.types'
 
 export interface WorkflowSettingsFormProps {
   projectId: string
   workflow: Workflow
   canManage: boolean
+  /** When set, this form reads/writes that issue type's workflow override instead of the
+   * project-wide default (Workflow Engine v2's per-issue-type workflows). Omit for the default. */
+  issueType?: string
 }
 
 /** A settings form for a project's custom workflow: its status list (name + category) and the
@@ -30,13 +35,14 @@ export function WorkflowSettingsForm({
   projectId,
   workflow,
   canManage,
+  issueType,
 }: WorkflowSettingsFormProps) {
   const [statuses, setStatuses] = useState<WorkflowStatus[]>(workflow.statuses)
   const [transitions, setTransitions] = useState<WorkflowTransition[]>(workflow.transitions)
   const [initialStatus, setInitialStatus] = useState(workflow.initialStatus)
 
-  const updateWorkflow = useUpdateWorkflow(projectId)
-  const resetWorkflow = useResetWorkflow(projectId)
+  const updateWorkflow = useUpdateWorkflow(projectId, issueType)
+  const resetWorkflow = useResetWorkflow(projectId, issueType)
   const { showToast } = useToast()
 
   function applyWorkflow(next: Workflow) {
@@ -77,6 +83,22 @@ export function WorkflowSettingsForm({
     } else {
       setTransitions(transitions.filter((t) => !(t.from === from && t.to === to)))
     }
+  }
+
+  function updateTransitionRule(
+    from: string,
+    to: string,
+    patch: Partial<Pick<WorkflowTransition, 'allowedRoles' | 'requireComment'>>,
+  ) {
+    setTransitions(
+      transitions.map((t) => (t.from === from && t.to === to ? { ...t, ...patch } : t)),
+    )
+  }
+
+  function toggleAllowedRole(from: string, to: string, role: OrgRole, checked: boolean) {
+    const current = transitions.find((t) => t.from === from && t.to === to)?.allowedRoles ?? []
+    const next = checked ? [...current, role] : current.filter((r) => r !== role)
+    updateTransitionRule(from, to, { allowedRoles: next.length ? next : undefined })
   }
 
   const validStatusNames = statuses.map((s) => s.name.trim()).filter(Boolean)
@@ -241,6 +263,61 @@ export function WorkflowSettingsForm({
           </table>
         </div>
       </div>
+
+      {transitions.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="font-medium">Transition rules</h3>
+          <p className="text-xs text-muted-foreground">
+            Optionally restrict who can make a transition (Condition) or require a comment on the
+            task first (Validator). Leave unrestricted for no gating.
+          </p>
+          <div className="space-y-3">
+            {transitions.map((t) => (
+              <div key={`${t.from}->${t.to}`} className="rounded border p-3">
+                <p className="mb-2 text-sm font-medium">
+                  {t.from} → {t.to}
+                </p>
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">Allowed roles:</span>
+                    {ORG_ROLES.map((role) => (
+                      <label
+                        key={role}
+                        className="flex items-center gap-1 text-xs"
+                        htmlFor={`transition-role-${t.from}-${t.to}-${role}`}
+                      >
+                        <Checkbox
+                          id={`transition-role-${t.from}-${t.to}-${role}`}
+                          aria-label={`Allow ${role} to make ${t.from} to ${t.to}`}
+                          checked={t.allowedRoles?.includes(role) ?? false}
+                          onCheckedChange={(checked) =>
+                            toggleAllowedRole(t.from, t.to, role, checked === true)
+                          }
+                        />
+                        {role}
+                      </label>
+                    ))}
+                  </div>
+                  <label
+                    className="flex items-center gap-1 text-xs"
+                    htmlFor={`transition-comment-${t.from}-${t.to}`}
+                  >
+                    <Checkbox
+                      id={`transition-comment-${t.from}-${t.to}`}
+                      aria-label={`Require a comment before ${t.from} to ${t.to}`}
+                      checked={t.requireComment ?? false}
+                      onCheckedChange={(checked) =>
+                        updateTransitionRule(t.from, t.to, { requireComment: checked === true })
+                      }
+                    />
+                    Require a comment first
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between border-t pt-4">
         <Button

@@ -1,4 +1,4 @@
-import { Building2, ChevronsLeft, ChevronsRight, ScrollText } from 'lucide-react'
+import { Building2, ChevronsLeft, ChevronsRight, ScrollText, Workflow } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
@@ -13,6 +13,7 @@ interface NavItem {
 // No role filtering here — the whole /platform area is already gated by PlatformOnlyRoute.
 const NAV_ITEMS: NavItem[] = [
   { to: '/platform/organizations', label: 'Organizations', icon: Building2 },
+  { to: '/platform/workflow-templates', label: 'Workflow Templates', icon: Workflow },
   { to: '/platform/logs', label: 'API Logs', icon: ScrollText },
 ]
 
