@@ -183,4 +183,29 @@ describe('PlatformApiLogsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Retry' }))
     await waitFor(() => expect(screen.getByText('No API activity yet')).toBeInTheDocument())
   })
+
+  it('opens a detail modal with the redacted request/response body on row click (Role-surface polish)', async () => {
+    mockOrganizations()
+    mockLogs([makeLog()])
+    server.use(
+      http.get(url('/platform/logs/log-1'), () =>
+        HttpResponse.json({
+          success: true,
+          data: makeLog({
+            requestBody: { email: 'a@a.com', password: '[REDACTED]' },
+            responseBody: { accessToken: '[REDACTED]' },
+          }),
+        }),
+      ),
+    )
+    const user = userEvent.setup()
+    renderPage()
+
+    await waitFor(() => expect(screen.getByText('/api/v1/projects')).toBeInTheDocument())
+    await user.click(screen.getByText('/api/v1/projects'))
+
+    expect(await screen.findByText('API log entry')).toBeInTheDocument()
+    expect(screen.getByText(/"password": "\[REDACTED\]"/)).toBeInTheDocument()
+    expect(screen.getByText(/"accessToken": "\[REDACTED\]"/)).toBeInTheDocument()
+  })
 })

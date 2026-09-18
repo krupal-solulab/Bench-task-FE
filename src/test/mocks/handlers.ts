@@ -247,4 +247,17 @@ export const handlers = [
   ),
 
   http.get(url('/saved-filters'), () => HttpResponse.json(ok([]))),
+
+  http.get(url('/canned-responses'), () => HttpResponse.json(ok([]))),
+
+  http.get(url('/platform/integrations/health'), () =>
+    HttpResponse.json(
+      ok([
+        { name: 'MongoDB', status: 'ok', detail: 'Reachable.' },
+        { name: 'Redis', status: 'ok', detail: 'Reachable.' },
+        { name: 'Object storage (S3/MinIO)', status: 'ok', detail: 'Reachable.' },
+        { name: 'Email', status: 'stub', detail: 'Logging-only stub.' },
+      ]),
+    ),
+  ),
 ]

@@ -1,4 +1,12 @@
-import { Building2, ChevronsLeft, ChevronsRight, ScrollText, Workflow } from 'lucide-react'
+import {
+  Activity,
+  Building2,
+  ChevronsLeft,
+  ChevronsRight,
+  CreditCard,
+  ScrollText,
+  Workflow,
+} from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
@@ -15,6 +23,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/platform/organizations', label: 'Organizations', icon: Building2 },
   { to: '/platform/workflow-templates', label: 'Workflow Templates', icon: Workflow },
   { to: '/platform/logs', label: 'API Logs', icon: ScrollText },
+  { to: '/platform/integrations', label: 'Integration Health', icon: Activity },
+  { to: '/platform/billing', label: 'Billing Overview', icon: CreditCard },
 ]
 
 export function PlatformSidebar() {

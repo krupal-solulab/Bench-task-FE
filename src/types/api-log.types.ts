@@ -23,6 +23,10 @@ export interface ApiLogEntry {
   userAgent: string | null
   errorMessage: string | null
   createdAt: string
+  // Only present on the single-entry detail fetch (GET /platform/logs/:id) - the list endpoint
+  // never returns these, to keep the existing table's payload size unchanged.
+  requestBody?: unknown
+  responseBody?: unknown
 }
 
 export interface ApiLogListQuery {

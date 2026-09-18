@@ -14,11 +14,15 @@ import { MyTasksPage } from '@/pages/tasks/MyTasksPage'
 import { TaskDetailPage } from '@/pages/tasks/TaskDetailPage'
 import { UsersPage } from '@/pages/admin/UsersPage'
 import { PermissionSchemesPage } from '@/pages/admin/PermissionSchemesPage'
+import { BillingPage } from '@/pages/admin/BillingPage'
 import { ProfilePage } from '@/pages/ProfilePage'
+import { CannedResponsesPage } from '@/pages/CannedResponsesPage'
 import { PlatformOrganizationsListPage } from '@/pages/platform/PlatformOrganizationsListPage'
 import { PlatformOrganizationDetailPage } from '@/pages/platform/PlatformOrganizationDetailPage'
 import { PlatformApiLogsPage } from '@/pages/platform/PlatformApiLogsPage'
 import { PlatformWorkflowTemplatesPage } from '@/pages/platform/PlatformWorkflowTemplatesPage'
+import { PlatformIntegrationHealthPage } from '@/pages/platform/PlatformIntegrationHealthPage'
+import { PlatformBillingPage } from '@/pages/platform/PlatformBillingPage'
 import { ForbiddenPage } from '@/pages/errors/ForbiddenPage'
 import { NotFoundPage } from '@/pages/errors/NotFoundPage'
 
@@ -38,11 +42,13 @@ export function AppRouter() {
             <Route path="/tasks/my-tasks" element={<MyTasksPage />} />
             <Route path="/tasks/:id" element={<TaskDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/canned-responses" element={<CannedResponsesPage />} />
             <Route path="/403" element={<ForbiddenPage />} />
 
             <Route element={<RoleRoute roles={['Admin']} />}>
               <Route path="/admin/users" element={<UsersPage />} />
               <Route path="/admin/permission-schemes" element={<PermissionSchemesPage />} />
+              <Route path="/admin/billing" element={<BillingPage />} />
             </Route>
           </Route>
         </Route>
@@ -60,6 +66,8 @@ export function AppRouter() {
               path="/platform/workflow-templates"
               element={<PlatformWorkflowTemplatesPage />}
             />
+            <Route path="/platform/integrations" element={<PlatformIntegrationHealthPage />} />
+            <Route path="/platform/billing" element={<PlatformBillingPage />} />
           </Route>
         </Route>
       </Route>

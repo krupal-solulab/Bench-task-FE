@@ -1,9 +1,11 @@
 import {
   ChevronsLeft,
   ChevronsRight,
+  CreditCard,
   LayoutDashboard,
   ListChecks,
   Lock,
+  MessageSquareText,
   ShieldCheck,
   FolderKanban,
 } from 'lucide-react'
@@ -25,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/projects', label: 'Projects', icon: FolderKanban },
   { to: '/tasks/my-tasks', label: 'My Tasks', icon: ListChecks },
+  { to: '/canned-responses', label: 'Canned Responses', icon: MessageSquareText },
   { to: '/admin/users', label: 'Admin', icon: ShieldCheck, roles: ['Admin'] },
   {
     to: '/admin/permission-schemes',
@@ -32,6 +35,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: Lock,
     roles: ['Admin'],
   },
+  { to: '/admin/billing', label: 'Billing', icon: CreditCard, roles: ['Admin'] },
 ]
 
 export function Sidebar() {

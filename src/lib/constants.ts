@@ -126,6 +126,8 @@ export const queryKeys = {
   platform: {
     stats: ['platform', 'stats'] as const,
     logs: (filters: unknown) => ['platform', 'logs', filters] as const,
+    logDetail: (id: string) => ['platform', 'logs', 'detail', id] as const,
+    integrationHealth: ['platform', 'integration-health'] as const,
   },
   dashboard: {
     all: ['dashboard'] as const,
@@ -152,5 +154,8 @@ export const queryKeys = {
   },
   permissionSchemes: {
     all: ['permission-schemes'] as const,
+  },
+  cannedResponses: {
+    all: ['canned-responses'] as const,
   },
 } as const

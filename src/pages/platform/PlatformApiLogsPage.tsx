@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/common/Button'
 import { SearchInput } from '@/components/common/SearchInput'
@@ -11,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ApiLogTable } from '@/components/platform/ApiLogTable'
+import { ApiLogDetailModal } from '@/components/platform/ApiLogDetailModal'
 import { useApiLogs } from '@/hooks/queries/useApiLogs'
 import { useOrganizations } from '@/hooks/queries/useOrganizations'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -26,6 +28,7 @@ import {
 const ALL = '__all__'
 
 export function PlatformApiLogsPage() {
+  const [selectedLogId, setSelectedLogId] = useState<string | null>(null)
   // Pagination and filters are read from a single useQueryParams call (rather than a separate
   // usePagination() + useQueryParams() pair) - two independent hook instances each capture their
   // own stale snapshot of the URL, so calling their setters back-to-back (as filter changes need
@@ -196,6 +199,7 @@ export function PlatformApiLogsPage() {
         onRetry={() => void refetch()}
         hasActiveFilters={hasActiveFilters}
         onClearFilters={handleClear}
+        onRowClick={(log) => setSelectedLogId(log.id)}
       />
 
       {data && (
@@ -208,6 +212,11 @@ export function PlatformApiLogsPage() {
           onLimitChange={setLimit}
         />
       )}
+
+      <ApiLogDetailModal
+        logId={selectedLogId}
+        onOpenChange={(open) => !open && setSelectedLogId(null)}
+      />
     </div>
   )
 }

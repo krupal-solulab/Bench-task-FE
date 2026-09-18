@@ -12,6 +12,7 @@ export interface ApiLogTableProps {
   onRetry: () => void
   hasActiveFilters?: boolean
   onClearFilters?: () => void
+  onRowClick?: (log: ApiLogEntry) => void
 }
 
 function statusBadgeClass(statusCode: number): string {
@@ -50,6 +51,7 @@ export function ApiLogTable({
   onRetry,
   hasActiveFilters,
   onClearFilters,
+  onRowClick,
 }: ApiLogTableProps) {
   const columns: DataTableColumn<ApiLogEntry>[] = [
     {
@@ -118,6 +120,7 @@ export function ApiLogTable({
       isError={isError}
       errorMessage={errorMessage}
       onRetry={onRetry}
+      onRowClick={onRowClick}
       emptyState={
         <EmptyState
           title={hasActiveFilters ? 'No results for these filters' : 'No API activity yet'}

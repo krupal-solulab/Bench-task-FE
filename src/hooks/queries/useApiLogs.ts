@@ -10,3 +10,11 @@ export function useApiLogs(query: ApiLogListQuery) {
     placeholderData: (prev) => prev,
   })
 }
+
+export function useApiLogDetail(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.platform.logDetail(id ?? ''),
+    queryFn: () => apiLogsService.getById(id!),
+    enabled: !!id,
+  })
+}
