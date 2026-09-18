@@ -8,6 +8,7 @@ import type {
   CustomFieldOverrideByType,
   MemberPermissions,
   ProjectStatus,
+  SlaPolicyEntry,
   UpdateProjectPayload,
 } from '@/types/project.types'
 import type { Workflow } from '@/types/workflow.types'
@@ -198,6 +199,16 @@ export function useUpdateNotificationScheme(id: string) {
     onSuccess: (project) => {
       queryClient.setQueryData(queryKeys.projects.detail(id), project)
       invalidateAfterFieldsChange(queryClient, id)
+    },
+  })
+}
+
+export function useUpdateSlaPolicy(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (entries: SlaPolicyEntry[]) => projectsService.updateSlaPolicy(id, entries),
+    onSuccess: (entries) => {
+      queryClient.setQueryData(queryKeys.projects.slaPolicy(id), entries)
     },
   })
 }

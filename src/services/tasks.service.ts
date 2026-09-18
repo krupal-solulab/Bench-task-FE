@@ -5,6 +5,7 @@ import type {
   Task,
   TaskActivityEntry,
   TaskListQuery,
+  TaskSearchQuery,
   UpdateTaskAssigneePayload,
   UpdateTaskPayload,
   UpdateTaskRankPayload,
@@ -32,6 +33,8 @@ export const tasksService = {
 
   myTasks: (query: TaskListQuery) =>
     apiGetPaginated<Task>('/tasks/my-tasks', toTaskListParams(query)),
+
+  search: (query: TaskSearchQuery) => apiGetPaginated<Task>('/tasks/search', query),
 
   get: (id: string) => apiGet<Task>(`/tasks/${id}`),
 

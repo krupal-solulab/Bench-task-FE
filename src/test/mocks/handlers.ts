@@ -139,6 +139,18 @@ export const handlers = [
     const project = mockProjects.find((p) => p.id === params.id)
     return HttpResponse.json(ok(project?.customFields ?? []))
   }),
+  // No project in the default fixtures has configured its own SLA policy, so every project's
+  // effective policy is just the system default (mirrors resolveSlaPolicy's own fallback).
+  http.get(url('/projects/:id/sla-policy'), () =>
+    HttpResponse.json(
+      ok([
+        { priority: 'P1', resolutionHours: 8 },
+        { priority: 'P2', resolutionHours: 24 },
+        { priority: 'P3', resolutionHours: 72 },
+      ]),
+    ),
+  ),
+  http.get(url('/projects/:id/reports/epic-progress'), () => HttpResponse.json(ok([]))),
 
   http.get(url('/tasks'), () => HttpResponse.json(paginated(mockTasks))),
   http.get(url('/tasks/my-tasks'), () => HttpResponse.json(paginated(mockTasks))),
@@ -214,6 +226,19 @@ export const handlers = [
       ),
     ),
   ),
+  http.get(url('/dashboard/sla-compliance'), () =>
+    HttpResponse.json(
+      ok([
+        { priority: 'P1', total: 0, compliant: 0, breached: 0, avgResolutionHours: null },
+        { priority: 'P2', total: 0, compliant: 0, breached: 0, avgResolutionHours: null },
+        { priority: 'P3', total: 0, compliant: 0, breached: 0, avgResolutionHours: null },
+      ]),
+    ),
+  ),
+  http.get(url('/dashboard/velocity-trend'), () =>
+    HttpResponse.json(ok({ points: [], hasStoryPoints: false })),
+  ),
+  http.get(url('/dashboard/active-sprints-health'), () => HttpResponse.json(ok([]))),
   http.get(url('/dashboard/preferences'), () =>
     HttpResponse.json(ok({ hiddenWidgets: [], widgetOrder: [] })),
   ),

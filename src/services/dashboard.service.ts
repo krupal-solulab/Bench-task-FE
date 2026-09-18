@@ -1,14 +1,17 @@
 import { apiGet, apiPut } from './api-client'
 import type {
+  ActiveSprintHealthEntry,
   DashboardPreference,
   DashboardScopeQuery,
   DashboardSummary,
   DeveloperWorkloadPoint,
   OverdueSummaryItem,
   ProjectsByStatusPoint,
+  SlaComplianceEntry,
   TaskTrendPoint,
   TasksByPriorityPoint,
   TasksStatusPoint,
+  VelocityTrendResult,
   WorkloadSortBy,
 } from '@/types/dashboard.types'
 
@@ -32,6 +35,15 @@ export const dashboardService = {
 
   taskTrend: (query: DashboardScopeQuery & { days?: number }) =>
     apiGet<TaskTrendPoint[]>('/dashboard/task-trend', query),
+
+  slaCompliance: (query: DashboardScopeQuery) =>
+    apiGet<SlaComplianceEntry[]>('/dashboard/sla-compliance', query),
+
+  velocityTrend: (query: DashboardScopeQuery) =>
+    apiGet<VelocityTrendResult>('/dashboard/velocity-trend', query),
+
+  activeSprintsHealth: (query: DashboardScopeQuery) =>
+    apiGet<ActiveSprintHealthEntry[]>('/dashboard/active-sprints-health', query),
 
   getPreferences: () => apiGet<DashboardPreference>('/dashboard/preferences'),
 

@@ -70,6 +70,9 @@ describe('DashboardPage', () => {
       'Task trend',
       'Developer workload',
       'Overdue tasks',
+      'SLA compliance',
+      'Velocity trend',
+      'Active sprints health',
     ])
   })
 

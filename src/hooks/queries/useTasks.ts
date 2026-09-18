@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { QUERY_STALE_TIME, queryKeys } from '@/lib/constants'
 import { tasksService } from '@/services/tasks.service'
-import type { TaskListQuery } from '@/types/task.types'
+import type { TaskListQuery, TaskSearchQuery } from '@/types/task.types'
 
 export function useTasks(query: TaskListQuery) {
   return useQuery({
@@ -43,5 +43,15 @@ export function useEpicProgress(id: string | undefined, options: { enabled?: boo
     queryKey: queryKeys.tasks.epicProgress(id ?? ''),
     queryFn: () => tasksService.epicProgress(id!),
     enabled: !!id && (options.enabled ?? true),
+  })
+}
+
+/** JQL-lite compound search (Search/Dashboards v2) - disabled until a query has actually been
+ * submitted (a partial/empty `jql` while the user is still typing should not fire a request). */
+export function useTaskSearch(query: TaskSearchQuery | null) {
+  return useQuery({
+    queryKey: queryKeys.tasks.search(query),
+    queryFn: () => tasksService.search(query!),
+    enabled: !!query?.jql,
   })
 }

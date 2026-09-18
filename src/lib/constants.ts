@@ -46,6 +46,8 @@ export const CHART_COLORS = {
   priority: { P1: '#ef4444', P2: '#f59e0b', P3: '#94a3b8' },
   trend: { created: '#3b82f6', completed: '#10b981' },
   burndown: { ideal: '#94a3b8', actual: '#3b82f6' },
+  sla: { compliant: '#10b981', breached: '#ef4444' },
+  velocityTrend: '#3b82f6',
   single: '#3b82f6',
 } as const
 
@@ -83,6 +85,9 @@ export const queryKeys = {
       ['projects', 'detail', id, 'custom-fields', 'effective', issueType ?? null] as const,
     customFieldOverride: (id: string, issueType: string) =>
       ['projects', 'detail', id, 'custom-field-overrides', issueType] as const,
+    slaPolicy: (id: string) => ['projects', 'detail', id, 'sla-policy'] as const,
+    epicProgressReport: (id: string) =>
+      ['projects', 'detail', id, 'reports', 'epic-progress'] as const,
   },
   workflowTemplates: {
     all: ['workflow-templates'] as const,
@@ -95,6 +100,7 @@ export const queryKeys = {
     myTasks: (filters: unknown) => ['tasks', 'my-tasks', filters] as const,
     activity: (id: string) => ['tasks', 'detail', id, 'activity'] as const,
     epicProgress: (id: string) => ['tasks', 'detail', id, 'epic-progress'] as const,
+    search: (filters: unknown) => ['tasks', 'search', filters] as const,
   },
   comments: {
     list: (taskId: string, filters: unknown) => ['comments', taskId, 'list', filters] as const,
@@ -130,6 +136,9 @@ export const queryKeys = {
     developerWorkload: (scope: unknown) => ['dashboard', 'developer-workload', scope] as const,
     overdueSummary: (scope: unknown) => ['dashboard', 'overdue-summary', scope] as const,
     taskTrend: (scope: unknown) => ['dashboard', 'task-trend', scope] as const,
+    slaCompliance: (scope: unknown) => ['dashboard', 'sla-compliance', scope] as const,
+    velocityTrend: (scope: unknown) => ['dashboard', 'velocity-trend', scope] as const,
+    activeSprintsHealth: (scope: unknown) => ['dashboard', 'active-sprints-health', scope] as const,
     preferences: ['dashboard', 'preferences'] as const,
   },
   savedFilters: {

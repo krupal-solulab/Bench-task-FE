@@ -2,6 +2,7 @@ import type { SortOrder } from './api.types'
 import type { User } from './user.types'
 import type { IssueTypeDefinition } from './issue-type.types'
 import type { NotificationSchemeRule } from './notification-scheme.types'
+import type { TaskPriority } from './task.types'
 
 export const PROJECT_STATUSES = ['Planning', 'In Progress', 'Completed'] as const
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number]
@@ -61,6 +62,15 @@ export interface CustomFieldOverrideByType {
   hiddenFieldIds: string[]
   requiredFieldIds: string[]
   optionalFieldIds: string[]
+}
+
+// A project's SLA resolution-time targets (Search/Dashboards v2) - fetched/set via dedicated
+// endpoints, same as workflow/custom-field overrides above; not embedded on `Project`. GET always
+// returns the resolved (non-empty) policy - the system default until a project configures its
+// own; PUT with an empty array resets a project back to that default.
+export interface SlaPolicyEntry {
+  priority: TaskPriority
+  resolutionHours: number
 }
 
 export const AUTOMATION_TRIGGER_TYPES = ['IssueCreated', 'StatusChanged'] as const

@@ -10,6 +10,9 @@ import { TaskPriorityChart } from '@/components/dashboard/TaskPriorityChart'
 import { DeveloperWorkloadChart } from '@/components/dashboard/DeveloperWorkloadChart'
 import { TaskTrendChart } from '@/components/dashboard/TaskTrendChart'
 import { OverdueList } from '@/components/dashboard/OverdueList'
+import { SlaComplianceChart } from '@/components/dashboard/SlaComplianceChart'
+import { VelocityTrendChart } from '@/components/dashboard/VelocityTrendChart'
+import { ActiveSprintsHealthList } from '@/components/dashboard/ActiveSprintsHealthList'
 import { DashboardCustomizeForm } from '@/components/dashboard/DashboardCustomizeForm'
 import { StaggerContainer, StaggerItem } from '@/components/common/Stagger'
 import {
@@ -40,6 +43,9 @@ const WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   taskTrend: 'Task Trend',
   developerWorkload: 'Developer Workload',
   overdueList: 'Overdue Tasks',
+  slaCompliance: 'SLA Compliance',
+  velocityTrend: 'Velocity Trend',
+  activeSprintsHealth: 'Active Sprints Health',
 }
 
 function widgetRegistry(scope: { projectId?: string }): Record<DashboardWidgetId, ReactNode> {
@@ -50,6 +56,9 @@ function widgetRegistry(scope: { projectId?: string }): Record<DashboardWidgetId
     taskTrend: <TaskTrendChart scope={scope} />,
     developerWorkload: <DeveloperWorkloadChart scope={scope} />,
     overdueList: <OverdueList scope={scope} />,
+    slaCompliance: <SlaComplianceChart scope={scope} />,
+    velocityTrend: <VelocityTrendChart scope={scope} />,
+    activeSprintsHealth: <ActiveSprintsHealthList scope={scope} />,
   }
 }
 

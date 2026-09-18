@@ -39,6 +39,8 @@ import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm
 import { WorkflowCanvas } from '@/components/projects/WorkflowCanvas'
 import { FieldsSettingsForm } from '@/components/projects/FieldsSettingsForm'
 import { CustomFieldOverridesForm } from '@/components/projects/CustomFieldOverridesForm'
+import { SlaPolicySettingsForm } from '@/components/projects/SlaPolicySettingsForm'
+import { EpicProgressTable } from '@/components/projects/EpicProgressTable'
 import { IssueTypesSettingsForm } from '@/components/projects/IssueTypesSettingsForm'
 import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
 import { NotificationSchemeForm } from '@/components/projects/NotificationSchemeForm'
@@ -204,6 +206,9 @@ export function ProjectDetailPage() {
 
   const canManage = hasRole('Admin') || (hasRole('Manager') && project.owner.id === user?.id)
   const memberIds = project.members.map((m) => m.user.id)
+  const memberNameById = Object.fromEntries(
+    [project.owner, ...project.members.map((m) => m.user)].map((u) => [u.id, u.name]),
+  )
   // Per-project grants (see Phase 3's permission schemes) can only ever ADD capability beyond
   // canManage, never replace it - canManage still gates every project-administration action.
   const myGrant = project.members.find((m) => m.user.id === user?.id)?.permissions ?? null
@@ -332,6 +337,7 @@ export function ProjectDetailPage() {
             <TabsTrigger value="issue-types">Issue Types</TabsTrigger>
             <TabsTrigger value="automation">Automation</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="sla">SLA</TabsTrigger>
             <TabsTrigger value="permissions">Permissions</TabsTrigger>
           </TabsList>
           {(canManageSprintsHere || canCreateTaskHere) && (
@@ -441,6 +447,7 @@ export function ProjectDetailPage() {
             <SavedFiltersMenu
               scope="project"
               projectId={id}
+              memberNameById={memberNameById}
               currentQuery={{
                 ...filters,
                 labels: labelFilter,
@@ -563,6 +570,7 @@ export function ProjectDetailPage() {
               </FormField>
               <SprintBurndownChart projectId={id} sprintId={effectiveReportsSprintId} />
               <SprintVelocityChart projectId={id} />
+              <EpicProgressTable projectId={id} />
             </>
           )}
         </TabsContent>
@@ -670,6 +678,10 @@ export function ProjectDetailPage() {
             notificationScheme={project.notificationScheme}
             canManage={canManage}
           />
+        </TabsContent>
+
+        <TabsContent value="sla">
+          <SlaPolicySettingsForm projectId={id ?? ''} canManage={canManage} />
         </TabsContent>
 
         <TabsContent value="permissions">

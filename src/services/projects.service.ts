@@ -10,8 +10,10 @@ import type {
   ProjectListQuery,
   ProjectMember,
   ProjectStats,
+  SlaPolicyEntry,
   UpdateProjectPayload,
 } from '@/types/project.types'
+import type { EpicProgressReportEntry } from '@/types/task.types'
 import type { ProjectStatus } from '@/types/project.types'
 import type { IssueTypeDefinition } from '@/types/issue-type.types'
 import type { PageQuery } from '@/types/api.types'
@@ -108,4 +110,12 @@ export const projectsService = {
 
   updateNotificationScheme: (id: string, rules: NotificationSchemeRule[]) =>
     apiPut<Project>(`/projects/${id}/notification-scheme`, { rules }),
+
+  getSlaPolicy: (id: string) => apiGet<SlaPolicyEntry[]>(`/projects/${id}/sla-policy`),
+
+  updateSlaPolicy: (id: string, entries: SlaPolicyEntry[]) =>
+    apiPut<SlaPolicyEntry[]>(`/projects/${id}/sla-policy`, { entries }),
+
+  epicProgressReport: (id: string) =>
+    apiGet<EpicProgressReportEntry[]>(`/projects/${id}/reports/epic-progress`),
 }

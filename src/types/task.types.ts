@@ -132,6 +132,23 @@ export interface EpicProgress {
   progress: number
 }
 
+export interface EpicProgressReportEntry {
+  epicId: string
+  issueKey: string | null
+  title: string
+  linkedIssueCount: number
+  doneCount: number
+  progress: number
+}
+
+/** A JQL-lite compound query (Search/Dashboards v2) - see the backend's jql.util.ts for the
+ * supported grammar. A separate, opt-in mode alongside the fixed-shape TaskListQuery above. */
+export interface TaskSearchQuery {
+  jql: string
+  page?: number
+  limit?: number
+}
+
 export interface TaskActivityEntry {
   id: string
   action: string

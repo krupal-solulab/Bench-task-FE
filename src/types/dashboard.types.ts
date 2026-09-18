@@ -59,8 +59,42 @@ export interface OverdueSummaryItem {
   priority: TaskPriority
 }
 
+export interface SlaComplianceEntry {
+  priority: TaskPriority
+  total: number
+  compliant: number
+  breached: number
+  avgResolutionHours: number | null
+}
+
+export interface VelocityTrendPoint {
+  weekStart: string
+  completedPoints: number
+  completedCount: number
+}
+
+export interface VelocityTrendResult {
+  points: VelocityTrendPoint[]
+  hasStoryPoints: boolean
+}
+
+export interface ActiveSprintHealthEntry {
+  sprintId: string
+  sprintName: string
+  projectId: string
+  projectName: string
+  percentTimeElapsed: number
+  percentWorkRemaining: number
+  remainingPoints: number
+  remainingCount: number
+  hasStoryPoints: boolean
+}
+
 // The dashboard's customizable widgets - the top stat-card row is always shown and isn't part of
-// this set. Order here doubles as the default order for anyone with no saved preference.
+// this set. Order here doubles as the default order for anyone with no saved preference. The
+// three Search/Dashboards v2 widgets are appended at the end, so a user with an existing saved
+// order sees them added on (DashboardPage's "stored order ∩ available, then append new ids"
+// logic), not inserted in the middle of their customized layout.
 export const DASHBOARD_WIDGET_IDS = [
   'projectsByStatus',
   'tasksStatus',
@@ -68,6 +102,9 @@ export const DASHBOARD_WIDGET_IDS = [
   'taskTrend',
   'developerWorkload',
   'overdueList',
+  'slaCompliance',
+  'velocityTrend',
+  'activeSprintsHealth',
 ] as const
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number]
 

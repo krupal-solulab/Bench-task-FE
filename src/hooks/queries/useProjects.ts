@@ -94,3 +94,19 @@ export function useCustomFieldOverride(id: string | undefined, issueType: string
     enabled: !!id && !!issueType,
   })
 }
+
+export function useSlaPolicy(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.projects.slaPolicy(id ?? ''),
+    queryFn: () => projectsService.getSlaPolicy(id!),
+    enabled: !!id,
+  })
+}
+
+export function useEpicProgressReport(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.projects.epicProgressReport(id ?? ''),
+    queryFn: () => projectsService.epicProgressReport(id!),
+    enabled: !!id,
+  })
+}

@@ -59,6 +59,30 @@ export function useTaskTrend(scope: DashboardScopeQuery & { days: number }) {
   })
 }
 
+export function useSlaCompliance(scope: DashboardScopeQuery) {
+  return useQuery({
+    queryKey: queryKeys.dashboard.slaCompliance(scope),
+    queryFn: () => dashboardService.slaCompliance(scope),
+    staleTime: QUERY_STALE_TIME.dashboard,
+  })
+}
+
+export function useVelocityTrend(scope: DashboardScopeQuery) {
+  return useQuery({
+    queryKey: queryKeys.dashboard.velocityTrend(scope),
+    queryFn: () => dashboardService.velocityTrend(scope),
+    staleTime: QUERY_STALE_TIME.dashboard,
+  })
+}
+
+export function useActiveSprintsHealth(scope: DashboardScopeQuery) {
+  return useQuery({
+    queryKey: queryKeys.dashboard.activeSprintsHealth(scope),
+    queryFn: () => dashboardService.activeSprintsHealth(scope),
+    staleTime: QUERY_STALE_TIME.dashboard,
+  })
+}
+
 export function useDashboardPreferences() {
   return useQuery({
     queryKey: queryKeys.dashboard.preferences,
