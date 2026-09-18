@@ -364,4 +364,24 @@ describe('ProjectDetailPage', () => {
       ).not.toBeInTheDocument()
     })
   })
+
+  describe('Reports tab (Sprint Reporting Depth)', () => {
+    beforeEach(() => {
+      server.use(
+        http.get(url('/projects/:id/sprints/velocity'), () =>
+          HttpResponse.json({ success: true, data: [] }),
+        ),
+      )
+    })
+
+    it('shows the Velocity chart and a "select a sprint" burndown empty state when no sprint has started', async () => {
+      renderProjectDetail(makeAuthValue(), '/projects/p-1?tab=reports')
+
+      await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+      expect(await screen.findByText('Velocity')).toBeInTheDocument()
+      expect(screen.getByText('No completed sprints yet.')).toBeInTheDocument()
+      expect(screen.getByText('Burndown')).toBeInTheDocument()
+      expect(screen.getByText('Select a sprint to view its burndown.')).toBeInTheDocument()
+    })
+  })
 })

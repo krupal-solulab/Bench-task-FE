@@ -41,3 +41,19 @@ export function useSprintActivity(
     enabled: !!projectId && !!sprintId,
   })
 }
+
+export function useSprintVelocity(projectId: string | undefined, limit?: number) {
+  return useQuery({
+    queryKey: queryKeys.sprints.velocity(projectId ?? '', limit),
+    queryFn: () => sprintsService.velocity(projectId!, limit),
+    enabled: !!projectId,
+  })
+}
+
+export function useSprintBurndown(projectId: string | undefined, sprintId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.sprints.burndown(sprintId ?? ''),
+    queryFn: () => sprintsService.burndown(projectId!, sprintId!),
+    enabled: !!projectId && !!sprintId,
+  })
+}

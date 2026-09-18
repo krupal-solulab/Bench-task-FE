@@ -45,6 +45,7 @@ export const CHART_COLORS = {
   sprintStatus: { Planned: '#64748b', Active: '#3b82f6', Completed: '#10b981' },
   priority: { P1: '#ef4444', P2: '#f59e0b', P3: '#94a3b8' },
   trend: { created: '#3b82f6', completed: '#10b981' },
+  burndown: { ideal: '#94a3b8', actual: '#3b82f6' },
   single: '#3b82f6',
 } as const
 
@@ -100,6 +101,9 @@ export const queryKeys = {
     detail: (id: string) => ['sprints', 'detail', id] as const,
     active: (projectId: string) => ['sprints', 'active', projectId] as const,
     activity: (id: string) => ['sprints', 'detail', id, 'activity'] as const,
+    velocity: (projectId: string, limit?: number) =>
+      ['sprints', 'velocity', projectId, limit] as const,
+    burndown: (id: string) => ['sprints', 'detail', id, 'burndown'] as const,
   },
   attachments: {
     list: (taskId: string, filters: unknown) => ['attachments', taskId, 'list', filters] as const,

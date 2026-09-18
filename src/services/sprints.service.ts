@@ -3,7 +3,9 @@ import type {
   CreateSprintPayload,
   Sprint,
   SprintActivityEntry,
+  SprintBurndownResult,
   SprintListQuery,
+  SprintVelocityEntry,
   UpdateSprintPayload,
 } from '@/types/sprint.types'
 
@@ -36,4 +38,10 @@ export const sprintsService = {
       `/projects/${projectId}/sprints/${sprintId}/activity`,
       query,
     ),
+
+  velocity: (projectId: string, limit?: number) =>
+    apiGet<SprintVelocityEntry[]>(`/projects/${projectId}/sprints/velocity`, { limit }),
+
+  burndown: (projectId: string, sprintId: string) =>
+    apiGet<SprintBurndownResult>(`/projects/${projectId}/sprints/${sprintId}/burndown`),
 }

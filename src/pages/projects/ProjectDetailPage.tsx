@@ -32,6 +32,8 @@ import { SprintForm } from '@/components/sprints/SprintForm'
 import { SprintLifecycleControls } from '@/components/sprints/SprintLifecycleControls'
 import { BacklogBoard } from '@/components/sprints/BacklogBoard'
 import { CalendarView } from '@/components/sprints/CalendarView'
+import { SprintBurndownChart } from '@/components/sprints/SprintBurndownChart'
+import { SprintVelocityChart } from '@/components/sprints/SprintVelocityChart'
 import { EpicsList } from '@/components/tasks/EpicsList'
 import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm'
 import { WorkflowCanvas } from '@/components/projects/WorkflowCanvas'
@@ -168,6 +170,16 @@ export function ProjectDetailPage() {
       variant: 'success',
     })
   }
+
+  // Reports tab: a sprint selector for the Burndown chart (Velocity is always project-wide) -
+  // defaults to the active sprint, falling back to the most recently started sprint if none is
+  // active, but a user's own pick always wins once made.
+  const [reportsSprintId, setReportsSprintId] = useState<string | undefined>(undefined)
+  const mostRecentlyStartedSprint = (sprintsData?.data ?? [])
+    .filter((s) => s.startedAt)
+    .sort((a, b) => (b.startedAt! > a.startedAt! ? 1 : -1))[0]
+  const effectiveReportsSprintId =
+    reportsSprintId ?? activeSprint?.id ?? mostRecentlyStartedSprint?.id
 
   const updateProject = useUpdateProject(id ?? '')
   const deleteProject = useDeleteProject()
@@ -312,6 +324,7 @@ export function ProjectDetailPage() {
             <TabsTrigger value="list">List</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="stats">Stats</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="workflow">Workflow</TabsTrigger>
             <TabsTrigger value="fields">Fields</TabsTrigger>
@@ -521,6 +534,35 @@ export function ProjectDetailPage() {
                 <StatCard label="Completion rate" value={`${stats.completionRate}%`} />
               </StaggerItem>
             </StaggerContainer>
+          )}
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-4">
+          {id && (
+            <>
+              <FormField label="Burndown for" htmlFor="reports-sprint-select">
+                <Select
+                  value={effectiveReportsSprintId ?? ''}
+                  onValueChange={setReportsSprintId}
+                  disabled={(sprintsData?.data ?? []).filter((s) => s.startedAt).length === 0}
+                >
+                  <SelectTrigger id="reports-sprint-select" className="w-64">
+                    <SelectValue placeholder="No started sprints yet" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(sprintsData?.data ?? [])
+                      .filter((s) => s.startedAt)
+                      .map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+              <SprintBurndownChart projectId={id} sprintId={effectiveReportsSprintId} />
+              <SprintVelocityChart projectId={id} />
+            </>
           )}
         </TabsContent>
 

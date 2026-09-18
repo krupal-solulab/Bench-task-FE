@@ -42,3 +42,24 @@ export interface SprintActivityEntry {
   actor: User
   createdAt: string
 }
+
+export interface SprintVelocityEntry {
+  sprintId: string
+  name: string
+  completedAt: string | null
+  completedPoints: number
+  completedCount: number
+}
+
+export interface SprintBurndownPoint {
+  date: string
+  remainingPoints: number
+  remainingCount: number
+  idealRemainingPoints: number
+  idealRemainingCount: number
+}
+
+export interface SprintBurndownResult {
+  points: SprintBurndownPoint[]
+  hasStoryPoints: boolean
+}
