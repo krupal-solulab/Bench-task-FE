@@ -79,6 +79,10 @@ export const queryKeys = {
     workflow: (id: string, issueType?: string) =>
       ['projects', 'detail', id, 'workflow', issueType ?? null] as const,
     labels: (id: string) => ['projects', 'detail', id, 'labels'] as const,
+    effectiveCustomFields: (id: string, issueType?: string) =>
+      ['projects', 'detail', id, 'custom-fields', 'effective', issueType ?? null] as const,
+    customFieldOverride: (id: string, issueType: string) =>
+      ['projects', 'detail', id, 'custom-field-overrides', issueType] as const,
   },
   workflowTemplates: {
     all: ['workflow-templates'] as const,

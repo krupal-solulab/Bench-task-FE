@@ -19,7 +19,12 @@ import { SubtaskChecklist } from '@/components/tasks/SubtaskChecklist'
 import { resolveIssueTypes, standardIssueTypeNames } from '@/types/issue-type.types'
 import { CommentList } from '@/components/comments/CommentList'
 import { useTask } from '@/hooks/queries/useTasks'
-import { useProject, useProjectWorkflow } from '@/hooks/queries/useProjects'
+import {
+  useEffectiveCustomFields,
+  useProject,
+  useProjectWorkflow,
+} from '@/hooks/queries/useProjects'
+import type { CustomFieldDefinition } from '@/types/project.types'
 import {
   useDeleteTask,
   useUpdateTask,
@@ -33,9 +38,20 @@ import { formatDate, formatDateTime } from '@/lib/date'
 import { toApiError } from '@/lib/error'
 import type { TaskFormValues } from '@/schemas/task.schema'
 
-function formatCustomFieldValue(value: unknown): string {
+function formatCustomFieldValue(
+  field: CustomFieldDefinition,
+  value: unknown,
+  userNameById: Map<string, string>,
+): string {
   if (value === null || value === undefined || value === '') return '—'
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  if (field.type === 'Checkbox') return value ? 'Yes' : 'No'
+  if (field.type === 'MultiSelect') {
+    return Array.isArray(value) && value.length > 0 ? value.join(', ') : '—'
+  }
+  if (field.type === 'UserPicker') {
+    // Falls back to the raw id for a member who's since left the project, rather than crashing.
+    return userNameById.get(String(value)) ?? String(value)
+  }
   return String(value)
 }
 
@@ -53,6 +69,10 @@ export function TaskDetailPage() {
   const { data: task, isLoading, isError, error, refetch } = useTask(id)
   const { data: project } = useProject(task?.project.id)
   const { data: workflow } = useProjectWorkflow(task?.project.id)
+  const { data: effectiveCustomFields } = useEffectiveCustomFields(
+    task?.project.id,
+    task?.issueType,
+  )
 
   const updateTask = useUpdateTask(id ?? '')
   const updateAssignee = useUpdateTaskAssignee(id ?? '')
@@ -74,6 +94,12 @@ export function TaskDetailPage() {
   // Per-project grants (see Phase 3's permission schemes) let these diverge for a Developer -
   // Admin/Manager are unaffected since `can(role, 'task:editAny')` already covers every case.
   const myGrant = project?.members.find((m) => m.user.id === user?.id)?.permissions ?? null
+  const userNameById = new Map(
+    project
+      ? [project.owner, ...project.members.map((m) => m.user)].map((u) => [u.id, u.name])
+      : [],
+  )
+  const customFields = effectiveCustomFields ?? project?.customFields ?? []
   const canEditOther = canEditTaskField('other', isAssignee, myGrant)
   const canDeleteTask = canEditTaskField('delete', isAssignee, myGrant)
   const canEditStatus = canEditTaskField('status', isAssignee, myGrant)
@@ -239,13 +265,13 @@ export function TaskDetailPage() {
                 </dt>
                 <dd className="mt-1">{formatDateTime(task.updatedAt)}</dd>
               </div>
-              {project?.customFields.map((field) => (
+              {customFields.map((field) => (
                 <div key={field.id}>
                   <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     {field.name}
                   </dt>
                   <dd className="mt-1">
-                    {formatCustomFieldValue(task.customFieldValues[field.id])}
+                    {formatCustomFieldValue(field, task.customFieldValues[field.id], userNameById)}
                   </dd>
                 </div>
               ))}

@@ -38,6 +38,7 @@ import { EpicsList } from '@/components/tasks/EpicsList'
 import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm'
 import { WorkflowCanvas } from '@/components/projects/WorkflowCanvas'
 import { FieldsSettingsForm } from '@/components/projects/FieldsSettingsForm'
+import { CustomFieldOverridesForm } from '@/components/projects/CustomFieldOverridesForm'
 import { IssueTypesSettingsForm } from '@/components/projects/IssueTypesSettingsForm'
 import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
 import { NotificationSchemeForm } from '@/components/projects/NotificationSchemeForm'
@@ -652,6 +653,7 @@ export function ProjectDetailPage() {
 
         <TabsContent value="fields">
           <FieldsSettingsForm projectId={id ?? ''} project={project} canManage={canManage} />
+          <CustomFieldOverridesForm projectId={id ?? ''} project={project} canManage={canManage} />
         </TabsContent>
 
         <TabsContent value="issue-types">

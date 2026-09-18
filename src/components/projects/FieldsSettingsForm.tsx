@@ -28,6 +28,20 @@ export interface FieldsSettingsFormProps {
 type EditableCustomField = Partial<Pick<CustomFieldDefinition, 'id'>> &
   Omit<CustomFieldDefinition, 'id'>
 
+const FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
+  Text: 'Text',
+  Number: 'Number',
+  Date: 'Date',
+  Dropdown: 'Dropdown',
+  Checkbox: 'Checkbox',
+  MultiSelect: 'Multi-select',
+  UserPicker: 'User picker',
+}
+
+function fieldHasOptions(type: CustomFieldType): boolean {
+  return type === 'Dropdown' || type === 'MultiSelect'
+}
+
 /** A settings form for a project's Components pick-list and Custom Field definitions - mirrors
  * WorkflowSettingsForm's shape, with its own independent save action per section. */
 export function FieldsSettingsForm({ projectId, project, canManage }: FieldsSettingsFormProps) {
@@ -48,7 +62,7 @@ export function FieldsSettingsForm({ projectId, project, canManage }: FieldsSett
   const canSaveFields =
     canManage &&
     fields.every(
-      (f) => f.name.trim().length > 0 && (f.type !== 'Dropdown' || (f.options?.length ?? 0) > 0),
+      (f) => f.name.trim().length > 0 && (!fieldHasOptions(f.type) || (f.options?.length ?? 0) > 0),
     ) &&
     !fieldsHaveDuplicates
 
@@ -129,7 +143,7 @@ export function FieldsSettingsForm({ projectId, project, canManage }: FieldsSett
                 <li key={f.id}>
                   {f.name}{' '}
                   <span className="text-xs">
-                    ({f.type}
+                    ({FIELD_TYPE_LABELS[f.type]}
                     {f.required ? ', required' : ''})
                   </span>
                 </li>
@@ -219,7 +233,7 @@ export function FieldsSettingsForm({ projectId, project, canManage }: FieldsSett
                   onValueChange={(v) =>
                     updateField(index, {
                       type: v as CustomFieldType,
-                      options: v === 'Dropdown' ? (field.options ?? []) : null,
+                      options: fieldHasOptions(v as CustomFieldType) ? (field.options ?? []) : null,
                     })
                   }
                 >
@@ -229,7 +243,7 @@ export function FieldsSettingsForm({ projectId, project, canManage }: FieldsSett
                   <SelectContent>
                     {CUSTOM_FIELD_TYPES.map((t) => (
                       <SelectItem key={t} value={t}>
-                        {t}
+                        {FIELD_TYPE_LABELS[t]}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -253,7 +267,7 @@ export function FieldsSettingsForm({ projectId, project, canManage }: FieldsSett
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              {field.type === 'Dropdown' && (
+              {fieldHasOptions(field.type) && (
                 <TagInput
                   value={field.options ?? []}
                   onChange={(next) => updateField(index, { options: next })}

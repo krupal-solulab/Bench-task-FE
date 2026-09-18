@@ -132,6 +132,13 @@ export const handlers = [
     }
     return HttpResponse.json(ok([...labels]))
   }),
+  // No per-issue-type overrides in the default fixtures - every project's effective fields are
+  // just its project-wide customFields, regardless of issueType (mirrors resolveCustomFields'
+  // own "no override configured" fallback).
+  http.get(url('/projects/:id/custom-fields/effective'), ({ params }) => {
+    const project = mockProjects.find((p) => p.id === params.id)
+    return HttpResponse.json(ok(project?.customFields ?? []))
+  }),
 
   http.get(url('/tasks'), () => HttpResponse.json(paginated(mockTasks))),
   http.get(url('/tasks/my-tasks'), () => HttpResponse.json(paginated(mockTasks))),

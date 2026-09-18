@@ -3,6 +3,7 @@ import type {
   AutomationRule,
   CreateProjectPayload,
   CustomFieldDefinition,
+  CustomFieldOverrideByType,
   MemberPermissions,
   Project,
   ProjectActivityEntry,
@@ -73,6 +74,28 @@ export const projectsService = {
 
   updateCustomFields: (id: string, fields: Array<Partial<CustomFieldDefinition>>) =>
     apiPut<Project>(`/projects/${id}/custom-fields`, { fields }),
+
+  getEffectiveCustomFields: (id: string, issueType?: string) =>
+    apiGet<CustomFieldDefinition[]>(
+      `/projects/${id}/custom-fields/effective`,
+      issueType ? { issueType } : undefined,
+    ),
+
+  getCustomFieldOverride: (id: string, issueType: string) =>
+    apiGet<CustomFieldOverrideByType>(`/projects/${id}/custom-field-overrides`, { issueType }),
+
+  updateCustomFieldOverride: (
+    id: string,
+    issueType: string,
+    override: Partial<Omit<CustomFieldOverrideByType, 'issueType'>>,
+  ) =>
+    apiPut<CustomFieldOverrideByType>(
+      `/projects/${id}/custom-field-overrides?issueType=${encodeURIComponent(issueType)}`,
+      override,
+    ),
+
+  resetCustomFieldOverride: (id: string, issueType: string) =>
+    apiDelete<CustomFieldOverrideByType>(`/projects/${id}/custom-field-overrides`, { issueType }),
 
   updateAutomationRules: (id: string, rules: Array<Partial<AutomationRule>>) =>
     apiPut<Project>(`/projects/${id}/automation-rules`, { rules }),

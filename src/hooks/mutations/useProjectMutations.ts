@@ -5,6 +5,7 @@ import type {
   AutomationRule,
   CreateProjectPayload,
   CustomFieldDefinition,
+  CustomFieldOverrideByType,
   MemberPermissions,
   ProjectStatus,
   UpdateProjectPayload,
@@ -144,6 +145,35 @@ export function useUpdateCustomFields(id: string) {
     onSuccess: (project) => {
       queryClient.setQueryData(queryKeys.projects.detail(id), project)
       invalidateAfterFieldsChange(queryClient, id)
+    },
+  })
+}
+
+export function useUpdateCustomFieldOverride(id: string, issueType: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (override: Partial<Omit<CustomFieldOverrideByType, 'issueType'>>) =>
+      projectsService.updateCustomFieldOverride(id, issueType, override),
+    onSuccess: (override) => {
+      queryClient.setQueryData(queryKeys.projects.customFieldOverride(id, issueType), override)
+      invalidateAfterFieldsChange(queryClient, id)
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.projects.effectiveCustomFields(id, issueType),
+      })
+    },
+  })
+}
+
+export function useResetCustomFieldOverride(id: string, issueType: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => projectsService.resetCustomFieldOverride(id, issueType),
+    onSuccess: (override) => {
+      queryClient.setQueryData(queryKeys.projects.customFieldOverride(id, issueType), override)
+      invalidateAfterFieldsChange(queryClient, id)
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.projects.effectiveCustomFields(id, issueType),
+      })
     },
   })
 }

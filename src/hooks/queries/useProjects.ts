@@ -75,3 +75,22 @@ export function useProjectLabels(id: string | undefined) {
     enabled: !!id,
   })
 }
+
+/** The project's effective custom fields, with any per-issue-type hidden/required override
+ * applied when `issueType` is given (Custom Fields v2). Omitting `issueType` returns the same
+ * project-wide list as `project.customFields`. */
+export function useEffectiveCustomFields(id: string | undefined, issueType?: string) {
+  return useQuery({
+    queryKey: queryKeys.projects.effectiveCustomFields(id ?? '', issueType),
+    queryFn: () => projectsService.getEffectiveCustomFields(id!, issueType),
+    enabled: !!id,
+  })
+}
+
+export function useCustomFieldOverride(id: string | undefined, issueType: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.projects.customFieldOverride(id ?? '', issueType ?? ''),
+    queryFn: () => projectsService.getCustomFieldOverride(id!, issueType!),
+    enabled: !!id && !!issueType,
+  })
+}

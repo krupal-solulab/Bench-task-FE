@@ -128,6 +128,52 @@ describe('FieldsSettingsForm', () => {
     expect(screen.getByRole('button', { name: 'Save custom fields' })).toBeEnabled()
   })
 
+  it('requires at least one option for a MultiSelect field before it can be saved', async () => {
+    const user = userEvent.setup()
+    renderForm({
+      ...BASE_PROJECT,
+      customFields: [
+        { id: 'f-1', name: 'Platforms', type: 'MultiSelect', required: false, options: [] },
+      ],
+    })
+
+    expect(screen.getByRole('button', { name: 'Save custom fields' })).toBeDisabled()
+
+    await user.type(screen.getByPlaceholderText('Type an option and press Enter'), 'Web{Enter}')
+
+    expect(screen.getByRole('button', { name: 'Save custom fields' })).toBeEnabled()
+  })
+
+  it('allows saving a User picker field, which needs no options row', async () => {
+    server.use(
+      http.put(url('/projects/p-1/custom-fields'), () =>
+        HttpResponse.json({
+          success: true,
+          data: {
+            ...BASE_PROJECT,
+            customFields: [
+              { id: 'f-1', name: 'Reviewer', type: 'UserPicker', required: false, options: null },
+            ],
+          },
+        }),
+      ),
+    )
+    const user = userEvent.setup()
+    renderForm({
+      ...BASE_PROJECT,
+      customFields: [
+        { id: 'f-1', name: 'Reviewer', type: 'UserPicker', required: false, options: null },
+      ],
+    })
+
+    expect(screen.queryByPlaceholderText('Type an option and press Enter')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save custom fields' })).toBeEnabled()
+
+    await user.click(screen.getByRole('button', { name: 'Save custom fields' }))
+
+    expect(await screen.findByText('Custom fields updated')).toBeInTheDocument()
+  })
+
   it('shows an error toast when the server rejects the save (e.g. a type change on an in-use field)', async () => {
     server.use(
       http.put(url('/projects/p-1/custom-fields'), () =>

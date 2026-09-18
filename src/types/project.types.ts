@@ -31,7 +31,15 @@ export interface ProjectMember {
   permissions: MemberPermissions | null
 }
 
-export const CUSTOM_FIELD_TYPES = ['Text', 'Number', 'Date', 'Dropdown', 'Checkbox'] as const
+export const CUSTOM_FIELD_TYPES = [
+  'Text',
+  'Number',
+  'Date',
+  'Dropdown',
+  'Checkbox',
+  'MultiSelect',
+  'UserPicker',
+] as const
 export type CustomFieldType = (typeof CUSTOM_FIELD_TYPES)[number]
 
 export interface CustomFieldDefinition {
@@ -41,8 +49,18 @@ export interface CustomFieldDefinition {
   name: string
   type: CustomFieldType
   required: boolean
-  // Only meaningful (and only ever set) for type === 'Dropdown'.
+  // Only meaningful (and only ever set) for type === 'Dropdown' or 'MultiSelect'.
   options: string[] | null
+}
+
+// A per-issue-type override of which custom fields are hidden, or forced required/optional -
+// fetched/set via dedicated endpoints (mirrors how per-issue-type workflows aren't embedded on
+// `Project` either - see useProjectWorkflow/useUpdateWorkflow).
+export interface CustomFieldOverrideByType {
+  issueType: string
+  hiddenFieldIds: string[]
+  requiredFieldIds: string[]
+  optionalFieldIds: string[]
 }
 
 export const AUTOMATION_TRIGGER_TYPES = ['IssueCreated', 'StatusChanged'] as const

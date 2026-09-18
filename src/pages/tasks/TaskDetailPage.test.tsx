@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext, type AuthContextValue } from '@/context/AuthContext'
 import { ToastProvider } from '@/context/ToastContext'
 import { server } from '@/test/mocks/server'
-import { mockProjects, mockUsers } from '@/test/mocks/fixtures'
+import { mockProjects, mockTasks, mockUsers } from '@/test/mocks/fixtures'
 import { TaskDetailPage } from '@/pages/tasks/TaskDetailPage'
 import { NO_MEMBER_PERMISSIONS, type MemberPermissions } from '@/types/project.types'
 
@@ -165,5 +165,42 @@ describe('TaskDetailPage', () => {
     await waitFor(() => expect(screen.getByText('Design homepage hero')).toBeInTheDocument())
     const projectLink = screen.getByRole('link', { name: 'Website Revamp' })
     expect(projectLink).toHaveAttribute('href', '/projects/p-1')
+  })
+
+  it('renders MultiSelect values joined and a UserPicker value resolved to a member name (Custom Fields v2)', async () => {
+    const fields = [
+      {
+        id: 'f-1',
+        name: 'Platforms',
+        type: 'MultiSelect' as const,
+        required: false,
+        options: ['Web', 'iOS'],
+      },
+      { id: 'f-2', name: 'Reviewer', type: 'UserPicker' as const, required: false, options: null },
+    ]
+    server.use(
+      http.get(url('/projects/p-1'), () => {
+        const project = mockProjects.find((p) => p.id === 'p-1')!
+        return HttpResponse.json({ success: true, data: { ...project, customFields: fields } })
+      }),
+      http.get(url('/projects/p-1/custom-fields/effective'), () =>
+        HttpResponse.json({ success: true, data: fields }),
+      ),
+      http.get(url('/tasks/t-1'), () => {
+        const task = mockTasks.find((t) => t.id === 't-1')!
+        return HttpResponse.json({
+          success: true,
+          data: { ...task, customFieldValues: { 'f-1': ['Web', 'iOS'], 'f-2': ASSIGNEE.id } },
+        })
+      }),
+    )
+
+    renderTaskDetail(makeAuthValue())
+
+    expect(await screen.findByText('Web, iOS')).toBeInTheDocument()
+    // ASSIGNEE.name also appears as the task's own assignee elsewhere on the page - scope to the
+    // Reviewer field's <dd> specifically.
+    const reviewerLabel = await screen.findByText('Reviewer')
+    expect(within(reviewerLabel.parentElement!).getByText(ASSIGNEE.name)).toBeInTheDocument()
   })
 })

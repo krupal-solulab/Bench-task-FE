@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useProject, useProjectLabels } from '@/hooks/queries/useProjects'
+import { useEffectiveCustomFields, useProject, useProjectLabels } from '@/hooks/queries/useProjects'
 import { taskSchema, type TaskFormValues } from '@/schemas/task.schema'
 import { TASK_PRIORITIES, type Task } from '@/types/task.types'
 import { resolveIssueTypes } from '@/types/issue-type.types'
@@ -84,6 +84,12 @@ export function TaskForm({
     .map((t) => t.name)
   const epicTypeNames = issueTypeDefinitions.filter((t) => t.level === 'epic').map((t) => t.name)
   const isStandardIssue = standardTypeNames.includes(issueType)
+
+  // Applies any per-issue-type hidden/required override (Custom Fields v2) once the issue type
+  // is known; falls back to the project-wide list while that request is still loading, so fields
+  // never flash away.
+  const { data: effectiveCustomFields } = useEffectiveCustomFields(projectId, issueType)
+  const customFields = effectiveCustomFields ?? project?.customFields ?? []
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -234,7 +240,7 @@ export function TaskForm({
         </FormField>
       )}
 
-      {project?.customFields.map((field) => (
+      {customFields.map((field) => (
         <FormField
           key={field.id}
           label={field.name}
@@ -301,6 +307,28 @@ export function TaskForm({
                   [field.id]: checked === true,
                 })
               }
+            />
+          )}
+          {field.type === 'MultiSelect' && (
+            <TagInput
+              id={`custom-field-${field.id}`}
+              value={(customFieldValues[field.id] as string[] | undefined) ?? []}
+              onChange={(next) =>
+                setValue('customFieldValues', { ...customFieldValues, [field.id]: next })
+              }
+              suggestions={field.options ?? []}
+              placeholder="Pick an option"
+            />
+          )}
+          {field.type === 'UserPicker' && (
+            <UserSelect
+              id={`custom-field-${field.id}`}
+              value={(customFieldValues[field.id] as string | null | undefined) ?? null}
+              onChange={(v) =>
+                setValue('customFieldValues', { ...customFieldValues, [field.id]: v })
+              }
+              memberIds={memberIds}
+              placeholder={`Select ${field.name.toLowerCase()}`}
             />
           )}
         </FormField>
