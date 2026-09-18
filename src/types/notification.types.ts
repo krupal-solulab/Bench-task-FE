@@ -3,6 +3,8 @@ export const NOTIFICATION_TYPES = [
   'StatusChanged',
   'CommentAdded',
   'DueSoon',
+  'Automation',
+  'Scheme',
 ] as const
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
 

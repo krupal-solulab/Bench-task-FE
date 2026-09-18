@@ -334,4 +334,34 @@ describe('ProjectDetailPage', () => {
       expect(screen.queryByRole('button', { name: 'Visual' })).toBeInTheDocument()
     })
   })
+
+  describe('Notifications tab (Notification Schemes v2)', () => {
+    it('shows an unconfigured scheme editor for an Admin, with a row for every event', async () => {
+      renderProjectDetail(
+        makeAuthValue({ user: ADMIN, hasRole: (...roles) => roles.includes('Admin') }),
+        '/projects/p-1?tab=notifications',
+      )
+
+      await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+      expect(await screen.findByText('Issue assigned')).toBeInTheDocument()
+      expect(screen.getByText('Comment added')).toBeInTheDocument()
+      expect(screen.getByText('Sprint started')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Save notification scheme' })).toBeInTheDocument()
+    })
+
+    it('a non-managing member sees a read-only summary, with no Save control', async () => {
+      renderProjectDetail(
+        makeAuthValue({ user: OTHER_DEV, hasRole: () => false }),
+        '/projects/p-1?tab=notifications',
+      )
+
+      await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+      expect(
+        await screen.findByText(/No extra notification routing configured/),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Save notification scheme' }),
+      ).not.toBeInTheDocument()
+    })
+  })
 })

@@ -17,6 +17,7 @@ import type { PageQuery } from '@/types/api.types'
 import type { Task, TaskListQuery } from '@/types/task.types'
 import { toTaskListParams } from './tasks.service'
 import type { Workflow } from '@/types/workflow.types'
+import type { NotificationSchemeRule } from '@/types/notification-scheme.types'
 
 export const projectsService = {
   list: (query: ProjectListQuery) => apiGetPaginated<Project>('/projects', query),
@@ -81,4 +82,7 @@ export const projectsService = {
 
   assignPermissionScheme: (id: string, permissionSchemeId: string | null) =>
     apiPatch<Project>(`/projects/${id}/permission-scheme`, { permissionSchemeId }),
+
+  updateNotificationScheme: (id: string, rules: NotificationSchemeRule[]) =>
+    apiPut<Project>(`/projects/${id}/notification-scheme`, { rules }),
 }

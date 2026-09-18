@@ -1,6 +1,7 @@
 import type { SortOrder } from './api.types'
 import type { User } from './user.types'
 import type { IssueTypeDefinition } from './issue-type.types'
+import type { NotificationSchemeRule } from './notification-scheme.types'
 
 export const PROJECT_STATUSES = ['Planning', 'In Progress', 'Completed'] as const
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number]
@@ -103,6 +104,7 @@ export interface Project {
   issueTypes: IssueTypeDefinition[]
   // Null means "use the legacy per-member permission flags" - see MemberPermissions above.
   permissionSchemeId: string | null
+  notificationScheme: NotificationSchemeRule[]
   createdAt: string
   updatedAt: string
 }

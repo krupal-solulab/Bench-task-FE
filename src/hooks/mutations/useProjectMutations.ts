@@ -11,6 +11,7 @@ import type {
 } from '@/types/project.types'
 import type { Workflow } from '@/types/workflow.types'
 import type { IssueTypeDefinition } from '@/types/issue-type.types'
+import type { NotificationSchemeRule } from '@/types/notification-scheme.types'
 
 export function useCreateProject() {
   const queryClient = useQueryClient()
@@ -152,6 +153,18 @@ export function useUpdateAutomationRules(id: string) {
   return useMutation({
     mutationFn: (rules: Array<Partial<AutomationRule>>) =>
       projectsService.updateAutomationRules(id, rules),
+    onSuccess: (project) => {
+      queryClient.setQueryData(queryKeys.projects.detail(id), project)
+      invalidateAfterFieldsChange(queryClient, id)
+    },
+  })
+}
+
+export function useUpdateNotificationScheme(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (rules: NotificationSchemeRule[]) =>
+      projectsService.updateNotificationScheme(id, rules),
     onSuccess: (project) => {
       queryClient.setQueryData(queryKeys.projects.detail(id), project)
       invalidateAfterFieldsChange(queryClient, id)

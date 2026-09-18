@@ -38,6 +38,7 @@ import { WorkflowCanvas } from '@/components/projects/WorkflowCanvas'
 import { FieldsSettingsForm } from '@/components/projects/FieldsSettingsForm'
 import { IssueTypesSettingsForm } from '@/components/projects/IssueTypesSettingsForm'
 import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
+import { NotificationSchemeForm } from '@/components/projects/NotificationSchemeForm'
 import { PermissionSchemeAssignment } from '@/components/projects/PermissionSchemeAssignment'
 import {
   useProject,
@@ -316,6 +317,7 @@ export function ProjectDetailPage() {
             <TabsTrigger value="fields">Fields</TabsTrigger>
             <TabsTrigger value="issue-types">Issue Types</TabsTrigger>
             <TabsTrigger value="automation">Automation</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="permissions">Permissions</TabsTrigger>
           </TabsList>
           {(canManageSprintsHere || canCreateTaskHere) && (
@@ -616,6 +618,14 @@ export function ProjectDetailPage() {
 
         <TabsContent value="automation">
           <AutomationRulesForm projectId={id ?? ''} project={project} canManage={canManage} />
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          <NotificationSchemeForm
+            projectId={id ?? ''}
+            notificationScheme={project.notificationScheme}
+            canManage={canManage}
+          />
         </TabsContent>
 
         <TabsContent value="permissions">

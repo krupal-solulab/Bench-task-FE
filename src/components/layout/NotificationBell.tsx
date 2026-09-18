@@ -35,6 +35,8 @@ const TYPE_LABELS: Record<NotificationType, string> = {
   StatusChanged: 'Status changed',
   CommentAdded: 'New comments',
   DueSoon: 'Due soon',
+  Automation: 'Automation rules',
+  Scheme: 'Notification schemes',
 }
 
 /** Bell + inbox dropdown embedded in the Topbar - no separate page/route, mirroring how Saved
