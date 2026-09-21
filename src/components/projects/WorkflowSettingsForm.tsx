@@ -18,6 +18,7 @@ import { STATUS_CATEGORIES } from '@/types/workflow.types'
 import type { Workflow, WorkflowStatus, WorkflowTransition } from '@/types/workflow.types'
 import { ORG_ROLES } from '@/types/user.types'
 import type { OrgRole } from '@/types/user.types'
+import type { CustomFieldDefinition } from '@/types/project.types'
 
 export interface WorkflowSettingsFormProps {
   projectId: string
@@ -26,6 +27,9 @@ export interface WorkflowSettingsFormProps {
   /** When set, this form reads/writes that issue type's workflow override instead of the
    * project-wide default (Workflow Engine v2's per-issue-type workflows). Omit for the default. */
   issueType?: string
+  /** The project's custom field definitions, used only to populate the "required fields before
+   * this transition" picker below. */
+  customFields?: CustomFieldDefinition[]
 }
 
 /** A settings form for a project's custom workflow: its status list (name + category) and the
@@ -36,6 +40,7 @@ export function WorkflowSettingsForm({
   workflow,
   canManage,
   issueType,
+  customFields = [],
 }: WorkflowSettingsFormProps) {
   const [statuses, setStatuses] = useState<WorkflowStatus[]>(workflow.statuses)
   const [transitions, setTransitions] = useState<WorkflowTransition[]>(workflow.transitions)
@@ -67,6 +72,11 @@ export function WorkflowSettingsForm({
     setStatuses(statuses.map((s, i) => (i === index ? { ...s, category } : s)))
   }
 
+  function updateStatusWipLimit(index: number, raw: string) {
+    const wipLimit = raw.trim() === '' ? undefined : Math.max(1, Number(raw))
+    setStatuses(statuses.map((s, i) => (i === index ? { ...s, wipLimit } : s)))
+  }
+
   function addStatus() {
     setStatuses([...statuses, { name: '', category: 'To Do' }])
   }
@@ -88,7 +98,9 @@ export function WorkflowSettingsForm({
   function updateTransitionRule(
     from: string,
     to: string,
-    patch: Partial<Pick<WorkflowTransition, 'allowedRoles' | 'requireComment'>>,
+    patch: Partial<
+      Pick<WorkflowTransition, 'allowedRoles' | 'requireComment' | 'requiredCustomFieldIds'>
+    >,
   ) {
     setTransitions(
       transitions.map((t) => (t.from === from && t.to === to ? { ...t, ...patch } : t)),
@@ -99,6 +111,13 @@ export function WorkflowSettingsForm({
     const current = transitions.find((t) => t.from === from && t.to === to)?.allowedRoles ?? []
     const next = checked ? [...current, role] : current.filter((r) => r !== role)
     updateTransitionRule(from, to, { allowedRoles: next.length ? next : undefined })
+  }
+
+  function toggleRequiredCustomField(from: string, to: string, fieldId: string, checked: boolean) {
+    const current =
+      transitions.find((t) => t.from === from && t.to === to)?.requiredCustomFieldIds ?? []
+    const next = checked ? [...current, fieldId] : current.filter((id) => id !== fieldId)
+    updateTransitionRule(from, to, { requiredCustomFieldIds: next.length ? next : undefined })
   }
 
   const validStatusNames = statuses.map((s) => s.name.trim()).filter(Boolean)
@@ -188,6 +207,15 @@ export function WorkflowSettingsForm({
                   ))}
                 </SelectContent>
               </Select>
+              <Input
+                aria-label={`Status ${index + 1} WIP limit`}
+                type="number"
+                min={1}
+                value={status.wipLimit ?? ''}
+                onChange={(e) => updateStatusWipLimit(index, e.target.value)}
+                placeholder="WIP limit"
+                className="w-28"
+              />
               <button
                 type="button"
                 onClick={() => removeStatus(index)}
@@ -313,6 +341,28 @@ export function WorkflowSettingsForm({
                     Require a comment first
                   </label>
                 </div>
+                {customFields.length > 0 && (
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <span className="text-xs text-muted-foreground">Require a value for:</span>
+                    {customFields.map((field) => (
+                      <label
+                        key={field.id}
+                        className="flex items-center gap-1 text-xs"
+                        htmlFor={`transition-field-${t.from}-${t.to}-${field.id}`}
+                      >
+                        <Checkbox
+                          id={`transition-field-${t.from}-${t.to}-${field.id}`}
+                          aria-label={`Require ${field.name} before ${t.from} to ${t.to}`}
+                          checked={t.requiredCustomFieldIds?.includes(field.id) ?? false}
+                          onCheckedChange={(checked) =>
+                            toggleRequiredCustomField(t.from, t.to, field.id, checked === true)
+                          }
+                        />
+                        {field.name}
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

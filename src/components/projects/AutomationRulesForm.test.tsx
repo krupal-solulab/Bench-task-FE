@@ -186,6 +186,80 @@ describe('AutomationRulesForm', () => {
     expect(screen.queryByLabelText('Rule 1 condition 1 field')).not.toBeInTheDocument()
   })
 
+  it('shows an hours input only when the trigger is Unassigned For Duration', () => {
+    renderForm({
+      ...BASE_PROJECT,
+      automationRules: [
+        {
+          id: 'r-1',
+          name: 'Created rule',
+          enabled: true,
+          trigger: { type: 'IssueCreated', toStatus: null },
+          conditions: [],
+          actions: [{ type: 'AddLabels', value: 'a' }],
+        },
+        {
+          id: 'r-2',
+          name: 'Idle rule',
+          enabled: true,
+          trigger: { type: 'UnassignedForDuration', toStatus: null, afterHours: 24 },
+          conditions: [],
+          actions: [{ type: 'AddLabels', value: 'a' }],
+        },
+      ],
+    })
+
+    expect(screen.queryByLabelText('Rule 1 after hours')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Rule 2 after hours')).toHaveValue(24)
+  })
+
+  it('disables Save when an UnassignedForDuration rule has no afterHours set', () => {
+    renderForm({
+      ...BASE_PROJECT,
+      automationRules: [
+        {
+          id: 'r-1',
+          name: 'Idle rule',
+          enabled: true,
+          trigger: { type: 'UnassignedForDuration', toStatus: null, afterHours: null },
+          conditions: [],
+          actions: [{ type: 'AddLabels', value: 'a' }],
+        },
+      ],
+    })
+
+    expect(screen.getByRole('button', { name: 'Save automation rules' })).toBeDisabled()
+  })
+
+  it('shows a URL input for a Webhook action and a role selector for a NotifyRole action', () => {
+    renderForm({
+      ...BASE_PROJECT,
+      automationRules: [
+        {
+          id: 'r-1',
+          name: 'Webhook rule',
+          enabled: true,
+          trigger: { type: 'IssueCreated', toStatus: null },
+          conditions: [],
+          actions: [{ type: 'Webhook', value: 'https://example.com/hook' }],
+        },
+        {
+          id: 'r-2',
+          name: 'Notify rule',
+          enabled: true,
+          trigger: { type: 'IssueCreated', toStatus: null },
+          conditions: [],
+          actions: [{ type: 'NotifyRole', value: 'Manager' }],
+        },
+      ],
+    })
+
+    expect(screen.getByLabelText('Rule 1 action 1 value')).toHaveValue('https://example.com/hook')
+    expect(screen.getByRole('combobox', { name: 'Rule 2 action 1 value' })).toHaveTextContent(
+      'Manager',
+    )
+  })
+
   it('shows an error toast when the server rejects the save', async () => {
     server.use(
       http.put(url('/projects/p-1/automation-rules'), () =>

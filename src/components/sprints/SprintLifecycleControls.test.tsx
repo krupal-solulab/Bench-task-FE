@@ -1,10 +1,16 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { HttpResponse, http } from 'msw'
 import type { ReactNode } from 'react'
 import { describe, expect, it } from 'vitest'
 import { ToastProvider } from '@/context/ToastContext'
+import { server } from '@/test/mocks/server'
 import { SprintLifecycleControls } from '@/components/sprints/SprintLifecycleControls'
 import type { Sprint } from '@/types/sprint.types'
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
+const url = (path: string) => `${BASE_URL}${path}`
 
 function makeSprint(overrides: Partial<Sprint> = {}): Sprint {
   return {
@@ -23,7 +29,7 @@ function makeSprint(overrides: Partial<Sprint> = {}): Sprint {
   }
 }
 
-function renderControls(sprint: Sprint, canManage: boolean) {
+function renderControls(sprint: Sprint, canManage: boolean, plannedSprints: Sprint[] = []) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   function Wrapper({ children }: { children: ReactNode }) {
     return (
@@ -38,6 +44,7 @@ function renderControls(sprint: Sprint, canManage: boolean) {
       projectId="p-1"
       canManage={canManage}
       onEdit={() => {}}
+      plannedSprints={plannedSprints}
     />,
     { wrapper: Wrapper },
   )
@@ -67,5 +74,38 @@ describe('SprintLifecycleControls', () => {
     renderControls(makeSprint({ status: 'Planned' }), false)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(screen.getByText('Planned')).toBeInTheDocument()
+  })
+
+  // Opening the Radix Select popover and clicking an option hangs under jsdom (no
+  // ResizeObserver/layout support - the same documented limitation as CommentForm's canned-
+  // response picker), so the destination-select path itself is covered by live smoke testing;
+  // this only verifies the trigger/options render once the dialog is open.
+  it('shows a destination picker with other Planned sprints once Complete sprint is clicked (Phase 2 gap-closure)', async () => {
+    const user = userEvent.setup()
+    const nextSprint = makeSprint({ id: 's-2', name: 'Sprint 2', status: 'Planned' })
+    renderControls(makeSprint({ status: 'Active' }), true, [nextSprint])
+
+    await user.click(screen.getByRole('button', { name: 'Complete sprint' }))
+
+    expect(screen.getByLabelText('Move incomplete issues to')).toBeInTheDocument()
+    expect(screen.getByText('Backlog')).toBeInTheDocument()
+  })
+
+  it('defaults the completion destination to the backlog (nextSprintId: null)', async () => {
+    let sentBody: { nextSprintId: string | null } | null = null
+    server.use(
+      http.post(url('/projects/p-1/sprints/s-1/complete'), async ({ request }) => {
+        sentBody = (await request.json()) as typeof sentBody
+        return HttpResponse.json({ success: true, data: makeSprint({ status: 'Completed' }) })
+      }),
+    )
+    const user = userEvent.setup()
+    renderControls(makeSprint({ status: 'Active' }), true)
+
+    await user.click(screen.getByRole('button', { name: 'Complete sprint' }))
+    await user.click(screen.getByRole('button', { name: 'Complete' }))
+
+    await waitFor(() => expect(sentBody).not.toBeNull())
+    expect(sentBody).toEqual({ nextSprintId: null })
   })
 })

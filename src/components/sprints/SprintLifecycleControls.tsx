@@ -1,7 +1,15 @@
 import { useState } from 'react'
 import { Button } from '@/components/common/Button'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { Modal } from '@/components/common/Modal'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   useCompleteSprint,
   useDeleteSprint,
@@ -11,11 +19,16 @@ import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
 import type { Sprint } from '@/types/sprint.types'
 
+const BACKLOG_DESTINATION = '__backlog__'
+
 export interface SprintLifecycleControlsProps {
   sprint: Sprint
   projectId: string
   canManage: boolean
   onEdit: () => void
+  /** Other Planned sprints in the project - offered as a destination for incomplete issues when
+   * completing this one (BRD 6.3's "PM's choice"). Omit/empty to only offer the backlog. */
+  plannedSprints?: Sprint[]
 }
 
 export function SprintLifecycleControls({
@@ -23,13 +36,16 @@ export function SprintLifecycleControls({
   projectId,
   canManage,
   onEdit,
+  plannedSprints = [],
 }: SprintLifecycleControlsProps) {
   const [completeOpen, setCompleteOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [destination, setDestination] = useState(BACKLOG_DESTINATION)
   const startSprint = useStartSprint(projectId)
   const completeSprint = useCompleteSprint(projectId)
   const deleteSprint = useDeleteSprint(projectId)
   const { showToast } = useToast()
+  const otherPlannedSprints = plannedSprints.filter((s) => s.id !== sprint.id)
 
   async function handleStart() {
     try {
@@ -46,8 +62,13 @@ export function SprintLifecycleControls({
 
   async function handleComplete() {
     try {
-      await completeSprint.mutateAsync(sprint.id)
+      await completeSprint.mutateAsync({
+        sprintId: sprint.id,
+        nextSprintId: destination === BACKLOG_DESTINATION ? null : destination,
+      })
       showToast({ title: `${sprint.name} completed`, variant: 'success' })
+      setCompleteOpen(false)
+      setDestination(BACKLOG_DESTINATION)
     } catch (err) {
       showToast({
         title: 'Could not complete sprint',
@@ -99,14 +120,37 @@ export function SprintLifecycleControls({
         </>
       )}
 
-      <ConfirmDialog
+      <Modal
         open={completeOpen}
         onOpenChange={setCompleteOpen}
         title="Complete sprint"
-        description={`Any incomplete tasks in "${sprint.name}" will be moved back to the backlog. This cannot be undone.`}
-        confirmLabel="Complete"
-        onConfirm={handleComplete}
-      />
+        description={`Choose where incomplete tasks in "${sprint.name}" should go. This cannot be undone.`}
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setCompleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button loading={completeSprint.isPending} onClick={() => void handleComplete()}>
+              Complete
+            </Button>
+          </>
+        }
+      >
+        <Select value={destination} onValueChange={setDestination}>
+          <SelectTrigger aria-label="Move incomplete issues to">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={BACKLOG_DESTINATION}>Backlog</SelectItem>
+            {otherPlannedSprints.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Modal>
 
       <ConfirmDialog
         open={deleteOpen}

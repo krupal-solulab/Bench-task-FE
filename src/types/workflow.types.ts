@@ -6,6 +6,8 @@ export type StatusCategory = (typeof STATUS_CATEGORIES)[number]
 export interface WorkflowStatus {
   name: string
   category: StatusCategory
+  /** WIP limit for this column on the board. Unset = no limit (default). */
+  wipLimit?: number
 }
 
 export interface WorkflowTransition {
@@ -15,6 +17,8 @@ export interface WorkflowTransition {
   allowedRoles?: OrgRole[]
   /** Validator: the task must already have a comment before this transition is allowed. */
   requireComment?: boolean
+  /** Validator: custom field ids that must already have a value before this transition. */
+  requiredCustomFieldIds?: string[]
 }
 
 export interface Workflow {

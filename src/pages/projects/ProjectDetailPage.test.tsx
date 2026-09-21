@@ -209,6 +209,51 @@ describe('ProjectDetailPage', () => {
     })
   })
 
+  it('clicking "My issues" filters the board to the current user, and the URL reflects it (Phase 2 gap-closure)', async () => {
+    const seenAssignees: Array<string | null> = []
+    server.use(
+      http.get(url('/projects/:id/tasks'), ({ request }) => {
+        seenAssignees.push(new URL(request.url).searchParams.get('assignee'))
+        return HttpResponse.json({
+          success: true,
+          data: [],
+          meta: {
+            total: 0,
+            page: 1,
+            limit: 100,
+            totalPages: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        })
+      }),
+    )
+    const user = userEvent.setup()
+    renderProjectDetail(makeAuthValue())
+
+    await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: 'My issues' }))
+
+    await waitFor(() => expect(seenAssignees).toContain(ADMIN.id))
+    expect(screen.getByTestId('location-probe')).toHaveTextContent(`assignee=${ADMIN.id}`)
+  })
+
+  it('hides the Backlog/Sprint Board/Calendar tabs for a Kanban project (Phase 2 gap-closure - BRD 6.3)', async () => {
+    server.use(
+      http.get(url('/projects/p-1'), () => {
+        const project = mockProjects.find((p) => p.id === 'p-1')!
+        return HttpResponse.json({ success: true, data: { ...project, boardType: 'Kanban' } })
+      }),
+    )
+    renderProjectDetail(makeAuthValue())
+
+    await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+    expect(screen.getByRole('tab', { name: 'Board' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Backlog' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Sprint Board' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Calendar' })).not.toBeInTheDocument()
+  })
+
   it('opens directly to the tab named in the URL (regression: a refresh on any non-Board tab used to always bounce back to Board)', async () => {
     renderProjectDetail(makeAuthValue(), '/projects/p-1?tab=members')
 

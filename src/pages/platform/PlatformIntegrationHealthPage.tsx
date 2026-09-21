@@ -4,9 +4,18 @@ import { Button } from '@/components/common/Button'
 import { ErrorState } from '@/components/common/ErrorState'
 import { Skeleton } from '@/components/common/Skeleton'
 import { useIntegrationHealth } from '@/hooks/queries/useIntegrationHealth'
+import {
+  usePauseIntegrationChannel,
+  useResumeIntegrationChannel,
+} from '@/hooks/mutations/useIntegrationHealthMutations'
+import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
 import { cn } from '@/lib/cn'
-import type { IntegrationHealthStatus } from '@/types/integration-health.types'
+import { PAUSABLE_NOTIFICATION_CHANNELS } from '@/types/integration-health.types'
+import type {
+  IntegrationHealthStatus,
+  PausableNotificationChannel,
+} from '@/types/integration-health.types'
 
 const STATUS_CLASSES: Record<IntegrationHealthStatus, string> = {
   ok: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -18,6 +27,56 @@ const STATUS_LABELS: Record<IntegrationHealthStatus, string> = {
   ok: 'Healthy',
   error: 'Unhealthy',
   stub: 'Not configured',
+}
+
+function isPausable(name: string): name is PausableNotificationChannel {
+  return (PAUSABLE_NOTIFICATION_CHANNELS as readonly string[]).includes(name)
+}
+
+/** Separated from the row-mapping loop so `channel` is a real (narrowed) binding, not a re-read
+ * of `entry.name` inside a closure - TS can't retain a type-predicate's narrowing on a property
+ * access across a nested callback. */
+function PauseResumeButton({
+  channel,
+  paused,
+}: {
+  channel: PausableNotificationChannel
+  paused: boolean
+}) {
+  const pauseChannel = usePauseIntegrationChannel()
+  const resumeChannel = useResumeIntegrationChannel()
+  const { showToast } = useToast()
+
+  async function handleClick() {
+    try {
+      if (paused) {
+        await resumeChannel.mutateAsync(channel)
+        showToast({ title: `${channel} resumed`, variant: 'success' })
+      } else {
+        await pauseChannel.mutateAsync(channel)
+        showToast({ title: `${channel} paused`, variant: 'success' })
+      }
+    } catch (err) {
+      showToast({
+        title: `Could not update ${channel}`,
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="w-full"
+      loading={pauseChannel.isPending || resumeChannel.isPending}
+      onClick={() => void handleClick()}
+    >
+      {paused ? 'Resume' : 'Pause'}
+    </Button>
+  )
 }
 
 export function PlatformIntegrationHealthPage() {
@@ -67,6 +126,9 @@ export function PlatformIntegrationHealthPage() {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">{entry.detail}</p>
+              {isPausable(entry.name) && (
+                <PauseResumeButton channel={entry.name} paused={entry.paused === true} />
+              )}
             </div>
           ))}
         </div>

@@ -36,7 +36,7 @@ function renderForm(notificationScheme: NotificationSchemeRule[] = [], canManage
 }
 
 describe('NotificationSchemeForm', () => {
-  it('renders a row for every one of the 5 configurable events, unconfigured by default (regression)', () => {
+  it('renders a row for every configurable event, unconfigured by default (regression)', () => {
     renderForm()
 
     expect(screen.getByText('Issue assigned')).toBeInTheDocument()
@@ -44,6 +44,7 @@ describe('NotificationSchemeForm', () => {
     expect(screen.getByText('Status changed')).toBeInTheDocument()
     expect(screen.getByText('Sprint started')).toBeInTheDocument()
     expect(screen.getByText('Sprint completed')).toBeInTheDocument()
+    expect(screen.getByText('SLA breached')).toBeInTheDocument()
     expect(screen.getByLabelText('Notify Admin on Comment added')).not.toBeChecked()
   })
 

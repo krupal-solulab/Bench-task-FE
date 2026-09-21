@@ -1,5 +1,6 @@
 import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost, apiPut } from './api-client'
 import type {
+  AutomationLogEntry,
   AutomationRule,
   CreateProjectPayload,
   CustomFieldDefinition,
@@ -118,4 +119,7 @@ export const projectsService = {
 
   epicProgressReport: (id: string) =>
     apiGet<EpicProgressReportEntry[]>(`/projects/${id}/reports/epic-progress`),
+
+  automationLog: (id: string, query: { page?: number; limit?: number }) =>
+    apiGetPaginated<AutomationLogEntry>(`/projects/${id}/automation-log`, query),
 }

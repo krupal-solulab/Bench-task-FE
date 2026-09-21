@@ -30,11 +30,14 @@ import { SavedFiltersMenu } from '@/components/tasks/SavedFiltersMenu'
 import { TaskForm } from '@/components/tasks/TaskForm'
 import { SprintForm } from '@/components/sprints/SprintForm'
 import { SprintLifecycleControls } from '@/components/sprints/SprintLifecycleControls'
+import { SprintCapacityIndicator } from '@/components/sprints/SprintCapacityIndicator'
+import { SprintHistoryList } from '@/components/sprints/SprintHistoryList'
 import { BacklogBoard } from '@/components/sprints/BacklogBoard'
 import { CalendarView } from '@/components/sprints/CalendarView'
 import { SprintBurndownChart } from '@/components/sprints/SprintBurndownChart'
 import { SprintVelocityChart } from '@/components/sprints/SprintVelocityChart'
 import { EpicsList } from '@/components/tasks/EpicsList'
+import { EpicRoadmapTimeline } from '@/components/projects/EpicRoadmapTimeline'
 import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm'
 import { WorkflowCanvas } from '@/components/projects/WorkflowCanvas'
 import { FieldsSettingsForm } from '@/components/projects/FieldsSettingsForm'
@@ -43,6 +46,7 @@ import { SlaPolicySettingsForm } from '@/components/projects/SlaPolicySettingsFo
 import { EpicProgressTable } from '@/components/projects/EpicProgressTable'
 import { IssueTypesSettingsForm } from '@/components/projects/IssueTypesSettingsForm'
 import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
+import { AutomationLogList } from '@/components/projects/AutomationLogList'
 import { NotificationSchemeForm } from '@/components/projects/NotificationSchemeForm'
 import { PermissionSchemeAssignment } from '@/components/projects/PermissionSchemeAssignment'
 import {
@@ -101,8 +105,14 @@ export function ProjectDetailPage() {
     dueDateTo: undefined as string | undefined,
     overdue: undefined as boolean | undefined,
     issueType: undefined as string | undefined,
+    // Board quick filter (BRD 6.1) - which epic's linked issues to show. Shared with List, same
+    // as every other filter in this object.
+    epicId: undefined as string | undefined,
   })
-  const { tab, issueType: issueTypeFilter, ...filters } = state
+  const { tab, issueType: issueTypeFilter, epicId, ...filters } = state
+  // Board-only, not persisted to the URL or shared with List - a pure display grouping (see
+  // TaskBoard's own SwimlaneBy type), reset is harmless so it doesn't need to survive a reload.
+  const [swimlaneBy, setSwimlaneBy] = useState<'none' | 'assignee' | 'priority' | 'epic'>('none')
   // Not persisted to the URL, unlike the rest of `filters` - useQueryParams is shared with several
   // pages and typed for scalar values only; these are string arrays.
   const [labelFilter, setLabelFilter] = useState<string[]>([])
@@ -119,11 +129,15 @@ export function ProjectDetailPage() {
   // exactly matching today's behavior for any project with no customization.
   const standardTypeNames = project ? standardIssueTypeNames(project) : STANDARD_ISSUE_TYPES
   const effectiveIssueTypes = issueTypeFilter ? [issueTypeFilter] : standardTypeNames
+  // BRD 6.3's Kanban-vs-Scrum toggle - Kanban hides the Backlog/Sprint-board/Calendar tabs
+  // (Board/List stay). Undefined (every project predating this feature) behaves as Scrum.
+  const isKanban = project?.boardType === 'Kanban'
   const { data: tasksData } = useProjectTasks(id, {
     page: 1,
     limit: 100,
     issueType: effectiveIssueTypes,
     ...filters,
+    parent: epicId,
     labels: labelFilter.length ? labelFilter : undefined,
     components: componentFilter.length ? componentFilter : undefined,
     customFieldFilters: customFieldFilters.length ? customFieldFilters : undefined,
@@ -141,7 +155,14 @@ export function ProjectDetailPage() {
   })
   const { data: sprintBoardData } = useProjectTasks(
     id,
-    { page: 1, limit: 100, sprintId: activeSprint?.id, issueType: effectiveIssueTypes },
+    {
+      page: 1,
+      limit: 100,
+      sprintId: activeSprint?.id,
+      issueType: effectiveIssueTypes,
+      assignee: filters.assignee,
+      parent: epicId,
+    },
     { enabled: !!activeSprint },
   )
   const { data: epicsData } = useProjectTasks(id, { page: 1, limit: 100, issueType: ['Epic'] })
@@ -323,9 +344,13 @@ export function ProjectDetailPage() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <TabsList>
             <TabsTrigger value="board">Board</TabsTrigger>
-            <TabsTrigger value="backlog">Backlog</TabsTrigger>
-            <TabsTrigger value="sprint-board">Sprint Board</TabsTrigger>
-            <TabsTrigger value="calendar">Calendar</TabsTrigger>
+            {!isKanban && (
+              <>
+                <TabsTrigger value="backlog">Backlog</TabsTrigger>
+                <TabsTrigger value="sprint-board">Sprint Board</TabsTrigger>
+                <TabsTrigger value="calendar">Calendar</TabsTrigger>
+              </>
+            )}
             <TabsTrigger value="epics">Epics</TabsTrigger>
             <TabsTrigger value="list">List</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
@@ -356,12 +381,52 @@ export function ProjectDetailPage() {
           )}
         </div>
 
-        <TabsContent value="board">
+        <TabsContent value="board" className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant={filters.assignee === user?.id ? 'default' : 'outline'}
+              size="sm"
+              onClick={() =>
+                setFilters({ assignee: filters.assignee === user?.id ? undefined : user?.id })
+              }
+            >
+              My issues
+            </Button>
+            <Select
+              value={epicId ?? '__all__'}
+              onValueChange={(v) => setFilters({ epicId: v === '__all__' ? undefined : v })}
+            >
+              <SelectTrigger aria-label="Filter by epic" className="w-44">
+                <SelectValue placeholder="All epics" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All epics</SelectItem>
+                {(epicsData?.data ?? []).map((epic) => (
+                  <SelectItem key={epic.id} value={epic.id}>
+                    {epic.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={swimlaneBy} onValueChange={(v) => setSwimlaneBy(v as typeof swimlaneBy)}>
+              <SelectTrigger aria-label="Group into swimlanes" className="w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No swimlanes</SelectItem>
+                <SelectItem value="assignee">Swimlanes: Assignee</SelectItem>
+                <SelectItem value="priority">Swimlanes: Priority</SelectItem>
+                <SelectItem value="epic">Swimlanes: Epic</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <TaskBoard
             tasks={tasksData?.data ?? []}
             workflow={workflow}
             grant={myGrant}
             issueTypeDefinitions={resolveIssueTypes(project)}
+            swimlaneBy={swimlaneBy}
           />
         </TabsContent>
 
@@ -379,12 +444,14 @@ export function ProjectDetailPage() {
                     {formatDate(sprint.startDate)} – {formatDate(sprint.endDate)}
                     {sprint.goal && ` · ${sprint.goal}`}
                   </p>
+                  <SprintCapacityIndicator projectId={id ?? ''} sprint={sprint} />
                 </div>
                 <SprintLifecycleControls
                   sprint={sprint}
                   projectId={id ?? ''}
                   canManage={canManageSprintsHere}
                   onEdit={() => openEditSprint(sprint)}
+                  plannedSprints={(sprintsData?.data ?? []).filter((s) => s.status === 'Planned')}
                 />
               </div>
             ))}
@@ -408,12 +475,24 @@ export function ProjectDetailPage() {
                     {formatDate(activeSprint.startDate)} – {formatDate(activeSprint.endDate)}
                     {activeSprint.goal && ` · ${activeSprint.goal}`}
                   </p>
+                  {(() => {
+                    const currentIds = new Set((sprintBoardData?.data ?? []).map((t) => t.id))
+                    const initialIds = new Set(activeSprint.initialTaskIds ?? [])
+                    const added = [...currentIds].filter((tid) => !initialIds.has(tid)).length
+                    const removed = [...initialIds].filter((tid) => !currentIds.has(tid)).length
+                    return added > 0 || removed > 0 ? (
+                      <p className="mt-1 text-xs font-medium text-amber-700">
+                        Scope change since start: +{added} / −{removed}
+                      </p>
+                    ) : null
+                  })()}
                 </div>
                 <SprintLifecycleControls
                   sprint={activeSprint}
                   projectId={id ?? ''}
                   canManage={canManageSprintsHere}
                   onEdit={() => openEditSprint(activeSprint)}
+                  plannedSprints={(sprintsData?.data ?? []).filter((s) => s.status === 'Planned')}
                 />
               </div>
               <TaskBoard
@@ -421,6 +500,7 @@ export function ProjectDetailPage() {
                 workflow={workflow}
                 grant={myGrant}
                 issueTypeDefinitions={resolveIssueTypes(project)}
+                swimlaneBy={swimlaneBy}
               />
             </>
           ) : (
@@ -435,7 +515,8 @@ export function ProjectDetailPage() {
           <CalendarView sprints={sprintsData?.data ?? []} projectId={id ?? ''} />
         </TabsContent>
 
-        <TabsContent value="epics">
+        <TabsContent value="epics" className="space-y-4">
+          {id && <EpicRoadmapTimeline projectId={id} />}
           <EpicsList
             epics={epicsData?.data ?? []}
             issueTypeDefinitions={resolveIssueTypes(project)}
@@ -571,6 +652,10 @@ export function ProjectDetailPage() {
               <SprintBurndownChart projectId={id} sprintId={effectiveReportsSprintId} />
               <SprintVelocityChart projectId={id} />
               <EpicProgressTable projectId={id} />
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Sprint history</h3>
+                <SprintHistoryList projectId={id} />
+              </div>
             </>
           )}
         </TabsContent>
@@ -643,6 +728,7 @@ export function ProjectDetailPage() {
                   workflow={templateDraft ?? tabWorkflow}
                   canManage={canManage}
                   issueType={effectiveWorkflowIssueType}
+                  customFields={project?.customFields}
                 />
               ) : (
                 <WorkflowCanvas
@@ -651,6 +737,7 @@ export function ProjectDetailPage() {
                   workflow={templateDraft ?? tabWorkflow}
                   canManage={canManage}
                   issueType={effectiveWorkflowIssueType}
+                  automationRules={project?.automationRules}
                 />
               )}
             </div>
@@ -668,8 +755,14 @@ export function ProjectDetailPage() {
           <IssueTypesSettingsForm projectId={id ?? ''} project={project} canManage={canManage} />
         </TabsContent>
 
-        <TabsContent value="automation">
+        <TabsContent value="automation" className="space-y-6">
           <AutomationRulesForm projectId={id ?? ''} project={project} canManage={canManage} />
+          {(hasRole('Admin') || hasRole('Manager')) && (
+            <div className="space-y-2">
+              <h3 className="font-medium">Automation activity log</h3>
+              <AutomationLogList projectId={id ?? ''} />
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="notifications">

@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import { EmptyState } from '@/components/common/EmptyState'
 import { IssueTypeBadge } from '@/components/common/IssueTypeBadge'
+import { OverdueBadge } from '@/components/common/OverdueBadge'
 import { useEpicProgress } from '@/hooks/queries/useTasks'
+import { formatDate } from '@/lib/date'
 import type { Task } from '@/types/task.types'
 import type { IssueTypeDefinition } from '@/types/issue-type.types'
 
@@ -24,6 +26,16 @@ function EpicCard({
           </Link>
           {epic.issueKey && (
             <p className="font-mono text-xs text-muted-foreground">{epic.issueKey}</p>
+          )}
+          {epic.dueDate && (
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              Target: {formatDate(epic.dueDate)}
+              <OverdueBadge
+                dueDate={epic.dueDate}
+                status={epic.status}
+                isDone={epic.statusCategory === 'Done'}
+              />
+            </p>
           )}
         </div>
         {progress && (

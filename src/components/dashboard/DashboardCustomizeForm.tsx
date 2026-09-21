@@ -1,11 +1,28 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { GripVertical } from 'lucide-react'
 import { Modal } from '@/components/common/Modal'
 import { Button } from '@/components/common/Button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useUpdateDashboardPreferences } from '@/hooks/mutations/useDashboardMutations'
 import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
+import { cn } from '@/lib/cn'
 import type { DashboardWidgetId } from '@/types/dashboard.types'
 
 export interface DashboardCustomizeFormProps {
@@ -16,8 +33,55 @@ export interface DashboardCustomizeFormProps {
   hidden: DashboardWidgetId[]
 }
 
-/** Show/hide and reorder the dashboard's widgets - no drag-and-drop, just plain checkboxes and
- * up/down buttons (see Phase 6 plan for why: keeps this dependency-free). */
+interface WidgetRowProps {
+  id: DashboardWidgetId
+  label: string
+  hidden: boolean
+  onToggleVisible: (id: DashboardWidgetId) => void
+}
+
+/** A single draggable widget row - mirrors BacklogBoard.tsx's own useSortable row pattern (a drag
+ * handle rather than the whole row, so the visibility checkbox stays independently clickable). */
+function WidgetRow({ id, label, hidden, onToggleVisible }: WidgetRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  })
+  const style = {
+    transform: transform ? `translate3d(0, ${transform.y}px, 0)` : undefined,
+    transition,
+  }
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm',
+        isDragging && 'opacity-50',
+      )}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label={`Drag to reorder ${label}`}
+        className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <Checkbox
+        aria-label={`Show ${label}`}
+        checked={!hidden}
+        onCheckedChange={() => onToggleVisible(id)}
+      />
+      <span className="flex-1">{label}</span>
+    </li>
+  )
+}
+
+/** Show/hide and reorder the dashboard's widgets via real drag-and-drop (dnd-kit) - upgraded from
+ * the earlier plain up/down-button reorder now that dnd-kit is already a dependency elsewhere
+ * (BacklogBoard.tsx). */
 export function DashboardCustomizeForm({
   open,
   onOpenChange,
@@ -29,6 +93,11 @@ export function DashboardCustomizeForm({
   const [hiddenSet, setHiddenSet] = useState(new Set(hidden))
   const updatePreferences = useUpdateDashboardPreferences()
   const { showToast } = useToast()
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   // Re-sync the draft whenever the modal is (re)opened, so a previous edit that wasn't saved
   // doesn't linger the next time it's opened.
@@ -47,12 +116,13 @@ export function DashboardCustomizeForm({
     setHiddenSet(next)
   }
 
-  function move(index: number, direction: -1 | 1) {
-    const target = index + direction
-    if (target < 0 || target >= draftOrder.length) return
-    const next = [...draftOrder]
-    ;[next[index], next[target]] = [next[target]!, next[index]!]
-    setDraftOrder(next)
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = draftOrder.indexOf(active.id as DashboardWidgetId)
+    const newIndex = draftOrder.indexOf(over.id as DashboardWidgetId)
+    if (oldIndex === -1 || newIndex === -1) return
+    setDraftOrder(arrayMove(draftOrder, oldIndex, newIndex))
   }
 
   async function handleSave() {
@@ -77,36 +147,21 @@ export function DashboardCustomizeForm({
   return (
     <Modal open={open} onOpenChange={onOpenChange} title="Customize dashboard">
       <div className="space-y-4">
-        <ul className="space-y-1.5">
-          {draftOrder.map((id, index) => (
-            <li key={id} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-              <Checkbox
-                aria-label={`Show ${labelById.get(id)}`}
-                checked={!hiddenSet.has(id)}
-                onCheckedChange={() => toggleVisible(id)}
-              />
-              <span className="flex-1">{labelById.get(id)}</span>
-              <button
-                type="button"
-                onClick={() => move(index, -1)}
-                disabled={index === 0}
-                aria-label={`Move ${labelById.get(id)} up`}
-                className="text-muted-foreground hover:text-foreground disabled:opacity-30"
-              >
-                <ChevronUp className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => move(index, 1)}
-                disabled={index === draftOrder.length - 1}
-                aria-label={`Move ${labelById.get(id)} down`}
-                className="text-muted-foreground hover:text-foreground disabled:opacity-30"
-              >
-                <ChevronDown className="h-4 w-4" />
-              </button>
-            </li>
-          ))}
-        </ul>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={draftOrder} strategy={verticalListSortingStrategy}>
+            <ul className="space-y-1.5">
+              {draftOrder.map((id) => (
+                <WidgetRow
+                  key={id}
+                  id={id}
+                  label={labelById.get(id) ?? id}
+                  hidden={hiddenSet.has(id)}
+                  onToggleVisible={toggleVisible}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
 
         <div className="flex justify-end gap-2 border-t pt-4">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

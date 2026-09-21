@@ -126,6 +126,26 @@ export interface UpdateTaskRankPayload {
   afterTaskId?: string
 }
 
+export interface BulkOperationResult {
+  succeeded: string[]
+  failed: Array<{ taskId: string; message: string }>
+}
+
+export interface BulkMoveSprintPayload {
+  taskIds: string[]
+  sprintId: string | null
+}
+
+export interface BulkAssignPayload {
+  taskIds: string[]
+  assignee: string | null
+}
+
+export interface BulkRelabelPayload {
+  taskIds: string[]
+  labels: string[]
+}
+
 export interface EpicProgress {
   linkedIssueCount: number
   doneCount: number
@@ -139,6 +159,10 @@ export interface EpicProgressReportEntry {
   linkedIssueCount: number
   doneCount: number
   progress: number
+  // BRD 6.4's Epics View target date + roadmap timeline - optional so existing test
+  // fixtures/mocks predating this field don't all need updating.
+  dueDate?: string | null
+  createdAt?: string
 }
 
 /** A JQL-lite compound query (Search/Dashboards v2) - see the backend's jql.util.ts for the

@@ -9,6 +9,7 @@ import { ToastViewport } from '@/components/common/Toast'
 import { server } from '@/test/mocks/server'
 import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm'
 import type { Workflow } from '@/types/workflow.types'
+import type { CustomFieldDefinition } from '@/types/project.types'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
 const url = (path: string) => `${BASE_URL}${path}`
@@ -28,7 +29,11 @@ const DEFAULT_WORKFLOW: Workflow = {
   initialStatus: 'Todo',
 }
 
-function renderForm(workflow: Workflow = DEFAULT_WORKFLOW, canManage = true) {
+function renderForm(
+  workflow: Workflow = DEFAULT_WORKFLOW,
+  canManage = true,
+  customFields: CustomFieldDefinition[] = [],
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   function Wrapper({ children }: { children: ReactNode }) {
     return (
@@ -41,7 +46,12 @@ function renderForm(workflow: Workflow = DEFAULT_WORKFLOW, canManage = true) {
     )
   }
   return render(
-    <WorkflowSettingsForm projectId="p-1" workflow={workflow} canManage={canManage} />,
+    <WorkflowSettingsForm
+      projectId="p-1"
+      workflow={workflow}
+      canManage={canManage}
+      customFields={customFields}
+    />,
     { wrapper: Wrapper },
   )
 }
@@ -190,6 +200,58 @@ describe('WorkflowSettingsForm', () => {
     })
     // Every other transition is unaffected - neither field set, exactly as before this feature.
     expect(sentBody!.transitions).toContainEqual({ from: 'Todo', to: 'In Progress' })
+  })
+
+  it('setting a WIP limit on a status and saving sends it (Phase 2 gap-closure)', async () => {
+    let sentBody: {
+      statuses: Array<{ name: string; category: string; wipLimit?: number }>
+    } | null = null
+    server.use(
+      http.put(url('/projects/p-1/workflow'), async ({ request }) => {
+        sentBody = (await request.json()) as typeof sentBody
+        return HttpResponse.json({ success: true, data: sentBody })
+      }),
+    )
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.type(screen.getByLabelText('Status 2 WIP limit'), '3')
+    await user.click(screen.getByRole('button', { name: 'Save workflow' }))
+
+    await waitFor(() => expect(sentBody).not.toBeNull())
+    expect(sentBody!.statuses).toContainEqual({
+      name: 'In Progress',
+      category: 'In Progress',
+      wipLimit: 3,
+    })
+  })
+
+  it('requiring a custom field on a transition and saving sends requiredCustomFieldIds (Phase 2 gap-closure)', async () => {
+    let sentBody: {
+      transitions: Array<{ from: string; to: string; requiredCustomFieldIds?: string[] }>
+    } | null = null
+    server.use(
+      http.put(url('/projects/p-1/workflow'), async ({ request }) => {
+        sentBody = (await request.json()) as typeof sentBody
+        return HttpResponse.json({ success: true, data: sentBody })
+      }),
+    )
+    const user = userEvent.setup()
+    renderForm(DEFAULT_WORKFLOW, true, [
+      { id: 'field-1', name: 'Resolution', type: 'Text', required: false, options: null },
+    ])
+
+    await user.click(screen.getByLabelText('Require Resolution before Todo to In Progress'))
+    await user.click(screen.getByRole('button', { name: 'Save workflow' }))
+
+    await waitFor(() => expect(sentBody).not.toBeNull())
+    expect(sentBody!.transitions).toContainEqual(
+      expect.objectContaining({
+        from: 'Todo',
+        to: 'In Progress',
+        requiredCustomFieldIds: ['field-1'],
+      }),
+    )
   })
 
   it('shows an error toast when the server rejects the save (e.g. an in-use status removed)', async () => {

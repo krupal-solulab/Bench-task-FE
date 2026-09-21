@@ -239,6 +239,8 @@ export const handlers = [
     HttpResponse.json(ok({ points: [], hasStoryPoints: false })),
   ),
   http.get(url('/dashboard/active-sprints-health'), () => HttpResponse.json(ok([]))),
+  http.get(url('/dashboard/my-open-issues'), () => HttpResponse.json(ok([]))),
+  http.get(url('/dashboard/resolution-time-trend'), () => HttpResponse.json(ok([]))),
   http.get(url('/dashboard/preferences'), () =>
     HttpResponse.json(ok({ hiddenWidgets: [], widgetOrder: [] })),
   ),

@@ -39,8 +39,55 @@ const CATEGORY_ACCENT: Record<StatusCategory, string> = {
   Done: 'bg-emerald-500',
 }
 
-function BoardColumn({ status, children }: { status: string; children: ReactNode }) {
-  const { setNodeRef, isOver } = useDroppable({ id: status })
+export const SWIMLANE_OPTIONS = ['none', 'assignee', 'priority', 'epic'] as const
+export type SwimlaneBy = (typeof SWIMLANE_OPTIONS)[number]
+
+interface Swimlane {
+  key: string
+  label: string
+  tasks: Task[]
+}
+
+/** Groups tasks into swimlane rows for the board - a pure display grouping (BRD 6.1's "Swimlanes
+ * by assignee, priority, or epic"), never a stored field: dragging a card only ever changes its
+ * status column, exactly as before this feature, regardless of which swimlane row it lands in. */
+function groupIntoSwimlanes(tasks: Task[], swimlaneBy: SwimlaneBy): Swimlane[] {
+  if (swimlaneBy === 'none') return [{ key: 'all', label: '', tasks }]
+
+  const groups = new Map<string, Swimlane>()
+  for (const task of tasks) {
+    let key: string
+    let label: string
+    if (swimlaneBy === 'assignee') {
+      key = task.assignee?.id ?? 'unassigned'
+      label = task.assignee?.name ?? 'Unassigned'
+    } else if (swimlaneBy === 'priority') {
+      key = task.priority
+      label = task.priority
+    } else {
+      key = task.parent?.id ?? 'no-epic'
+      label = task.parent?.title ?? 'No epic'
+    }
+    if (!groups.has(key)) groups.set(key, { key, label, tasks: [] })
+    groups.get(key)!.tasks.push(task)
+  }
+  return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label))
+}
+
+/** A droppable column id is scoped to its swimlane row (`${swimlaneKey}::${status}`) so the same
+ * status can appear once per swimlane without id collisions - `handleDragEnd` below only reads the
+ * status portion back out, since swimlane row is never itself a drop target's effect. */
+function columnDroppableId(swimlaneKey: string, status: string): string {
+  return `${swimlaneKey}::${status}`
+}
+
+function statusFromDroppableId(id: string): string {
+  const idx = id.indexOf('::')
+  return idx === -1 ? id : id.slice(idx + 2)
+}
+
+function BoardColumn({ id, children }: { id: string; children: ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id })
   return (
     <div
       ref={setNodeRef}
@@ -96,6 +143,7 @@ export function TaskBoard({
   workflow = DEFAULT_WORKFLOW,
   grant,
   issueTypeDefinitions,
+  swimlaneBy = 'none',
 }: {
   tasks: Task[]
   /** The project's workflow (custom, or the system default). Defaults to the system default
@@ -105,6 +153,9 @@ export function TaskBoard({
   grant?: MemberPermissions | null
   /** The owning project's resolved issue types, for icon/color - see IssueTypeBadge. */
   issueTypeDefinitions?: IssueTypeDefinition[]
+  /** BRD 6.1's "Swimlanes by assignee, priority, or epic" - defaults to 'none' (today's single
+   * flat grid), so every existing caller is unaffected until it opts in. */
+  swimlaneBy?: SwimlaneBy
 }) {
   const { canEditTaskField } = usePermissions()
   const { user } = useAuth()
@@ -127,7 +178,7 @@ export function TaskBoard({
     const { active, over } = event
     if (!over) return
     const task = active.data.current?.task as Task | undefined
-    const targetStatus = over.id as string
+    const targetStatus = statusFromDroppableId(over.id as string)
     if (!task || task.status === targetStatus) return
 
     if (!canDragTaskTo(task, targetStatus, user?.role, user?.id, workflow, grant)) {
@@ -149,21 +200,34 @@ export function TaskBoard({
     )
   }
 
-  return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+  function renderColumns(swimlaneKey: string, laneTasks: Task[]) {
+    return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {workflow.statuses.map(({ name: status, category }) => {
-          const columnTasks = tasks.filter((t) => t.status === status)
+        {workflow.statuses.map(({ name: status, category, wipLimit }) => {
+          const columnTasks = laneTasks.filter((t) => t.status === status)
+          const overWipLimit = !!wipLimit && columnTasks.length > wipLimit
           return (
             <div key={status} className="space-y-3">
               <div className="flex items-center gap-2 px-1">
                 <span className={cn('h-2 w-2 rounded-full', CATEGORY_ACCENT[category])} />
                 <h3 className="text-sm font-medium">{status}</h3>
-                <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                <span
+                  className={cn(
+                    'ml-auto rounded-full px-2 py-0.5 text-xs',
+                    overWipLimit
+                      ? 'bg-destructive/10 font-medium text-destructive'
+                      : 'bg-muted text-muted-foreground',
+                  )}
+                  title={wipLimit ? `WIP limit: ${wipLimit}` : undefined}
+                >
                   {columnTasks.length}
+                  {wipLimit ? ` / ${wipLimit}` : ''}
                 </span>
               </div>
-              <BoardColumn status={status}>
+              {overWipLimit && (
+                <p className="px-1 text-xs text-destructive">WIP limit exceeded for this column</p>
+              )}
+              <BoardColumn id={columnDroppableId(swimlaneKey, status)}>
                 <StaggerContainer className="space-y-2">
                   {columnTasks.map((task) => {
                     const isAssignee = task.assignee?.id === user?.id
@@ -211,6 +275,28 @@ export function TaskBoard({
           )
         })}
       </div>
+    )
+  }
+
+  const swimlanes = groupIntoSwimlanes(tasks, swimlaneBy)
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      {swimlaneBy === 'none' ? (
+        renderColumns('all', tasks)
+      ) : (
+        <div className="space-y-6">
+          {swimlanes.map((lane) => (
+            <div key={lane.key} className="space-y-2">
+              <h3 className="text-sm font-semibold">
+                {lane.label}{' '}
+                <span className="font-normal text-muted-foreground">({lane.tasks.length})</span>
+              </h3>
+              {renderColumns(lane.key, lane.tasks)}
+            </div>
+          ))}
+        </div>
+      )}
     </DndContext>
   )
 }

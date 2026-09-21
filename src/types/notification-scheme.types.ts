@@ -6,6 +6,7 @@ export const NOTIFICATION_SCHEME_EVENTS = [
   'Transitioned',
   'SprintStarted',
   'SprintCompleted',
+  'SlaBreach',
 ] as const
 export type NotificationSchemeEvent = (typeof NOTIFICATION_SCHEME_EVENTS)[number]
 
@@ -15,6 +16,7 @@ export const NOTIFICATION_SCHEME_EVENT_LABELS: Record<NotificationSchemeEvent, s
   Transitioned: 'Status changed',
   SprintStarted: 'Sprint started',
   SprintCompleted: 'Sprint completed',
+  SlaBreach: 'SLA breached',
 }
 
 export const NOTIFICATION_CHANNELS = ['InApp', 'Email', 'WhatsApp'] as const

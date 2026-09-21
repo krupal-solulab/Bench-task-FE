@@ -1,7 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/constants'
 import { sprintsService } from '@/services/sprints.service'
-import type { CreateSprintPayload, UpdateSprintPayload } from '@/types/sprint.types'
+import type {
+  CompleteSprintPayload,
+  CreateSprintPayload,
+  UpdateSprintPayload,
+} from '@/types/sprint.types'
 
 /**
  * Starting/completing a sprint reshuffles which tasks appear in the Backlog vs. Sprint Board and
@@ -45,7 +49,8 @@ export function useStartSprint(projectId: string) {
 export function useCompleteSprint(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (sprintId: string) => sprintsService.complete(projectId, sprintId),
+    mutationFn: ({ sprintId, ...payload }: { sprintId: string } & CompleteSprintPayload) =>
+      sprintsService.complete(projectId, sprintId, payload),
     onSuccess: () => invalidateAfterSprintChange(queryClient, projectId),
   })
 }

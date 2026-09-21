@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { AuthContext, type AuthContextValue } from '@/context/AuthContext'
 import { ToastProvider } from '@/context/ToastContext'
-import { TaskBoard } from '@/components/tasks/TaskBoard'
+import { TaskBoard, type SwimlaneBy } from '@/components/tasks/TaskBoard'
 import type { Task } from '@/types/task.types'
 import type { Workflow } from '@/types/workflow.types'
 import { NO_MEMBER_PERMISSIONS, type MemberPermissions } from '@/types/project.types'
@@ -73,6 +73,7 @@ function renderBoard(
   workflow?: Workflow,
   authOverrides: Partial<AuthContextValue> = {},
   grant?: MemberPermissions | null,
+  swimlaneBy?: SwimlaneBy,
 ) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   function Wrapper({ children }: { children: ReactNode }) {
@@ -88,7 +89,10 @@ function renderBoard(
       </QueryClientProvider>
     )
   }
-  return render(<TaskBoard tasks={tasks} workflow={workflow} grant={grant} />, { wrapper: Wrapper })
+  return render(
+    <TaskBoard tasks={tasks} workflow={workflow} grant={grant} swimlaneBy={swimlaneBy} />,
+    { wrapper: Wrapper },
+  )
 }
 
 describe('TaskBoard', () => {
@@ -150,6 +154,73 @@ describe('TaskBoard', () => {
     const backlogHeading = screen.getByRole('heading', { name: 'Backlog' })
     const columnHeader = backlogHeading.parentElement!
     expect(within(columnHeader).getByText('2')).toBeInTheDocument()
+  })
+
+  it('shows a WIP limit warning when a column exceeds its limit (Phase 2 gap-closure)', () => {
+    const customWorkflow: Workflow = {
+      statuses: [
+        { name: 'Backlog', category: 'To Do' },
+        { name: 'Building', category: 'In Progress', wipLimit: 1 },
+      ],
+      transitions: [],
+      initialStatus: 'Backlog',
+    }
+    renderBoard(
+      [
+        makeTask({ id: 't-1', status: 'Building', statusCategory: 'In Progress' }),
+        makeTask({ id: 't-2', status: 'Building', statusCategory: 'In Progress' }),
+      ],
+      customWorkflow,
+    )
+
+    expect(screen.getByText('2 / 1')).toBeInTheDocument()
+    expect(screen.getByText('WIP limit exceeded for this column')).toBeInTheDocument()
+  })
+
+  it('does not warn when a column is at or under its WIP limit (Phase 2 gap-closure)', () => {
+    const customWorkflow: Workflow = {
+      statuses: [{ name: 'Building', category: 'In Progress', wipLimit: 2 }],
+      transitions: [],
+      initialStatus: 'Building',
+    }
+    renderBoard(
+      [
+        makeTask({ id: 't-1', status: 'Building', statusCategory: 'In Progress' }),
+        makeTask({ id: 't-2', status: 'Building', statusCategory: 'In Progress' }),
+      ],
+      customWorkflow,
+    )
+
+    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+    expect(screen.queryByText('WIP limit exceeded for this column')).not.toBeInTheDocument()
+  })
+
+  it('groups tasks into swimlanes by assignee, keeping the same columns per lane (Phase 2 gap-closure)', () => {
+    const customWorkflow: Workflow = {
+      statuses: [{ name: 'Todo', category: 'To Do' }],
+      transitions: [],
+      initialStatus: 'Todo',
+    }
+    renderBoard(
+      [
+        makeTask({
+          id: 't-1',
+          title: 'Alice task',
+          status: 'Todo',
+          assignee: { ...makeAuthValue().user!, id: 'alice', name: 'Alice' },
+        }),
+        makeTask({ id: 't-2', title: 'Unassigned task', status: 'Todo', assignee: null }),
+      ],
+      customWorkflow,
+      {},
+      undefined,
+      'assignee',
+    )
+
+    expect(screen.getByRole('heading', { name: /Alice/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Unassigned/ })).toBeInTheDocument()
+    expect(screen.getByText('Alice task')).toBeInTheDocument()
+    expect(screen.getByText('Unassigned task')).toBeInTheDocument()
   })
 
   describe('per-project grants (Phase 3)', () => {

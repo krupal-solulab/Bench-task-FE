@@ -60,6 +60,15 @@ export function useProjectActivity(id: string | undefined, page: number, limit: 
   })
 }
 
+export function useAutomationLog(id: string | undefined, page: number, limit: number) {
+  return useQuery({
+    queryKey: queryKeys.projects.automationLog(id ?? '', page),
+    queryFn: () => projectsService.automationLog(id!, { page, limit }),
+    enabled: !!id,
+    placeholderData: (prev) => prev,
+  })
+}
+
 export function useProjectWorkflow(id: string | undefined, issueType?: string) {
   return useQuery({
     queryKey: queryKeys.projects.workflow(id ?? '', issueType),

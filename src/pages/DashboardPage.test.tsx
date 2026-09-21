@@ -73,6 +73,8 @@ describe('DashboardPage', () => {
       'SLA compliance',
       'Velocity trend',
       'Active sprints health',
+      'My open issues',
+      'Resolution time trend',
     ])
   })
 

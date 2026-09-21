@@ -5,6 +5,13 @@ import { FormField } from '@/components/common/FormField'
 import { DatePicker } from '@/components/common/DatePicker'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { projectSchema, type ProjectFormValues } from '@/schemas/project.schema'
 import { toDateInputValue } from '@/lib/date'
 import type { Project } from '@/types/project.types'
@@ -37,11 +44,13 @@ export function ProjectForm({
       // string (rather than null/undefined) would fail its @IsISO8601() validation on submit.
       startDate: initialValues?.startDate ? toDateInputValue(initialValues.startDate) : null,
       dueDate: initialValues?.dueDate ? toDateInputValue(initialValues.dueDate) : null,
+      boardType: initialValues?.boardType ?? 'Scrum',
     },
   })
 
   const startDate = watch('startDate')
   const dueDate = watch('dueDate')
+  const boardType = watch('boardType')
 
   return (
     <form id="project-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -71,6 +80,25 @@ export function ProjectForm({
           />
         </FormField>
       </div>
+
+      <FormField
+        label="Board type"
+        htmlFor="boardType"
+        hint="Kanban hides the Backlog/Sprint-board/Calendar tabs - Board and List stay either way."
+      >
+        <Select
+          value={boardType}
+          onValueChange={(v) => setValue('boardType', v as ProjectFormValues['boardType'])}
+        >
+          <SelectTrigger id="boardType">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Scrum">Scrum</SelectItem>
+            <SelectItem value="Kanban">Kanban</SelectItem>
+          </SelectContent>
+        </Select>
+      </FormField>
 
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>

@@ -1,5 +1,9 @@
 import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost } from './api-client'
 import type {
+  BulkAssignPayload,
+  BulkMoveSprintPayload,
+  BulkOperationResult,
+  BulkRelabelPayload,
   CreateTaskPayload,
   EpicProgress,
   Task,
@@ -53,6 +57,15 @@ export const tasksService = {
 
   updateRank: (id: string, payload: UpdateTaskRankPayload) =>
     apiPatch<Task>(`/tasks/${id}/rank`, payload),
+
+  bulkMoveSprint: (payload: BulkMoveSprintPayload) =>
+    apiPatch<BulkOperationResult>('/tasks/bulk-move-sprint', payload),
+
+  bulkAssign: (payload: BulkAssignPayload) =>
+    apiPatch<BulkOperationResult>('/tasks/bulk-assign', payload),
+
+  bulkRelabel: (payload: BulkRelabelPayload) =>
+    apiPatch<BulkOperationResult>('/tasks/bulk-relabel', payload),
 
   remove: (id: string) => apiDelete<void>(`/tasks/${id}`),
 

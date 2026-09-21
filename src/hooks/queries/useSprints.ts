@@ -57,3 +57,13 @@ export function useSprintBurndown(projectId: string | undefined, sprintId: strin
     enabled: !!projectId && !!sprintId,
   })
 }
+
+/** BRD 6.3's Sprint History - every past (Completed) sprint, with its date range/goal/completion
+ * rate already on the document. */
+export function useSprintHistory(projectId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.sprints.history(projectId ?? ''),
+    queryFn: () => sprintsService.history(projectId!),
+    enabled: !!projectId,
+  })
+}

@@ -56,22 +56,11 @@ describe('DashboardCustomizeForm', () => {
     expect(screen.getByLabelText('Show Task Status')).toBeChecked()
   })
 
-  it('disables the up arrow on the first row and the down arrow on the last row', () => {
+  it('shows a drag handle on every widget row (real drag-and-drop, Search/Dashboards v2)', () => {
     renderForm()
-    expect(screen.getByLabelText('Move Task Status up')).toBeDisabled()
-    expect(screen.getByLabelText('Move Overdue Tasks down')).toBeDisabled()
-    expect(screen.getByLabelText('Move Task Trend up')).toBeEnabled()
-  })
-
-  it('moving a widget up swaps it with its predecessor', async () => {
-    const user = userEvent.setup()
-    renderForm()
-
-    await user.click(screen.getByLabelText('Move Task Trend up'))
-
-    const rows = screen.getAllByRole('listitem')
-    expect(rows[0]!.textContent).toContain('Task Trend')
-    expect(rows[1]!.textContent).toContain('Task Status')
+    expect(screen.getByLabelText('Drag to reorder Task Status')).toBeInTheDocument()
+    expect(screen.getByLabelText('Drag to reorder Task Trend')).toBeInTheDocument()
+    expect(screen.getByLabelText('Drag to reorder Overdue Tasks')).toBeInTheDocument()
   })
 
   it('unchecking a widget and saving sends it in hiddenWidgets', async () => {

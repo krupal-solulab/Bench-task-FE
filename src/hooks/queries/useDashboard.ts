@@ -83,6 +83,22 @@ export function useActiveSprintsHealth(scope: DashboardScopeQuery) {
   })
 }
 
+export function useMyOpenIssues(scope: DashboardScopeQuery) {
+  return useQuery({
+    queryKey: queryKeys.dashboard.myOpenIssues(scope),
+    queryFn: () => dashboardService.myOpenIssues(scope),
+    staleTime: QUERY_STALE_TIME.dashboard,
+  })
+}
+
+export function useResolutionTimeTrend(scope: DashboardScopeQuery) {
+  return useQuery({
+    queryKey: queryKeys.dashboard.resolutionTimeTrend(scope),
+    queryFn: () => dashboardService.resolutionTimeTrend(scope),
+    staleTime: QUERY_STALE_TIME.dashboard,
+  })
+}
+
 export function useDashboardPreferences() {
   return useQuery({
     queryKey: queryKeys.dashboard.preferences,

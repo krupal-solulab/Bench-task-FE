@@ -4,6 +4,9 @@ import type { User } from './user.types'
 export const SPRINT_STATUSES = ['Planned', 'Active', 'Completed'] as const
 export type SprintStatus = (typeof SPRINT_STATUSES)[number]
 
+export const SPRINT_DURATION_WEEKS = [1, 2, 3, 4] as const
+export type SprintDurationWeeks = (typeof SPRINT_DURATION_WEEKS)[number]
+
 export interface Sprint {
   id: string
   name: string
@@ -14,6 +17,9 @@ export interface Sprint {
   endDate: string
   startedAt: string | null
   completedAt: string | null
+  capacityPoints?: number | null
+  initialTaskIds?: string[]
+  completionRatePercent?: number | null
   createdAt: string
   updatedAt: string
 }
@@ -29,10 +35,19 @@ export interface CreateSprintPayload {
   name: string
   goal?: string
   startDate: string
-  endDate: string
+  /** Required unless durationWeeks is given (a custom date range). */
+  endDate?: string
+  durationWeeks?: SprintDurationWeeks
+  capacityPoints?: number
 }
 
 export type UpdateSprintPayload = Partial<CreateSprintPayload>
+
+export interface CompleteSprintPayload {
+  /** Omit/null for the default (the backlog); a Planned sprint id moves incomplete issues there
+   * instead (BRD 6.3's "PM's choice"). */
+  nextSprintId?: string | null
+}
 
 export interface SprintActivityEntry {
   id: string

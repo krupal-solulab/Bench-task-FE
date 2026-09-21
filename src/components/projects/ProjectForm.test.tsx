@@ -26,8 +26,13 @@ describe('ProjectForm', () => {
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
     expect(onSubmit.mock.calls[0]![0]).toEqual(
-      expect.objectContaining({ name: 'A New Project', description: '' }),
+      expect.objectContaining({ name: 'A New Project', description: '', boardType: 'Scrum' }),
     )
+  })
+
+  it('defaults board type to Scrum for a new project (Phase 2 gap-closure - BRD 6.3)', () => {
+    render(<ProjectForm onSubmit={vi.fn()} onCancel={vi.fn()} />)
+    expect(screen.getByRole('combobox', { name: 'Board type' })).toHaveTextContent('Scrum')
   })
 
   it('pre-fills fields (including dates) from initialValues when editing (regression: the API returns full ISO datetimes, which a native date input silently rejects unless trimmed to YYYY-MM-DD)', () => {

@@ -78,6 +78,8 @@ export const queryKeys = {
     tasks: (id: string, filters: unknown) => ['projects', 'detail', id, 'tasks', filters] as const,
     stats: (id: string) => ['projects', 'detail', id, 'stats'] as const,
     activity: (id: string) => ['projects', 'detail', id, 'activity'] as const,
+    automationLog: (id: string, page: number) =>
+      ['projects', 'detail', id, 'automation-log', page] as const,
     workflow: (id: string, issueType?: string) =>
       ['projects', 'detail', id, 'workflow', issueType ?? null] as const,
     labels: (id: string) => ['projects', 'detail', id, 'labels'] as const,
@@ -114,6 +116,7 @@ export const queryKeys = {
     velocity: (projectId: string, limit?: number) =>
       ['sprints', 'velocity', projectId, limit] as const,
     burndown: (id: string) => ['sprints', 'detail', id, 'burndown'] as const,
+    history: (projectId: string) => ['sprints', 'history', projectId] as const,
   },
   attachments: {
     list: (taskId: string, filters: unknown) => ['attachments', taskId, 'list', filters] as const,
@@ -141,6 +144,8 @@ export const queryKeys = {
     slaCompliance: (scope: unknown) => ['dashboard', 'sla-compliance', scope] as const,
     velocityTrend: (scope: unknown) => ['dashboard', 'velocity-trend', scope] as const,
     activeSprintsHealth: (scope: unknown) => ['dashboard', 'active-sprints-health', scope] as const,
+    myOpenIssues: (scope: unknown) => ['dashboard', 'my-open-issues', scope] as const,
+    resolutionTimeTrend: (scope: unknown) => ['dashboard', 'resolution-time-trend', scope] as const,
     preferences: ['dashboard', 'preferences'] as const,
   },
   savedFilters: {

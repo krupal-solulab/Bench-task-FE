@@ -1,5 +1,6 @@
 import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost } from './api-client'
 import type {
+  CompleteSprintPayload,
   CreateSprintPayload,
   Sprint,
   SprintActivityEntry,
@@ -27,8 +28,10 @@ export const sprintsService = {
   start: (projectId: string, sprintId: string) =>
     apiPost<Sprint>(`/projects/${projectId}/sprints/${sprintId}/start`, {}),
 
-  complete: (projectId: string, sprintId: string) =>
-    apiPost<Sprint>(`/projects/${projectId}/sprints/${sprintId}/complete`, {}),
+  complete: (projectId: string, sprintId: string, payload: CompleteSprintPayload = {}) =>
+    apiPost<Sprint>(`/projects/${projectId}/sprints/${sprintId}/complete`, payload),
+
+  history: (projectId: string) => apiGet<Sprint[]>(`/projects/${projectId}/sprints/history`),
 
   remove: (projectId: string, sprintId: string) =>
     apiDelete<void>(`/projects/${projectId}/sprints/${sprintId}`),

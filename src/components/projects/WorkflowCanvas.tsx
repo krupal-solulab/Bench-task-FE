@@ -28,6 +28,8 @@ import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
 import { STATUS_CATEGORIES } from '@/types/workflow.types'
 import type { Workflow, WorkflowStatus, WorkflowTransition } from '@/types/workflow.types'
+import type { AutomationRule } from '@/types/project.types'
+import { countRulesForTransition } from '@/lib/workflow-automation-badge'
 
 export interface WorkflowCanvasProps {
   projectId: string
@@ -36,6 +38,9 @@ export interface WorkflowCanvasProps {
   /** When set, this canvas reads/writes that issue type's workflow override instead of the
    * project-wide default (Workflow Engine v2's per-issue-type workflows). Omit for the default. */
   issueType?: string
+  /** The project's automation rules, used only to compute the "N rules" badge on each transition
+   * edge below - purely a read/display concern, editing rules stays on the Automation tab. */
+  automationRules?: AutomationRule[]
 }
 
 // Category accent colors matching TaskBoard's column accents, so a status reads the same color
@@ -107,9 +112,22 @@ function layoutNodes(statuses: WorkflowStatus[], selectedName: string | null): N
   })
 }
 
-function layoutEdges(transitions: WorkflowTransition[], selectedId: string | null): Edge[] {
+function layoutEdges(
+  transitions: WorkflowTransition[],
+  selectedId: string | null,
+  automationRules: AutomationRule[],
+): Edge[] {
   return transitions.map((t) => {
     const id = `${t.from}->${t.to}`
+    const isGated = !!(
+      t.allowedRoles?.length ||
+      t.requireComment ||
+      t.requiredCustomFieldIds?.length
+    )
+    const ruleCount = countRulesForTransition(automationRules, t.from, t.to)
+    const labelParts = [isGated ? 'gated' : null, ruleCount > 0 ? `⚡${ruleCount}` : null].filter(
+      Boolean,
+    )
     return {
       id,
       source: t.from,
@@ -119,7 +137,7 @@ function layoutEdges(transitions: WorkflowTransition[], selectedId: string | nul
         stroke: id === selectedId ? '#6366f1' : '#94a3b8',
         strokeWidth: id === selectedId ? 2 : 1,
       },
-      label: t.allowedRoles?.length || t.requireComment ? 'gated' : undefined,
+      label: labelParts.length > 0 ? labelParts.join(' · ') : undefined,
     }
   })
 }
@@ -129,7 +147,13 @@ function layoutEdges(transitions: WorkflowTransition[], selectedId: string | nul
  * List). Handles the workflow's shape (statuses + transitions); a transition's Condition/Validator
  * (who may make it / whether it requires a comment first) stays in the List view's per-transition
  * controls, to keep this canvas's interactions simple and reliably testable. */
-export function WorkflowCanvas({ projectId, workflow, canManage, issueType }: WorkflowCanvasProps) {
+export function WorkflowCanvas({
+  projectId,
+  workflow,
+  canManage,
+  issueType,
+  automationRules = [],
+}: WorkflowCanvasProps) {
   const [statuses, setStatuses] = useState<WorkflowStatus[]>(workflow.statuses)
   const [transitions, setTransitions] = useState<WorkflowTransition[]>(workflow.transitions)
   const [initialStatus, setInitialStatus] = useState(workflow.initialStatus)
@@ -142,8 +166,8 @@ export function WorkflowCanvas({ projectId, workflow, canManage, issueType }: Wo
 
   const nodes = useMemo(() => layoutNodes(statuses, selectedStatus), [statuses, selectedStatus])
   const edges = useMemo(
-    () => layoutEdges(transitions, selectedEdgeId),
-    [transitions, selectedEdgeId],
+    () => layoutEdges(transitions, selectedEdgeId, automationRules),
+    [transitions, selectedEdgeId, automationRules],
   )
 
   function applyWorkflow(next: Workflow) {
@@ -348,9 +372,19 @@ export function WorkflowCanvas({ projectId, workflow, canManage, issueType }: Wo
             </div>
             <p className="text-xs text-muted-foreground">{selectedEdgeId.replace('->', ' → ')}</p>
             <p className="text-xs text-muted-foreground">
-              Conditions and Validators (who can make it / require a comment first) are edited in
-              the List view.
+              Conditions and Validators (who can make it / require a comment first / required
+              fields) are edited in the List view.
             </p>
+            {(() => {
+              const [from, to] = selectedEdgeId.split('->')
+              const count = countRulesForTransition(automationRules, from ?? '', to ?? '')
+              return count > 0 ? (
+                <p className="text-xs font-medium text-amber-700">
+                  ⚡ {count} automation {count === 1 ? 'rule' : 'rules'} fire on this transition —
+                  see the Automation tab.
+                </p>
+              ) : null
+            })()}
             <Button
               type="button"
               size="sm"

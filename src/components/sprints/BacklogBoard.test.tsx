@@ -1,11 +1,18 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { HttpResponse, http } from 'msw'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { ToastProvider } from '@/context/ToastContext'
+import { ToastViewport } from '@/components/common/Toast'
+import { server } from '@/test/mocks/server'
 import { BacklogBoard } from '@/components/sprints/BacklogBoard'
 import type { Task } from '@/types/task.types'
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
+const url = (path: string) => `${BASE_URL}${path}`
 
 function makeTask(overrides: Partial<Task> = {}): Task {
   return {
@@ -49,7 +56,10 @@ function renderBoard(tasks: Task[], canManage = true) {
     return (
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            {children}
+            <ToastViewport />
+          </ToastProvider>
         </MemoryRouter>
       </QueryClientProvider>
     )
@@ -84,5 +94,73 @@ describe('BacklogBoard', () => {
   it('shows an empty state when there are no backlog tasks', () => {
     renderBoard([])
     expect(screen.getByText('Backlog is empty')).toBeInTheDocument()
+  })
+
+  describe('Phase 2 gap-closure: grouping and bulk actions', () => {
+    it('groups tasks by parent epic, with an "No epic" bucket for parentless tasks', async () => {
+      const user = userEvent.setup()
+      renderBoard([
+        makeTask({
+          id: 't-1',
+          title: 'Epic A task',
+          parent: { id: 'epic-a', title: 'Epic A', issueKey: 'PRJ-1' },
+        }),
+        makeTask({ id: 't-2', title: 'Loose task', parent: null }),
+      ])
+
+      await user.click(screen.getByLabelText('Group by epic'))
+
+      expect(screen.getByRole('heading', { name: /Epic A/ })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: /No epic/ })).toBeInTheDocument()
+      expect(screen.getByText('Epic A task')).toBeInTheDocument()
+      expect(screen.getByText('Loose task')).toBeInTheDocument()
+      // Grouped mode disables drag-to-reorder.
+      expect(screen.queryByLabelText('Drag to reorder')).not.toBeInTheDocument()
+    })
+
+    it('shows the bulk action bar once a row is selected, and clears it on "Clear selection"', async () => {
+      const user = userEvent.setup()
+      renderBoard([makeTask({ id: 't-1', title: 'First' })])
+
+      expect(screen.queryByText('1 selected')).not.toBeInTheDocument()
+      await user.click(screen.getByLabelText('Select First'))
+      expect(screen.getByText('1 selected')).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Clear selection' }))
+      expect(screen.queryByText('1 selected')).not.toBeInTheDocument()
+    })
+
+    it('bulk-adds a label to every selected task via the action bar', async () => {
+      let sentBody: { taskIds: string[]; labels: string[] } | null = null
+      server.use(
+        http.patch(url('/tasks/bulk-relabel'), async ({ request }) => {
+          sentBody = (await request.json()) as typeof sentBody
+          return HttpResponse.json({
+            success: true,
+            data: { succeeded: sentBody!.taskIds, failed: [] },
+          })
+        }),
+      )
+      const user = userEvent.setup()
+      renderBoard([
+        makeTask({ id: 't-1', title: 'First' }),
+        makeTask({ id: 't-2', title: 'Second' }),
+      ])
+
+      await user.click(screen.getByLabelText('Select First'))
+      await user.click(screen.getByLabelText('Select Second'))
+      await user.type(screen.getByPlaceholderText('Add label(s)…'), 'urgent{Enter}')
+      await user.click(screen.getByRole('button', { name: 'Apply' }))
+
+      await waitFor(() => expect(sentBody).not.toBeNull())
+      expect(sentBody!.taskIds.sort()).toEqual(['t-1', 't-2'])
+      expect(sentBody!.labels).toEqual(['urgent'])
+      expect(await screen.findByText('Add labels: 2 task(s) updated')).toBeInTheDocument()
+    })
+
+    it('does not show selection checkboxes or the bulk bar when canManage is false', () => {
+      renderBoard([makeTask({ id: 't-1', title: 'First' })], false)
+      expect(screen.queryByLabelText('Select First')).not.toBeInTheDocument()
+    })
   })
 })

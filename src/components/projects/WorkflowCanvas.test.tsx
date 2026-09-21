@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest'
 import { ToastProvider } from '@/context/ToastContext'
 import { WorkflowCanvas } from '@/components/projects/WorkflowCanvas'
 import type { Workflow } from '@/types/workflow.types'
+import type { AutomationRule } from '@/types/project.types'
+import { countRulesForTransition } from '@/lib/workflow-automation-badge'
 
 const DEFAULT_WORKFLOW: Workflow = {
   statuses: [
@@ -29,7 +31,11 @@ const DEFAULT_WORKFLOW: Workflow = {
 // below uses plain `fireEvent.click` (a single click event, no mousedown/mouseup pair) to select a
 // node without triggering that drag listener - this canvas is an additional, less rigorously-
 // tested view by design; the List view (WorkflowSettingsForm) stays the fully userEvent-covered one.
-function renderCanvas(workflow: Workflow = DEFAULT_WORKFLOW, canManage = true) {
+function renderCanvas(
+  workflow: Workflow = DEFAULT_WORKFLOW,
+  canManage = true,
+  automationRules: AutomationRule[] = [],
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   function Wrapper({ children }: { children: ReactNode }) {
     return (
@@ -38,9 +44,15 @@ function renderCanvas(workflow: Workflow = DEFAULT_WORKFLOW, canManage = true) {
       </QueryClientProvider>
     )
   }
-  return render(<WorkflowCanvas projectId="p-1" workflow={workflow} canManage={canManage} />, {
-    wrapper: Wrapper,
-  })
+  return render(
+    <WorkflowCanvas
+      projectId="p-1"
+      workflow={workflow}
+      canManage={canManage}
+      automationRules={automationRules}
+    />,
+    { wrapper: Wrapper },
+  )
 }
 
 describe('WorkflowCanvas', () => {
@@ -86,6 +98,66 @@ describe('WorkflowCanvas', () => {
     fireEvent.change(nameInput, { target: { value: 'Backlog' } })
 
     expect(screen.getByDisplayValue('Backlog')).toBeInTheDocument()
+  })
+
+  // Edges don't render under jsdom (no layout measurement for path geometry - see this file's
+  // own note on drag/connect limitations), so the "N automation rules" badge is verified against
+  // the exported pure counting function directly, not via a simulated edge click.
+  it('counts only enabled rules scoped to the exact from->to transition (Phase 2 gap-closure)', () => {
+    const rules: AutomationRule[] = [
+      {
+        id: 'r1',
+        name: 'Notify on progress',
+        enabled: true,
+        trigger: { type: 'StatusChanged', toStatus: 'In Progress', fromStatus: 'Todo' },
+        conditions: [],
+        actions: [],
+      },
+      {
+        id: 'r2',
+        name: 'Disabled rule',
+        enabled: false,
+        trigger: { type: 'StatusChanged', toStatus: 'In Progress', fromStatus: 'Todo' },
+        conditions: [],
+        actions: [],
+      },
+      {
+        id: 'r3',
+        name: 'Any status -> In Progress',
+        enabled: true,
+        trigger: { type: 'StatusChanged', toStatus: 'In Progress' },
+        conditions: [],
+        actions: [],
+      },
+      {
+        id: 'r4',
+        name: 'Unrelated transition',
+        enabled: true,
+        trigger: { type: 'StatusChanged', toStatus: 'Done', fromStatus: 'In Progress' },
+        conditions: [],
+        actions: [],
+      },
+    ]
+
+    expect(countRulesForTransition(rules, 'Todo', 'In Progress')).toBe(2)
+    expect(countRulesForTransition(rules, 'In Progress', 'Done')).toBe(1)
+    expect(countRulesForTransition(rules, 'Done', 'Todo')).toBe(0)
+  })
+
+  it('renders without crashing when automation rules are provided as a prop (Phase 2 gap-closure)', () => {
+    const rules: AutomationRule[] = [
+      {
+        id: 'r1',
+        name: 'Notify on progress',
+        enabled: true,
+        trigger: { type: 'StatusChanged', toStatus: 'In Progress', fromStatus: 'Todo' },
+        conditions: [],
+        actions: [],
+      },
+    ]
+    renderCanvas(DEFAULT_WORKFLOW, true, rules)
+
+    expect(screen.getByTestId('workflow-canvas')).toBeInTheDocument()
   })
 
   it('deleting the selected status removes its node and closes the editor', async () => {

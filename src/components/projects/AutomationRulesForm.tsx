@@ -31,6 +31,7 @@ import type {
   Project,
 } from '@/types/project.types'
 import { ISSUE_TYPES, TASK_PRIORITIES } from '@/types/task.types'
+import { ORG_ROLES } from '@/types/user.types'
 
 export interface AutomationRulesFormProps {
   projectId: string
@@ -41,6 +42,8 @@ export interface AutomationRulesFormProps {
 const TRIGGER_LABELS: Record<AutomationTriggerType, string> = {
   IssueCreated: 'Issue Created',
   StatusChanged: 'Status Changed',
+  UnassignedForDuration: 'Unassigned For Duration',
+  AllSubtasksDone: 'All Sub-tasks Done',
 }
 
 const ACTION_LABELS: Record<AutomationActionType, string> = {
@@ -49,6 +52,8 @@ const ACTION_LABELS: Record<AutomationActionType, string> = {
   SetAssignee: 'Set Assignee',
   AddLabels: 'Add Label(s)',
   AddComment: 'Add Comment',
+  Webhook: 'Call Webhook',
+  NotifyRole: 'Notify Role',
 }
 
 const CONDITION_FIELD_LABELS: Record<AutomationConditionField, string> = {
@@ -102,6 +107,7 @@ export function AutomationRulesForm({ projectId, project, canManage }: Automatio
       (r) =>
         r.name.trim().length > 0 &&
         (r.trigger.type !== 'StatusChanged' || !!r.trigger.toStatus) &&
+        (r.trigger.type !== 'UnassignedForDuration' || !!r.trigger.afterHours) &&
         r.actions.length > 0 &&
         r.actions.every((a) => a.value.trim().length > 0) &&
         r.conditions.every((c) => c.value.trim().length > 0),
@@ -241,6 +247,7 @@ export function AutomationRulesForm({ projectId, project, canManage }: Automatio
                     trigger: {
                       type: v as AutomationTriggerType,
                       toStatus: v === 'StatusChanged' ? rule.trigger.toStatus : null,
+                      afterHours: v === 'UnassignedForDuration' ? rule.trigger.afterHours : null,
                     },
                   })
                 }
@@ -278,6 +285,29 @@ export function AutomationRulesForm({ projectId, project, canManage }: Automatio
                     ))}
                   </SelectContent>
                 </Select>
+              )}
+
+              {rule.trigger.type === 'UnassignedForDuration' && (
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    aria-label={`Rule ${ruleIndex + 1} after hours`}
+                    type="number"
+                    min={1}
+                    value={rule.trigger.afterHours ?? ''}
+                    onChange={(e) =>
+                      updateRule(ruleIndex, {
+                        trigger: {
+                          type: 'UnassignedForDuration',
+                          toStatus: null,
+                          afterHours: e.target.value ? Number(e.target.value) : null,
+                        },
+                      })
+                    }
+                    placeholder="Hours"
+                    className="w-24"
+                  />
+                  <span className="text-sm text-muted-foreground">hours unassigned</span>
+                </div>
               )}
             </div>
 
@@ -509,6 +539,38 @@ export function AutomationRulesForm({ projectId, project, canManage }: Automatio
                       rows={2}
                       className="w-64"
                     />
+                  )}
+                  {action.type === 'Webhook' && (
+                    <Input
+                      aria-label={`Rule ${ruleIndex + 1} action ${actionIndex + 1} value`}
+                      type="url"
+                      value={action.value}
+                      onChange={(e) =>
+                        updateAction(ruleIndex, actionIndex, { value: e.target.value })
+                      }
+                      placeholder="https://example.com/hook"
+                      className="w-64"
+                    />
+                  )}
+                  {action.type === 'NotifyRole' && (
+                    <Select
+                      value={action.value}
+                      onValueChange={(v) => updateAction(ruleIndex, actionIndex, { value: v })}
+                    >
+                      <SelectTrigger
+                        aria-label={`Rule ${ruleIndex + 1} action ${actionIndex + 1} value`}
+                        className="w-36"
+                      >
+                        <SelectValue placeholder="Role…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ORG_ROLES.map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {r}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
 
                   <button

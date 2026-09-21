@@ -5,8 +5,10 @@ import type {
   DashboardScopeQuery,
   DashboardSummary,
   DeveloperWorkloadPoint,
+  MyOpenIssueItem,
   OverdueSummaryItem,
   ProjectsByStatusPoint,
+  ResolutionTimeTrendPoint,
   SlaComplianceEntry,
   TaskTrendPoint,
   TasksByPriorityPoint,
@@ -44,6 +46,12 @@ export const dashboardService = {
 
   activeSprintsHealth: (query: DashboardScopeQuery) =>
     apiGet<ActiveSprintHealthEntry[]>('/dashboard/active-sprints-health', query),
+
+  myOpenIssues: (query: DashboardScopeQuery) =>
+    apiGet<MyOpenIssueItem[]>('/dashboard/my-open-issues', query),
+
+  resolutionTimeTrend: (query: DashboardScopeQuery) =>
+    apiGet<ResolutionTimeTrendPoint[]>('/dashboard/resolution-time-trend', query),
 
   getPreferences: () => apiGet<DashboardPreference>('/dashboard/preferences'),
 

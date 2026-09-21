@@ -73,7 +73,12 @@ export interface SlaPolicyEntry {
   resolutionHours: number
 }
 
-export const AUTOMATION_TRIGGER_TYPES = ['IssueCreated', 'StatusChanged'] as const
+export const AUTOMATION_TRIGGER_TYPES = [
+  'IssueCreated',
+  'StatusChanged',
+  'UnassignedForDuration',
+  'AllSubtasksDone',
+] as const
 export type AutomationTriggerType = (typeof AUTOMATION_TRIGGER_TYPES)[number]
 
 export const AUTOMATION_ACTION_TYPES = [
@@ -82,6 +87,8 @@ export const AUTOMATION_ACTION_TYPES = [
   'SetAssignee',
   'AddLabels',
   'AddComment',
+  'Webhook',
+  'NotifyRole',
 ] as const
 export type AutomationActionType = (typeof AUTOMATION_ACTION_TYPES)[number]
 
@@ -102,6 +109,11 @@ export interface AutomationTrigger {
   type: AutomationTriggerType
   // Only meaningful (and only ever set) for type === 'StatusChanged'.
   toStatus: string | null
+  // Further scopes a StatusChanged trigger to one specific from->to edge. Unset means "any status
+  // -> toStatus" - matches the backend's automation-rule.schema.ts shape exactly.
+  fromStatus?: string | null
+  // Only meaningful (and required) for type === 'UnassignedForDuration'.
+  afterHours?: number | null
 }
 
 export interface AutomationRule {
@@ -114,6 +126,9 @@ export interface AutomationRule {
   conditions: AutomationCondition[]
   actions: AutomationAction[]
 }
+
+export const BOARD_TYPES = ['Kanban', 'Scrum'] as const
+export type BoardType = (typeof BOARD_TYPES)[number]
 
 export interface Project {
   id: string
@@ -133,6 +148,9 @@ export interface Project {
   // Null means "use the legacy per-member permission flags" - see MemberPermissions above.
   permissionSchemeId: string | null
   notificationScheme: NotificationSchemeRule[]
+  // Optional (rather than required) so existing test fixtures/mocks predating this field don't
+  // all need updating - absent means Scrum, matching the backend's own default.
+  boardType?: BoardType
   createdAt: string
   updatedAt: string
 }
@@ -154,6 +172,7 @@ export interface CreateProjectPayload {
   startDate?: string | null
   dueDate?: string | null
   memberIds?: string[]
+  boardType?: BoardType
 }
 
 export type UpdateProjectPayload = Partial<CreateProjectPayload>
@@ -172,5 +191,22 @@ export interface ProjectActivityEntry {
   from: string | null
   to: string | null
   actor: User
+  createdAt: string
+}
+
+export const AUTOMATION_LOG_OUTCOMES = ['success', 'failure'] as const
+export type AutomationLogOutcome = (typeof AUTOMATION_LOG_OUTCOMES)[number]
+
+/** BRD 8's automation audit trail entry - one per fired action, written whether it succeeded or
+ * failed (see GET /projects/:id/automation-log). */
+export interface AutomationLogEntry {
+  id: string
+  ruleId: string
+  ruleName: string
+  triggerType: AutomationTriggerType
+  actionSummaries: string[]
+  outcome: AutomationLogOutcome
+  errorMessage: string | null
+  task: { id: string; title: string; issueKey: string } | null
   createdAt: string
 }

@@ -90,6 +90,21 @@ export interface ActiveSprintHealthEntry {
   hasStoryPoints: boolean
 }
 
+export interface MyOpenIssueItem {
+  id: string
+  title: string
+  issueKey: string
+  project: { id: string; name: string }
+  status: string
+  dueDate: string | null
+  priority: TaskPriority
+}
+
+export interface ResolutionTimeTrendPoint {
+  weekStart: string
+  avgResolutionHoursByPriority: Record<TaskPriority, number | null>
+}
+
 // The dashboard's customizable widgets - the top stat-card row is always shown and isn't part of
 // this set. Order here doubles as the default order for anyone with no saved preference. The
 // three Search/Dashboards v2 widgets are appended at the end, so a user with an existing saved
@@ -105,6 +120,8 @@ export const DASHBOARD_WIDGET_IDS = [
   'slaCompliance',
   'velocityTrend',
   'activeSprintsHealth',
+  'myOpenIssues',
+  'resolutionTimeTrend',
 ] as const
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number]
 

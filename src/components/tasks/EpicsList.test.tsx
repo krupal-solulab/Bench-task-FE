@@ -82,6 +82,34 @@ describe('EpicsList', () => {
     expect(screen.getByText('25% complete')).toBeInTheDocument()
   })
 
+  it('shows a target date when the epic has a dueDate (Phase 2 gap-closure - BRD 6.4)', () => {
+    server.use(
+      http.get(url('/tasks/:id/epic-progress'), () =>
+        HttpResponse.json({
+          success: true,
+          data: { linkedIssueCount: 0, doneCount: 0, progress: 0 },
+        }),
+      ),
+    )
+    renderEpicsList([makeEpic({ dueDate: '2026-03-01T00:00:00.000Z' })])
+
+    expect(screen.getByText(/Target:/)).toBeInTheDocument()
+  })
+
+  it('shows no target date line when the epic has no dueDate', () => {
+    server.use(
+      http.get(url('/tasks/:id/epic-progress'), () =>
+        HttpResponse.json({
+          success: true,
+          data: { linkedIssueCount: 0, doneCount: 0, progress: 0 },
+        }),
+      ),
+    )
+    renderEpicsList([makeEpic({ dueDate: null })])
+
+    expect(screen.queryByText(/Target:/)).not.toBeInTheDocument()
+  })
+
   it('shows 0% before the progress data has loaded, rather than a broken/undefined bar', () => {
     server.use(
       http.get(url('/tasks/:id/epic-progress'), () => new Promise(() => {})), // never resolves

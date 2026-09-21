@@ -2,6 +2,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/constants'
 import { tasksService } from '@/services/tasks.service'
 import type {
+  BulkAssignPayload,
+  BulkMoveSprintPayload,
+  BulkRelabelPayload,
   CreateTaskPayload,
   Task,
   UpdateTaskAssigneePayload,
@@ -19,7 +22,7 @@ function invalidateAfterTaskChange(queryClient: ReturnType<typeof useQueryClient
 }
 
 /** Moving a task in/out of a sprint changes both the Backlog and Sprint Board views at once. */
-function invalidateAfterSprintMove(queryClient: ReturnType<typeof useQueryClient>, task: Task) {
+function invalidateAfterSprintMove(queryClient: ReturnType<typeof useQueryClient>, task?: Task) {
   invalidateAfterTaskChange(queryClient, task)
   void queryClient.invalidateQueries({ queryKey: queryKeys.sprints.all })
 }
@@ -143,6 +146,32 @@ export function useUpdateTaskAssignee(id: string) {
       queryClient.setQueryData(queryKeys.tasks.detail(id), task)
       invalidateAfterTaskChange(queryClient, task)
     },
+  })
+}
+
+/** BRD 6.2's bulk backlog actions - each invalidates the same broad set a single-task change
+ * would, since a bulk call can touch tasks across multiple projects/sprints at once. */
+export function useBulkMoveSprint() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: BulkMoveSprintPayload) => tasksService.bulkMoveSprint(payload),
+    onSuccess: () => invalidateAfterSprintMove(queryClient),
+  })
+}
+
+export function useBulkAssign() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: BulkAssignPayload) => tasksService.bulkAssign(payload),
+    onSuccess: () => invalidateAfterTaskChange(queryClient),
+  })
+}
+
+export function useBulkRelabel() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: BulkRelabelPayload) => tasksService.bulkRelabel(payload),
+    onSuccess: () => invalidateAfterTaskChange(queryClient),
   })
 }
 
