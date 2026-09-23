@@ -14,6 +14,7 @@ import { MyTasksPage } from '@/pages/tasks/MyTasksPage'
 import { TaskDetailPage } from '@/pages/tasks/TaskDetailPage'
 import { TicketsListPage } from '@/pages/tickets/TicketsListPage'
 import { TicketDetailPage } from '@/pages/tickets/TicketDetailPage'
+import { TicketSettingsPage } from '@/pages/tickets/TicketSettingsPage'
 import { UsersPage } from '@/pages/admin/UsersPage'
 import { PermissionSchemesPage } from '@/pages/admin/PermissionSchemesPage'
 import { BillingPage } from '@/pages/admin/BillingPage'
@@ -44,6 +45,7 @@ export function AppRouter() {
             <Route path="/tasks/my-tasks" element={<MyTasksPage />} />
             <Route path="/tasks/:id" element={<TaskDetailPage />} />
             <Route path="/tickets" element={<TicketsListPage />} />
+            <Route path="/tickets/settings" element={<TicketSettingsPage />} />
             <Route path="/tickets/:id" element={<TicketDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/canned-responses" element={<CannedResponsesPage />} />

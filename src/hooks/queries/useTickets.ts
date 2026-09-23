@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { QUERY_STALE_TIME, queryKeys } from '@/lib/constants'
-import { ticketsService } from '@/services/tickets.service'
+import { ticketSettingsService, ticketsService } from '@/services/tickets.service'
 import type { ListTicketsQuery } from '@/types/ticket.types'
 
 export function useTickets(query: ListTicketsQuery) {
@@ -33,5 +33,50 @@ export function useTicketActivity(id: string | undefined) {
     queryKey: queryKeys.tickets.activity(id ?? ''),
     queryFn: () => ticketsService.listActivity(id!),
     enabled: !!id,
+  })
+}
+
+// --- Batch 1: Triggers/Automations/Macros + Advanced SLA/Business Hours settings ---
+
+export function useTicketAutomationRules() {
+  return useQuery({
+    queryKey: queryKeys.ticketSettings.automationRules,
+    queryFn: () => ticketSettingsService.getAutomationRules(),
+  })
+}
+
+export function useTicketScheduledAutomations() {
+  return useQuery({
+    queryKey: queryKeys.ticketSettings.scheduledAutomations,
+    queryFn: () => ticketSettingsService.getScheduledAutomations(),
+  })
+}
+
+export function useTicketMacros() {
+  return useQuery({
+    queryKey: queryKeys.ticketSettings.macros,
+    queryFn: () => ticketSettingsService.getMacros(),
+  })
+}
+
+export function useTicketSlaPolicy() {
+  return useQuery({
+    queryKey: queryKeys.ticketSettings.slaPolicy,
+    queryFn: () => ticketSettingsService.getSlaPolicy(),
+  })
+}
+
+export function useBusinessHoursCalendar() {
+  return useQuery({
+    queryKey: queryKeys.ticketSettings.businessHoursCalendar,
+    queryFn: () => ticketSettingsService.getBusinessHoursCalendar(),
+  })
+}
+
+export function useTicketAutomationLog(page: number, limit: number) {
+  return useQuery({
+    queryKey: queryKeys.ticketSettings.automationLog(page),
+    queryFn: () => ticketSettingsService.automationLog({ page, limit }),
+    placeholderData: (prev) => prev,
   })
 }
