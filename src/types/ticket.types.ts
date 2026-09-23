@@ -93,3 +93,110 @@ export interface ListTicketsQuery {
   customer?: string
   search?: string
 }
+
+// --- Triggers/Automations/Macros + Advanced SLA/Business Hours (Batch 1) ---
+
+export const TICKET_AUTOMATION_TRIGGER_TYPES = [
+  'TicketCreated',
+  'TicketStatusChanged',
+  'TicketCommentAdded',
+  'TicketReassigned',
+] as const
+export type TicketAutomationTriggerType = (typeof TICKET_AUTOMATION_TRIGGER_TYPES)[number]
+
+export const TICKET_AUTOMATION_ACTION_TYPES = [
+  'SetStatus',
+  'SetPriority',
+  'SetAssignee',
+  'AddTags',
+  'AddComment',
+  'NotifyRole',
+  'Webhook',
+] as const
+export type TicketAutomationActionType = (typeof TICKET_AUTOMATION_ACTION_TYPES)[number]
+
+export const TICKET_AUTOMATION_CONDITION_FIELDS = [
+  'Priority',
+  'Channel',
+  'CustomerTier',
+  'Tag',
+] as const
+export type TicketAutomationConditionField = (typeof TICKET_AUTOMATION_CONDITION_FIELDS)[number]
+
+export interface TicketAutomationCondition {
+  field: TicketAutomationConditionField
+  value: string
+}
+
+export interface TicketAutomationAction {
+  type: TicketAutomationActionType
+  value: string
+}
+
+export interface TicketAutomationTrigger {
+  type: TicketAutomationTriggerType
+  toStatus?: string | null
+  fromStatus?: string | null
+}
+
+export interface TicketAutomationRule {
+  id: string
+  name: string
+  enabled: boolean
+  trigger: TicketAutomationTrigger
+  conditions: TicketAutomationCondition[]
+  actions: TicketAutomationAction[]
+}
+
+export interface TicketScheduledAutomation {
+  id: string
+  name: string
+  enabled: boolean
+  matchStatus: TicketStatus
+  afterHours: number
+  conditions: TicketAutomationCondition[]
+  actions: TicketAutomationAction[]
+}
+
+export const TICKET_MACRO_VISIBILITIES = ['team', 'personal'] as const
+export type TicketMacroVisibility = (typeof TICKET_MACRO_VISIBILITIES)[number]
+
+export interface TicketMacro {
+  id: string
+  name: string
+  actions: TicketAutomationAction[]
+  visibility: TicketMacroVisibility
+  createdBy: string
+}
+
+export interface TicketSlaPolicyEntry {
+  priority: TicketPriority
+  customerTier: CustomerTier | null
+  channel: string | null
+  firstResponseHours: number
+  resolutionHours: number
+  escalationChain: string[]
+}
+
+export interface BusinessHoursWindow {
+  start: string
+  end: string
+}
+
+export interface BusinessHoursCalendar {
+  workingDays: number[]
+  workingHours: BusinessHoursWindow
+  holidays: string[]
+}
+
+export interface TicketAutomationLogEntry {
+  id: string
+  ticket: { id: string; subject: string; ticketKey: string } | null
+  ruleId: string
+  ruleName: string
+  triggerType: string
+  actionSummaries: string[]
+  outcome: 'success' | 'failure'
+  errorMessage: string | null
+  createdAt: string
+}

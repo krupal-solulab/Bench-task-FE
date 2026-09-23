@@ -248,6 +248,16 @@ export const handlers = [
     HttpResponse.json(ok(await request.json())),
   ),
 
+  // No org in the default fixtures has configured any ticket-automation-engine settings, so
+  // every default is an empty list/no calendar (mirrors the /projects/:id/sla-policy fallback
+  // above) - only tests that specifically exercise Batch 1 settings need to override these.
+  http.get(url('/tickets/settings/automation-rules'), () => HttpResponse.json(ok([]))),
+  http.get(url('/tickets/settings/scheduled-automations'), () => HttpResponse.json(ok([]))),
+  http.get(url('/tickets/settings/macros'), () => HttpResponse.json(ok([]))),
+  http.get(url('/tickets/settings/sla-policy'), () => HttpResponse.json(ok([]))),
+  http.get(url('/tickets/settings/business-hours'), () => HttpResponse.json(ok(null))),
+  http.get(url('/tickets/settings/automation-log'), () => HttpResponse.json(paginated([]))),
+
   http.get(url('/saved-filters'), () => HttpResponse.json(ok([]))),
 
   http.get(url('/canned-responses'), () => HttpResponse.json(ok([]))),
