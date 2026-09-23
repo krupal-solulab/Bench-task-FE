@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, Settings } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/common/Button'
+import { useAuth } from '@/hooks/useAuth'
 import { Pagination } from '@/components/common/Pagination'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ErrorState } from '@/components/common/ErrorState'
@@ -25,6 +26,7 @@ import type { TicketPriority, TicketStatus } from '@/types/ticket.types'
 const ALL = '__all__'
 
 export function TicketsListPage() {
+  const { hasRole } = useAuth()
   const [createOpen, setCreateOpen] = useState(false)
   const [state, setState] = useQueryParams({
     page: 1,
@@ -46,9 +48,18 @@ export function TicketsListPage() {
         title="Tickets"
         description="Customer support tickets"
         actions={
-          <Button type="button" onClick={() => setCreateOpen(true)} className="gap-1">
-            <Plus className="h-4 w-4" /> New ticket
-          </Button>
+          <div className="flex gap-2">
+            {(hasRole('Admin') || hasRole('Manager')) && (
+              <Button type="button" variant="outline" asChild className="gap-1">
+                <Link to="/tickets/settings">
+                  <Settings className="h-4 w-4" /> Automation settings
+                </Link>
+              </Button>
+            )}
+            <Button type="button" onClick={() => setCreateOpen(true)} className="gap-1">
+              <Plus className="h-4 w-4" /> New ticket
+            </Button>
+          </div>
         }
       />
 

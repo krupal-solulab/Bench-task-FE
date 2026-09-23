@@ -15,25 +15,35 @@ import {
 import { Skeleton } from '@/components/common/Skeleton'
 import { ErrorState } from '@/components/common/ErrorState'
 import { EmptyState } from '@/components/common/EmptyState'
-import { useTicket, useTicketActivity, useTicketComments } from '@/hooks/queries/useTickets'
+import {
+  useTicket,
+  useTicketActivity,
+  useTicketComments,
+  useTicketMacros,
+} from '@/hooks/queries/useTickets'
 import {
   useAddTicketComment,
+  useApplyMacro,
   useAssignTicket,
+  useUpdateTicketPriority,
   useUpdateTicketStatus,
 } from '@/hooks/mutations/useTicketMutations'
 import { useToast } from '@/hooks/useToast'
 import { formatDateTime } from '@/lib/date'
 import { toApiError } from '@/lib/error'
-import { TICKET_STATUSES } from '@/types/ticket.types'
-import type { TicketStatus } from '@/types/ticket.types'
+import { TICKET_PRIORITIES, TICKET_STATUSES } from '@/types/ticket.types'
+import type { TicketPriority, TicketStatus } from '@/types/ticket.types'
 
 export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: ticket, isLoading, isError, error, refetch } = useTicket(id)
   const { data: comments } = useTicketComments(id)
   const { data: activity } = useTicketActivity(id)
+  const { data: macros } = useTicketMacros()
   const updateStatus = useUpdateTicketStatus(id ?? '')
   const assignTicket = useAssignTicket(id ?? '')
+  const updatePriority = useUpdateTicketPriority(id ?? '')
+  const applyMacro = useApplyMacro(id ?? '')
   const addComment = useAddTicketComment(id ?? '')
   const { showToast } = useToast()
 
@@ -58,6 +68,31 @@ export function TicketDetailPage() {
     } catch (err) {
       showToast({
         title: 'Could not change assignee',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  async function handlePriorityChange(priority: string) {
+    try {
+      await updatePriority.mutateAsync(priority as TicketPriority)
+    } catch (err) {
+      showToast({
+        title: 'Could not change priority',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  async function handleApplyMacro(macroId: string) {
+    try {
+      await applyMacro.mutateAsync(macroId)
+      showToast({ title: 'Macro applied', variant: 'success' })
+    } catch (err) {
+      showToast({
+        title: 'Could not apply macro',
         description: toApiError(err).message,
         variant: 'destructive',
       })
@@ -96,6 +131,22 @@ export function TicketDetailPage() {
       <PageHeader
         title={`${ticket.ticketKey} · ${ticket.subject}`}
         description={`${ticket.customer.name} (${ticket.customer.email})`}
+        actions={
+          !!macros?.length && (
+            <Select onValueChange={(v) => void handleApplyMacro(v)}>
+              <SelectTrigger aria-label="Apply macro" className="w-48">
+                <SelectValue placeholder="Apply macro…" />
+              </SelectTrigger>
+              <SelectContent>
+                {macros.map((macro) => (
+                  <SelectItem key={macro.id} value={macro.id}>
+                    {macro.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -117,9 +168,18 @@ export function TicketDetailPage() {
 
         <div className="space-y-1.5">
           <label className="text-xs font-medium uppercase text-muted-foreground">Priority</label>
-          <div className="flex h-10 items-center rounded-md border px-3 text-sm">
-            {ticket.priority}
-          </div>
+          <Select value={ticket.priority} onValueChange={(v) => void handlePriorityChange(v)}>
+            <SelectTrigger aria-label="Priority">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TICKET_PRIORITIES.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {p}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-1.5">

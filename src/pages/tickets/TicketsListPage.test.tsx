@@ -6,9 +6,24 @@ import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { server } from '@/test/mocks/server'
+import { AuthContext, type AuthContextValue } from '@/context/AuthContext'
 import { ToastProvider } from '@/context/ToastContext'
 import { ToastViewport } from '@/components/common/Toast'
+import { mockUsers } from '@/test/mocks/fixtures'
 import { TicketsListPage } from './TicketsListPage'
+
+function makeAuthValue(overrides: Partial<AuthContextValue> = {}): AuthContextValue {
+  return {
+    user: mockUsers[0]!,
+    isAuthenticated: true,
+    isLoading: false,
+    login: async () => {},
+    registerOrganization: async () => {},
+    logout: async () => {},
+    hasRole: () => false,
+    ...overrides,
+  }
+}
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
 const url = (path: string) => `${BASE_URL}${path}`
@@ -24,15 +39,17 @@ function emptyMeta(total = 0) {
   }
 }
 
-function renderPage() {
+function renderPage(authValue: AuthContextValue = makeAuthValue()) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
           <ToastProvider>
-            {children}
-            <ToastViewport />
+            <AuthContext.Provider value={authValue}>
+              {children}
+              <ToastViewport />
+            </AuthContext.Provider>
           </ToastProvider>
         </MemoryRouter>
       </QueryClientProvider>
