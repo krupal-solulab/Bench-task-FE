@@ -107,6 +107,18 @@ export const queryKeys = {
   comments: {
     list: (taskId: string, filters: unknown) => ['comments', taskId, 'list', filters] as const,
   },
+  tickets: {
+    all: ['tickets'] as const,
+    list: (filters: unknown) => ['tickets', 'list', filters] as const,
+    detail: (id: string) => ['tickets', 'detail', id] as const,
+    comments: (id: string) => ['tickets', 'detail', id, 'comments'] as const,
+    activity: (id: string) => ['tickets', 'detail', id, 'activity'] as const,
+  },
+  customers: {
+    all: ['customers'] as const,
+    list: (filters: unknown) => ['customers', 'list', filters] as const,
+    detail: (id: string) => ['customers', 'detail', id] as const,
+  },
   sprints: {
     all: ['sprints'] as const,
     list: (projectId: string, filters: unknown) => ['sprints', 'list', projectId, filters] as const,

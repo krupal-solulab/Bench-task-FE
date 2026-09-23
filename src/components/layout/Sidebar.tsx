@@ -3,6 +3,7 @@ import {
   ChevronsRight,
   CreditCard,
   LayoutDashboard,
+  LifeBuoy,
   ListChecks,
   Lock,
   MessageSquareText,
@@ -27,6 +28,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/projects', label: 'Projects', icon: FolderKanban },
   { to: '/tasks/my-tasks', label: 'My Tasks', icon: ListChecks },
+  { to: '/tickets', label: 'Tickets', icon: LifeBuoy },
   { to: '/canned-responses', label: 'Canned Responses', icon: MessageSquareText },
   { to: '/admin/users', label: 'Admin', icon: ShieldCheck, roles: ['Admin'] },
   {
