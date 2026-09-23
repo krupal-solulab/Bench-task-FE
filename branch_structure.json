@@ -1,0 +1,21 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "development",
+    "main",
+    "origin",
+    "zendes-backup"
+  ],
+  "parent": {
+    "development": "main",
+    "main": null,
+    "origin": "main",
+    "zendes-backup": "main"
+  },
+  "order": [
+    "main",
+    "development",
+    "origin",
+    "zendes-backup"
+  ]
+}

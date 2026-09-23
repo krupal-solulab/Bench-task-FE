@@ -131,4 +131,42 @@ describe('TicketDetailPage', () => {
 
     expect(screen.getByRole('button', { name: 'Add note' })).toBeInTheDocument()
   })
+
+  it("shows the Priority selector with the ticket's current value", async () => {
+    mockRoutes()
+    renderPage()
+
+    expect(await screen.findByRole('combobox', { name: 'Priority' })).toHaveTextContent('High')
+  })
+
+  it('shows an "Apply macro" selector when macros exist, and hides it when there are none', async () => {
+    mockRoutes()
+    server.use(
+      http.get(url('/tickets/settings/macros'), () =>
+        HttpResponse.json({
+          success: true,
+          data: [
+            {
+              id: 'm-1',
+              name: 'Close as resolved',
+              actions: [{ type: 'SetStatus', value: 'Solved' }],
+              visibility: 'team',
+              createdBy: 'u-1',
+            },
+          ],
+        }),
+      ),
+    )
+    renderPage()
+
+    expect(await screen.findByRole('combobox', { name: 'Apply macro' })).toBeInTheDocument()
+  })
+
+  it('does not show an "Apply macro" selector when no macros are configured', async () => {
+    mockRoutes()
+    renderPage()
+
+    await screen.findByText(/SUP-1/)
+    expect(screen.queryByRole('combobox', { name: 'Apply macro' })).not.toBeInTheDocument()
+  })
 })

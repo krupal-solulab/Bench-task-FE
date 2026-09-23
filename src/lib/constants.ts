@@ -114,6 +114,14 @@ export const queryKeys = {
     comments: (id: string) => ['tickets', 'detail', id, 'comments'] as const,
     activity: (id: string) => ['tickets', 'detail', id, 'activity'] as const,
   },
+  ticketSettings: {
+    automationRules: ['ticket-settings', 'automation-rules'] as const,
+    scheduledAutomations: ['ticket-settings', 'scheduled-automations'] as const,
+    macros: ['ticket-settings', 'macros'] as const,
+    slaPolicy: ['ticket-settings', 'sla-policy'] as const,
+    businessHoursCalendar: ['ticket-settings', 'business-hours'] as const,
+    automationLog: (page: number) => ['ticket-settings', 'automation-log', page] as const,
+  },
   customers: {
     all: ['customers'] as const,
     list: (filters: unknown) => ['customers', 'list', filters] as const,
