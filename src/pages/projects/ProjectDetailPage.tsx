@@ -44,6 +44,7 @@ import { FieldsSettingsForm } from '@/components/projects/FieldsSettingsForm'
 import { CustomFieldOverridesForm } from '@/components/projects/CustomFieldOverridesForm'
 import { SlaPolicySettingsForm } from '@/components/projects/SlaPolicySettingsForm'
 import { DependencyGraphView } from '@/components/projects/DependencyGraphView'
+import { ReleasesPanel } from '@/components/releases/ReleasesPanel'
 import { EpicProgressTable } from '@/components/projects/EpicProgressTable'
 import { IssueTypesSettingsForm } from '@/components/projects/IssueTypesSettingsForm'
 import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
@@ -358,6 +359,7 @@ export function ProjectDetailPage() {
             <TabsTrigger value="stats">Stats</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
+            <TabsTrigger value="releases">Releases</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="workflow">Workflow</TabsTrigger>
             <TabsTrigger value="fields">Fields</TabsTrigger>
@@ -777,6 +779,10 @@ export function ProjectDetailPage() {
 
         <TabsContent value="dependencies">
           <DependencyGraphView projectId={id ?? ''} />
+        </TabsContent>
+
+        <TabsContent value="releases">
+          <ReleasesPanel projectId={id ?? ''} canManage={canManage} />
         </TabsContent>
 
         <TabsContent value="sla">

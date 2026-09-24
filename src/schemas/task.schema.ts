@@ -17,6 +17,8 @@ export const taskSchema = z
     storyPoints: z.number().min(0).max(1000).nullable().optional(),
     labels: z.array(z.string()).optional().default([]),
     components: z.array(z.string()).optional().default([]),
+    fixVersions: z.array(z.string()).optional().default([]),
+    affectsVersions: z.array(z.string()).optional().default([]),
     // Required-field enforcement for custom fields happens server-side - the project's field
     // definitions aren't known to this static schema.
     customFieldValues: z.record(z.unknown()).optional().default({}),

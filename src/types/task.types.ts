@@ -1,6 +1,7 @@
 import type { SortOrder } from './api.types'
 import type { User } from './user.types'
 import type { StatusCategory } from './workflow.types'
+import type { ReleaseSummary } from './release.types'
 
 // The system default workflow's 4 status names - still used as the fallback status list/filter
 // options for any project that hasn't configured a custom workflow (see status-transitions.ts's
@@ -63,6 +64,9 @@ export interface Task {
   issueKey: string | null
   labels: string[]
   components: string[]
+  // Module 2's "Fix Version" / "Affects Version" (BRD: Releases & Version Management).
+  fixVersions: ReleaseSummary[]
+  affectsVersions: ReleaseSummary[]
   // Keyed by the project's CustomFieldDefinition.id, not name.
   customFieldValues: Record<string, unknown>
   createdAt: string
@@ -104,6 +108,8 @@ export interface CreateTaskPayload {
   storyPoints?: number | null
   labels?: string[]
   components?: string[]
+  fixVersions?: string[]
+  affectsVersions?: string[]
   customFieldValues?: Record<string, unknown>
 }
 

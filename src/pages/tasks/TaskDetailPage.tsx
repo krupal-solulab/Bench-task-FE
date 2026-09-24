@@ -118,6 +118,8 @@ export function TaskDetailPage() {
         storyPoints: values.storyPoints,
         labels: values.labels,
         components: values.components,
+        fixVersions: values.fixVersions,
+        affectsVersions: values.affectsVersions,
         customFieldValues: values.customFieldValues,
       })
       showToast({ title: 'Task updated', variant: 'success' })
@@ -278,8 +280,45 @@ export function TaskDetailPage() {
               ))}
             </dl>
 
-            {(task.labels.length > 0 || task.components.length > 0) && (
+            {(task.labels.length > 0 ||
+              task.components.length > 0 ||
+              task.fixVersions.length > 0 ||
+              task.affectsVersions.length > 0) && (
               <div className="mt-5 flex flex-wrap gap-4 border-t pt-4">
+                {task.fixVersions.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Fix Version
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {task.fixVersions.map((release) => (
+                        <span
+                          key={release.id}
+                          className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+                        >
+                          {release.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {task.affectsVersions.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Affects Version
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {task.affectsVersions.map((release) => (
+                        <span
+                          key={release.id}
+                          className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+                        >
+                          {release.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {task.labels.length > 0 && (
                   <div className="space-y-1.5">
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

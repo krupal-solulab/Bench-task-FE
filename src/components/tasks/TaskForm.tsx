@@ -6,6 +6,7 @@ import { DatePicker } from '@/components/common/DatePicker'
 import { UserSelect } from '@/components/common/UserSelect'
 import { TagInput } from '@/components/common/TagInput'
 import { IssuePicker } from '@/components/tasks/IssuePicker'
+import { ReleaseMultiSelect } from '@/components/releases/ReleaseMultiSelect'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -58,6 +59,8 @@ export function TaskForm({
       storyPoints: initialValues?.storyPoints ?? null,
       labels: initialValues?.labels ?? [],
       components: initialValues?.components ?? [],
+      fixVersions: initialValues?.fixVersions?.map((r) => r.id) ?? [],
+      affectsVersions: initialValues?.affectsVersions?.map((r) => r.id) ?? [],
       customFieldValues: initialValues?.customFieldValues ?? {},
     },
   })
@@ -73,6 +76,8 @@ export function TaskForm({
   const storyPoints = watch('storyPoints')
   const labels = watch('labels') ?? []
   const components = watch('components') ?? []
+  const fixVersions = watch('fixVersions') ?? []
+  const affectsVersions = watch('affectsVersions') ?? []
   const customFieldValues = watch('customFieldValues') ?? {}
 
   // Hierarchy position is fixed at creation - the API doesn't accept issueType/parent changes on
@@ -239,6 +244,28 @@ export function TaskForm({
           />
         </FormField>
       )}
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormField label="Fix Version" htmlFor="fixVersions">
+          <ReleaseMultiSelect
+            id="fixVersions"
+            projectId={projectId}
+            value={fixVersions}
+            onChange={(next) => setValue('fixVersions', next)}
+            placeholder="No fix version"
+          />
+        </FormField>
+
+        <FormField label="Affects Version" htmlFor="affectsVersions">
+          <ReleaseMultiSelect
+            id="affectsVersions"
+            projectId={projectId}
+            value={affectsVersions}
+            onChange={(next) => setValue('affectsVersions', next)}
+            placeholder="No affects version"
+          />
+        </FormField>
+      </div>
 
       {customFields.map((field) => (
         <FormField

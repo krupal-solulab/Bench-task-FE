@@ -6,11 +6,13 @@ const COLOR_MAP = {
   project: STATUS_COLORS.project,
   task: STATUS_COLORS.task,
   sprint: STATUS_COLORS.sprint,
+  release: STATUS_COLORS.release,
 }
 const DOT_MAP = {
   project: CHART_COLORS.projectStatus,
   task: CHART_COLORS.taskStatus,
   sprint: CHART_COLORS.sprintStatus,
+  release: CHART_COLORS.releaseStatus,
 }
 
 // Fallback coloring for a task status name a custom workflow introduced (not one of the 4 fixed
@@ -29,7 +31,7 @@ const CATEGORY_DOT_COLOR: Record<StatusCategory, string> = {
 
 interface StatusBadgeProps {
   status: string
-  kind: 'project' | 'task' | 'sprint'
+  kind: 'project' | 'task' | 'sprint' | 'release'
   /** Only consulted for a status name not already in the fixed color maps above. */
   category?: StatusCategory
   className?: string

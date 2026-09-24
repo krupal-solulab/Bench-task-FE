@@ -17,6 +17,11 @@ export const STATUS_COLORS = {
     Active: 'bg-blue-100 text-blue-700 border-blue-200',
     Completed: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   },
+  release: {
+    Unreleased: 'bg-slate-100 text-slate-700 border-slate-200',
+    Released: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    Archived: 'bg-gray-100 text-gray-500 border-gray-200',
+  },
 } as const
 
 export const PRIORITY_COLORS = {
@@ -43,6 +48,7 @@ export const CHART_COLORS = {
   projectStatus: { Planning: '#64748b', 'In Progress': '#3b82f6', Completed: '#10b981' },
   taskStatus: { Todo: '#64748b', 'In Progress': '#3b82f6', Review: '#f59e0b', Done: '#10b981' },
   sprintStatus: { Planned: '#64748b', Active: '#3b82f6', Completed: '#10b981' },
+  releaseStatus: { Unreleased: '#64748b', Released: '#10b981', Archived: '#9ca3af' },
   priority: { P1: '#ef4444', P2: '#f59e0b', P3: '#94a3b8' },
   trend: { created: '#3b82f6', completed: '#10b981' },
   burndown: { ideal: '#94a3b8', actual: '#3b82f6' },
@@ -117,6 +123,14 @@ export const queryKeys = {
       ['sprints', 'velocity', projectId, limit] as const,
     burndown: (id: string) => ['sprints', 'detail', id, 'burndown'] as const,
     history: (projectId: string) => ['sprints', 'history', projectId] as const,
+  },
+  releases: {
+    all: ['releases'] as const,
+    list: (projectId: string, filters: unknown) =>
+      ['releases', 'list', projectId, filters] as const,
+    detail: (id: string) => ['releases', 'detail', id] as const,
+    progress: (id: string) => ['releases', 'detail', id, 'progress'] as const,
+    notes: (id: string) => ['releases', 'detail', id, 'notes'] as const,
   },
   attachments: {
     list: (taskId: string, filters: unknown) => ['attachments', taskId, 'list', filters] as const,
