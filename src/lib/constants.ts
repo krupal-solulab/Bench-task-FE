@@ -109,6 +109,9 @@ export const queryKeys = {
     activity: (id: string) => ['tasks', 'detail', id, 'activity'] as const,
     epicProgress: (id: string) => ['tasks', 'detail', id, 'epic-progress'] as const,
     search: (filters: unknown) => ['tasks', 'search', filters] as const,
+    autocompleteFields: ['tasks', 'search', 'autocomplete-fields'] as const,
+    autocompleteValues: (field: string) =>
+      ['tasks', 'search', 'autocomplete-values', field] as const,
   },
   comments: {
     list: (taskId: string, filters: unknown) => ['comments', taskId, 'list', filters] as const,

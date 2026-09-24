@@ -16,6 +16,7 @@ import type {
   UpdateTaskSprintPayload,
   UpdateTaskStatusPayload,
 } from '@/types/task.types'
+import type { JqlAutocompleteFields } from '@/types/jql.types'
 
 /** axios sends an array-of-objects query param as bracketed keys (`customFieldFilters[0][fieldId]`),
  * which the backend doesn't parse - it expects one JSON-encoded string, so this is built here
@@ -39,6 +40,11 @@ export const tasksService = {
     apiGetPaginated<Task>('/tasks/my-tasks', toTaskListParams(query)),
 
   search: (query: TaskSearchQuery) => apiGetPaginated<Task>('/tasks/search', query),
+
+  autocompleteFields: () => apiGet<JqlAutocompleteFields>('/tasks/search/autocomplete-fields'),
+
+  autocompleteValues: (field: string) =>
+    apiGet<string[]>('/tasks/search/autocomplete-values', { field }),
 
   get: (id: string) => apiGet<Task>(`/tasks/${id}`),
 

@@ -2,6 +2,12 @@ import { useState } from 'react'
 import { Search, X } from 'lucide-react'
 import { Button } from '@/components/common/Button'
 import { Textarea } from '@/components/ui/textarea'
+import { useJqlAutocompleteFields, useJqlAutocompleteValues } from '@/hooks/queries/useTasks'
+import {
+  applyJqlSuggestion,
+  detectValuePositionField,
+  suggestJqlTokens,
+} from '@/lib/jql-autocomplete'
 
 export interface AdvancedSearchInputProps {
   /** The currently-active (submitted) query, or null if none - controls whether "Clear" shows. */
@@ -26,6 +32,22 @@ export function AdvancedSearchInput({
 }: AdvancedSearchInputProps) {
   const [draft, setDraft] = useState(activeQuery ?? '')
 
+  // Module 4's JQL autocomplete - see jql-autocomplete.ts's own doc comment for why this is an
+  // end-of-string suggester rather than a caret-position-aware one.
+  const { data: metadata } = useJqlAutocompleteFields()
+  const valueField = metadata ? detectValuePositionField(draft, metadata.fields) : undefined
+  const { data: dynamicValues } = useJqlAutocompleteValues(
+    valueField?.hasDynamicValues ? valueField.field : null,
+  )
+  const suggestions = metadata
+    ? suggestJqlTokens(
+        draft,
+        metadata.fields,
+        metadata.keywords,
+        valueField && dynamicValues ? { [valueField.field]: dynamicValues } : {},
+      )
+    : []
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (draft.trim()) onSearch(draft.trim())
@@ -34,6 +56,10 @@ export function AdvancedSearchInput({
   function handleClear() {
     setDraft('')
     onClear()
+  }
+
+  function applySuggestion(text: string) {
+    setDraft((prev) => applyJqlSuggestion(prev, text))
   }
 
   return (
@@ -49,6 +75,21 @@ export function AdvancedSearchInput({
         rows={2}
         className="font-mono text-sm"
       />
+      {suggestions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">Suggestions:</span>
+          {suggestions.slice(0, 12).map((s) => (
+            <button
+              key={`${s.kind}-${s.text}`}
+              type="button"
+              onClick={() => applySuggestion(s.text)}
+              className="rounded-full border bg-muted/50 px-2 py-0.5 font-mono text-xs hover:bg-accent"
+            >
+              {s.text}
+            </button>
+          ))}
+        </div>
+      )}
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}

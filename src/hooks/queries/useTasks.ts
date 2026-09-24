@@ -55,3 +55,24 @@ export function useTaskSearch(query: TaskSearchQuery | null) {
     enabled: !!query?.jql,
   })
 }
+
+/** Module 4's Issue Navigator autocomplete metadata - static per-deploy, so a long staleTime
+ * avoids re-fetching it on every keystroke's re-render. */
+export function useJqlAutocompleteFields() {
+  return useQuery({
+    queryKey: queryKeys.tasks.autocompleteFields,
+    queryFn: () => tasksService.autocompleteFields(),
+    staleTime: Infinity,
+  })
+}
+
+/** Dynamic value suggestions for one JQL field at a time - only fetched once the autocomplete
+ * logic has actually determined that field is the one currently being completed. */
+export function useJqlAutocompleteValues(field: string | null) {
+  return useQuery({
+    queryKey: queryKeys.tasks.autocompleteValues(field ?? ''),
+    queryFn: () => tasksService.autocompleteValues(field!),
+    enabled: !!field,
+    staleTime: 60_000,
+  })
+}

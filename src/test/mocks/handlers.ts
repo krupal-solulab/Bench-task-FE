@@ -125,6 +125,10 @@ export const handlers = [
   http.get(url('/projects/:id/sprints'), () => HttpResponse.json(paginated([]))),
   http.get(url('/projects/:id/sprints/active'), () => HttpResponse.json(ok(null))),
   http.get(url('/projects/:id/releases'), () => HttpResponse.json(paginated([]))),
+  http.get(url('/tasks/search/autocomplete-fields'), () =>
+    HttpResponse.json(ok({ fields: [], keywords: [] })),
+  ),
+  http.get(url('/tasks/search/autocomplete-values'), () => HttpResponse.json(ok([]))),
   http.get(url('/projects/:id/labels'), ({ params }) => {
     const project = mockProjects.find((p) => p.id === params.id)
     const labels = new Set<string>()

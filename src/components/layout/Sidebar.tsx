@@ -8,6 +8,7 @@ import {
   Lock,
   MessageSquareText,
   Milestone,
+  Search,
   ShieldCheck,
   FolderKanban,
 } from 'lucide-react'
@@ -29,6 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/projects', label: 'Projects', icon: FolderKanban },
   { to: '/tasks/my-tasks', label: 'My Tasks', icon: ListChecks },
+  { to: '/issues', label: 'Issue Navigator', icon: Search },
   { to: '/roadmap', label: 'Roadmap', icon: Milestone },
   { to: '/canned-responses', label: 'Canned Responses', icon: MessageSquareText },
   { to: '/admin/users', label: 'Admin', icon: ShieldCheck, roles: ['Admin'] },

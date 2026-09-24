@@ -11,6 +11,7 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { ProjectsListPage } from '@/pages/projects/ProjectsListPage'
 import { ProjectDetailPage } from '@/pages/projects/ProjectDetailPage'
 import { MyTasksPage } from '@/pages/tasks/MyTasksPage'
+import { IssueNavigatorPage } from '@/pages/tasks/IssueNavigatorPage'
 import { TaskDetailPage } from '@/pages/tasks/TaskDetailPage'
 import { RoadmapPage } from '@/pages/roadmap/RoadmapPage'
 import { UsersPage } from '@/pages/admin/UsersPage'
@@ -42,6 +43,7 @@ export function AppRouter() {
             <Route path="/projects" element={<ProjectsListPage />} />
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
             <Route path="/tasks/my-tasks" element={<MyTasksPage />} />
+            <Route path="/issues" element={<IssueNavigatorPage />} />
             <Route path="/tasks/:id" element={<TaskDetailPage />} />
             <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/profile" element={<ProfilePage />} />
