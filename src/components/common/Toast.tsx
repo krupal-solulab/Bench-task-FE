@@ -4,10 +4,15 @@ import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/cn'
 import type { ToastVariant } from '@/context/ToastContext'
 
+// Solid background + its paired foreground color - the same pattern this design system already
+// uses for buttons (see buttonVariants' destructive/default variants), not a translucent tint.
+// The previous `bg-success/10`/`bg-destructive/10` tints paired with the *-foreground text colors
+// (near-white in light mode, near-black in dark mode - meant to sit on a solid fill) produced
+// near-invisible, low-contrast text once the fill was 90% transparent in both themes.
 const VARIANT_STYLES: Record<ToastVariant, string> = {
-  default: 'border-border bg-card text-foreground',
-  success: 'border-success/30 bg-success/10 text-success-foreground',
-  destructive: 'border-destructive/30 bg-destructive/10 text-destructive',
+  default: 'border-border bg-card text-card-foreground',
+  success: 'border-transparent bg-success text-success-foreground',
+  destructive: 'border-transparent bg-destructive text-destructive-foreground',
 }
 
 function VariantIcon({ variant }: { variant: ToastVariant }) {
