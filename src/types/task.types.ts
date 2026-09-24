@@ -155,6 +155,20 @@ export interface BulkRelabelPayload {
   labels: string[]
 }
 
+export interface BulkStatusPayload {
+  taskIds: string[]
+  status: string
+}
+
+export interface BulkPriorityPayload {
+  taskIds: string[]
+  priority: TaskPriority
+}
+
+export interface BulkDeletePayload {
+  taskIds: string[]
+}
+
 export interface EpicProgress {
   linkedIssueCount: number
   doneCount: number

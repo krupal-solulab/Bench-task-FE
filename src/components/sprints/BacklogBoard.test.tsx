@@ -166,4 +166,64 @@ describe('BacklogBoard', () => {
       expect(screen.queryByLabelText('Select First')).not.toBeInTheDocument()
     })
   })
+
+  describe('Module 5: bulk status/priority/delete', () => {
+    // Bulk "Set status"/"Set priority" use the same Radix Select as the existing "Move to
+    // sprint" picker, which this file's own bulk-relabel test avoids opening (documented jsdom/
+    // Radix limitation - see WorkflowCanvas.test.tsx for the same class of issue). Bulk-delete
+    // is a plain Button + ConfirmDialog, so it's fully testable here.
+    it('bulk-deletes every selected task via the action bar, after confirming', async () => {
+      let sentBody: { taskIds: string[] } | null = null
+      server.use(
+        http.patch(url('/tasks/bulk-delete'), async ({ request }) => {
+          sentBody = (await request.json()) as typeof sentBody
+          return HttpResponse.json({
+            success: true,
+            data: { succeeded: sentBody!.taskIds, failed: [] },
+          })
+        }),
+      )
+      const user = userEvent.setup()
+      renderBoard([
+        makeTask({ id: 't-1', title: 'First' }),
+        makeTask({ id: 't-2', title: 'Second' }),
+      ])
+
+      await user.click(screen.getByLabelText('Select First'))
+      await user.click(screen.getByLabelText('Select Second'))
+      await user.click(screen.getByRole('button', { name: 'Delete' }))
+      // The toolbar's "Delete" button and the confirm dialog's "Delete" button coexist once the
+      // dialog opens - the dialog's is the last one rendered.
+      const confirmButtons = screen.getAllByRole('button', { name: 'Delete' })
+      await user.click(confirmButtons[confirmButtons.length - 1]!)
+
+      await waitFor(() => expect(sentBody).not.toBeNull())
+      expect(sentBody!.taskIds.sort()).toEqual(['t-1', 't-2'])
+      expect(await screen.findByText('Delete: 2 task(s) updated')).toBeInTheDocument()
+    })
+
+    it('reports a partial bulk-delete failure without crashing', async () => {
+      server.use(
+        http.patch(url('/tasks/bulk-delete'), () =>
+          HttpResponse.json({
+            success: true,
+            data: { succeeded: ['t-1'], failed: [{ taskId: 't-2', message: 'Forbidden' }] },
+          }),
+        ),
+      )
+      const user = userEvent.setup()
+      renderBoard([
+        makeTask({ id: 't-1', title: 'First' }),
+        makeTask({ id: 't-2', title: 'Second' }),
+      ])
+
+      await user.click(screen.getByLabelText('Select First'))
+      await user.click(screen.getByLabelText('Select Second'))
+      await user.click(screen.getByRole('button', { name: 'Delete' }))
+      const confirmButtons = screen.getAllByRole('button', { name: 'Delete' })
+      await user.click(confirmButtons[confirmButtons.length - 1]!)
+
+      expect(await screen.findByText('Delete: 1 succeeded, 1 failed')).toBeInTheDocument()
+    })
+  })
 })

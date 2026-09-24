@@ -3,8 +3,11 @@ import { queryKeys } from '@/lib/constants'
 import { tasksService } from '@/services/tasks.service'
 import type {
   BulkAssignPayload,
+  BulkDeletePayload,
   BulkMoveSprintPayload,
+  BulkPriorityPayload,
   BulkRelabelPayload,
+  BulkStatusPayload,
   CreateTaskPayload,
   Task,
   UpdateTaskAssigneePayload,
@@ -171,6 +174,31 @@ export function useBulkRelabel() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: BulkRelabelPayload) => tasksService.bulkRelabel(payload),
+    onSuccess: () => invalidateAfterTaskChange(queryClient),
+  })
+}
+
+/** Module 5's bulk operations, same invalidation shape as the BRD 6.2 bulk hooks above. */
+export function useBulkUpdateStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: BulkStatusPayload) => tasksService.bulkStatus(payload),
+    onSuccess: () => invalidateAfterTaskChange(queryClient),
+  })
+}
+
+export function useBulkUpdatePriority() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: BulkPriorityPayload) => tasksService.bulkPriority(payload),
+    onSuccess: () => invalidateAfterTaskChange(queryClient),
+  })
+}
+
+export function useBulkDeleteTasks() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: BulkDeletePayload) => tasksService.bulkDelete(payload),
     onSuccess: () => invalidateAfterTaskChange(queryClient),
   })
 }

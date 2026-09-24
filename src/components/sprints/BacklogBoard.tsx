@@ -20,6 +20,7 @@ import { Link } from 'react-router-dom'
 import { Avatar } from '@/components/common/Avatar'
 import { Button } from '@/components/common/Button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { PriorityBadge } from '@/components/common/PriorityBadge'
 import { EmptyState } from '@/components/common/EmptyState'
 import { TagInput } from '@/components/common/TagInput'
@@ -33,8 +34,11 @@ import {
 } from '@/components/ui/select'
 import {
   useBulkAssign,
+  useBulkDeleteTasks,
   useBulkMoveSprint,
   useBulkRelabel,
+  useBulkUpdatePriority,
+  useBulkUpdateStatus,
   useUpdateAnyTaskRank,
   useUpdateTaskSprint,
 } from '@/hooks/mutations/useTaskMutations'
@@ -42,6 +46,7 @@ import { useToast } from '@/hooks/useToast'
 import { computeReorderNeighbors } from '@/lib/backlog-reorder'
 import { toApiError } from '@/lib/error'
 import { cn } from '@/lib/cn'
+import { TASK_PRIORITIES, type TaskPriority } from '@/types/task.types'
 import type { Sprint } from '@/types/sprint.types'
 import type { Task } from '@/types/task.types'
 
@@ -151,16 +156,22 @@ function BacklogRow({
 function BulkActionBar({
   selectedIds,
   assignableSprints,
+  statusOptions,
   onDone,
 }: {
   selectedIds: string[]
   assignableSprints: Sprint[]
+  statusOptions: string[]
   onDone: () => void
 }) {
   const [labelDraft, setLabelDraft] = useState<string[]>([])
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const bulkMoveSprint = useBulkMoveSprint()
   const bulkAssign = useBulkAssign()
   const bulkRelabel = useBulkRelabel()
+  const bulkStatus = useBulkUpdateStatus()
+  const bulkPriority = useBulkUpdatePriority()
+  const bulkDelete = useBulkDeleteTasks()
   const { showToast } = useToast()
 
   function reportResult(action: string, result: { succeeded: string[]; failed: unknown[] }) {
@@ -219,6 +230,45 @@ function BulkActionBar({
     }
   }
 
+  async function handleSetStatus(status: string) {
+    try {
+      const result = await bulkStatus.mutateAsync({ taskIds: selectedIds, status })
+      reportResult('Set status', result)
+    } catch (err) {
+      showToast({
+        title: 'Could not update status',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  async function handleSetPriority(priority: TaskPriority) {
+    try {
+      const result = await bulkPriority.mutateAsync({ taskIds: selectedIds, priority })
+      reportResult('Set priority', result)
+    } catch (err) {
+      showToast({
+        title: 'Could not update priority',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  async function handleDelete() {
+    try {
+      const result = await bulkDelete.mutateAsync({ taskIds: selectedIds })
+      reportResult('Delete', result)
+    } catch (err) {
+      showToast({
+        title: 'Could not delete tasks',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-accent/40 px-3 py-2 text-sm">
       <span className="font-medium">{selectedIds.length} selected</span>
@@ -257,9 +307,51 @@ function BulkActionBar({
         </Button>
       </div>
 
+      {statusOptions.length > 0 && (
+        <Select value="" onValueChange={(v) => void handleSetStatus(v)}>
+          <SelectTrigger className="w-40" aria-label="Bulk set status">
+            <SelectValue placeholder="Set status" />
+          </SelectTrigger>
+          <SelectContent>
+            {statusOptions.map((status) => (
+              <SelectItem key={status} value={status}>
+                {status}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      <Select value="" onValueChange={(v) => void handleSetPriority(v as TaskPriority)}>
+        <SelectTrigger className="w-32" aria-label="Bulk set priority">
+          <SelectValue placeholder="Set priority" />
+        </SelectTrigger>
+        <SelectContent>
+          {TASK_PRIORITIES.map((priority) => (
+            <SelectItem key={priority} value={priority}>
+              {priority}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Button type="button" size="sm" variant="destructive" onClick={() => setDeleteOpen(true)}>
+        Delete
+      </Button>
+
       <Button type="button" size="sm" variant="ghost" className="ml-auto" onClick={onDone}>
         Clear selection
       </Button>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete selected tasks"
+        description={`This will delete ${selectedIds.length} task(s). This cannot be undone.`}
+        variant="destructive"
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }
@@ -268,6 +360,14 @@ export interface BacklogBoardProps {
   tasks: Task[]
   canManage: boolean
   assignableSprints: Sprint[]
+}
+
+/** The bulk "Set status" picker's options - this board doesn't have the project's configured
+ * workflow in scope (only a flat Task[]), so it offers every status name already in use among
+ * the visible tasks rather than fetching the full workflow just for this one picker - every
+ * option offered is guaranteed to be a real, currently valid status in this project. */
+function distinctStatuses(tasks: Task[]): string[] {
+  return [...new Set(tasks.map((t) => t.status))].sort((a, b) => a.localeCompare(b))
 }
 
 /** BRD 6.2's "issues can be grouped/collapsed by parent Epic" - a display-only grouping (drag-to-
@@ -385,6 +485,7 @@ export function BacklogBoard({ tasks, canManage, assignableSprints }: BacklogBoa
         <BulkActionBar
           selectedIds={[...selectedIds]}
           assignableSprints={assignableSprints}
+          statusOptions={distinctStatuses(tasks)}
           onDone={() => setSelectedIds(new Set())}
         />
       )}

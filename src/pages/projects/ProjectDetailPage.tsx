@@ -52,6 +52,7 @@ import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
 import { AutomationLogList } from '@/components/projects/AutomationLogList'
 import { NotificationSchemeForm } from '@/components/projects/NotificationSchemeForm'
 import { PermissionSchemeAssignment } from '@/components/projects/PermissionSchemeAssignment'
+import { ImportExportPanel } from '@/components/projects/ImportExportPanel'
 import {
   useProject,
   useProjectLabels,
@@ -363,6 +364,7 @@ export function ProjectDetailPage() {
             <TabsTrigger value="releases">Releases</TabsTrigger>
             <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="import-export">Import/Export</TabsTrigger>
             <TabsTrigger value="workflow">Workflow</TabsTrigger>
             <TabsTrigger value="fields">Fields</TabsTrigger>
             <TabsTrigger value="issue-types">Issue Types</TabsTrigger>
@@ -667,6 +669,10 @@ export function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="activity">{id && <ProjectActivityFeed projectId={id} />}</TabsContent>
+
+        <TabsContent value="import-export">
+          <ImportExportPanel projectId={id ?? ''} canManage={canManage} />
+        </TabsContent>
 
         <TabsContent value="workflow">
           {id && tabWorkflow ? (
