@@ -45,6 +45,7 @@ import { CustomFieldOverridesForm } from '@/components/projects/CustomFieldOverr
 import { SlaPolicySettingsForm } from '@/components/projects/SlaPolicySettingsForm'
 import { DependencyGraphView } from '@/components/projects/DependencyGraphView'
 import { ReleasesPanel } from '@/components/releases/ReleasesPanel'
+import { TimesheetPanel } from '@/components/worklogs/TimesheetPanel'
 import { EpicProgressTable } from '@/components/projects/EpicProgressTable'
 import { IssueTypesSettingsForm } from '@/components/projects/IssueTypesSettingsForm'
 import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
@@ -360,6 +361,7 @@ export function ProjectDetailPage() {
             <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
             <TabsTrigger value="releases">Releases</TabsTrigger>
+            <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="workflow">Workflow</TabsTrigger>
             <TabsTrigger value="fields">Fields</TabsTrigger>
@@ -783,6 +785,10 @@ export function ProjectDetailPage() {
 
         <TabsContent value="releases">
           <ReleasesPanel projectId={id ?? ''} canManage={canManage} />
+        </TabsContent>
+
+        <TabsContent value="timesheet">
+          <TimesheetPanel projectId={id ?? ''} />
         </TabsContent>
 
         <TabsContent value="sla">

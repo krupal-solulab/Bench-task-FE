@@ -132,6 +132,15 @@ export const queryKeys = {
     progress: (id: string) => ['releases', 'detail', id, 'progress'] as const,
     notes: (id: string) => ['releases', 'detail', id, 'notes'] as const,
   },
+  worklogs: {
+    all: ['worklogs'] as const,
+    task: (taskId: string, filters: unknown) => ['worklogs', 'task', taskId, filters] as const,
+    summary: (taskId: string) => ['worklogs', 'summary', taskId] as const,
+    project: (projectId: string, filters: unknown) =>
+      ['worklogs', 'project', projectId, filters] as const,
+    report: (projectId: string, filters: unknown) =>
+      ['worklogs', 'report', projectId, filters] as const,
+  },
   attachments: {
     list: (taskId: string, filters: unknown) => ['attachments', taskId, 'list', filters] as const,
   },

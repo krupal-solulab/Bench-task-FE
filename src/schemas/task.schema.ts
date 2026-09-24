@@ -15,6 +15,7 @@ export const taskSchema = z
     issueType: z.string().min(1).optional().default('Task'),
     parent: z.string().nullable().optional(),
     storyPoints: z.number().min(0).max(1000).nullable().optional(),
+    originalEstimateHours: z.number().min(0).max(10000).nullable().optional(),
     labels: z.array(z.string()).optional().default([]),
     components: z.array(z.string()).optional().default([]),
     fixVersions: z.array(z.string()).optional().default([]),

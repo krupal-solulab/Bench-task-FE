@@ -17,6 +17,7 @@ import { TaskActivityFeed } from '@/components/tasks/TaskActivityFeed'
 import { AttachmentList } from '@/components/tasks/AttachmentList'
 import { SubtaskChecklist } from '@/components/tasks/SubtaskChecklist'
 import { IssueLinksSection } from '@/components/tasks/IssueLinksSection'
+import { WorkLogSection } from '@/components/worklogs/WorkLogSection'
 import { resolveIssueTypes, standardIssueTypeNames } from '@/types/issue-type.types'
 import { CommentList } from '@/components/comments/CommentList'
 import { useTask } from '@/hooks/queries/useTasks'
@@ -116,6 +117,7 @@ export function TaskDetailPage() {
         priority: values.priority,
         dueDate: values.dueDate,
         storyPoints: values.storyPoints,
+        originalEstimateHours: values.originalEstimateHours,
         labels: values.labels,
         components: values.components,
         fixVersions: values.fixVersions,
@@ -389,6 +391,8 @@ export function TaskDetailPage() {
           )}
 
           <IssueLinksSection taskId={task.id} canManage={canEditOther} />
+
+          <WorkLogSection taskId={task.id} />
 
           <TaskActivityFeed taskId={task.id} />
 

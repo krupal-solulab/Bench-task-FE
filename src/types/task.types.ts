@@ -67,6 +67,8 @@ export interface Task {
   // Module 2's "Fix Version" / "Affects Version" (BRD: Releases & Version Management).
   fixVersions: ReleaseSummary[]
   affectsVersions: ReleaseSummary[]
+  // Module 3's "Original Estimate" (BRD: Time Tracking & Work Logs), in hours.
+  originalEstimateHours: number | null
   // Keyed by the project's CustomFieldDefinition.id, not name.
   customFieldValues: Record<string, unknown>
   createdAt: string
@@ -110,6 +112,7 @@ export interface CreateTaskPayload {
   components?: string[]
   fixVersions?: string[]
   affectsVersions?: string[]
+  originalEstimateHours?: number | null
   customFieldValues?: Record<string, unknown>
 }
 

@@ -57,6 +57,7 @@ export function TaskForm({
       issueType: initialValues?.issueType ?? 'Task',
       parent: initialValues?.parent?.id ?? null,
       storyPoints: initialValues?.storyPoints ?? null,
+      originalEstimateHours: initialValues?.originalEstimateHours ?? null,
       labels: initialValues?.labels ?? [],
       components: initialValues?.components ?? [],
       fixVersions: initialValues?.fixVersions?.map((r) => r.id) ?? [],
@@ -74,6 +75,7 @@ export function TaskForm({
   const issueType = watch('issueType') ?? 'Task'
   const parent = watch('parent')
   const storyPoints = watch('storyPoints')
+  const originalEstimateHours = watch('originalEstimateHours')
   const labels = watch('labels') ?? []
   const components = watch('components') ?? []
   const fixVersions = watch('fixVersions') ?? []
@@ -200,18 +202,41 @@ export function TaskForm({
       </div>
 
       {isStandardIssue && (
-        <FormField label="Story points" htmlFor="storyPoints" error={errors.storyPoints?.message}>
-          <Input
-            id="storyPoints"
-            type="number"
-            min={0}
-            max={1000}
-            value={storyPoints ?? ''}
-            onChange={(e) =>
-              setValue('storyPoints', e.target.value === '' ? null : Number(e.target.value))
-            }
-          />
-        </FormField>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="Story points" htmlFor="storyPoints" error={errors.storyPoints?.message}>
+            <Input
+              id="storyPoints"
+              type="number"
+              min={0}
+              max={1000}
+              value={storyPoints ?? ''}
+              onChange={(e) =>
+                setValue('storyPoints', e.target.value === '' ? null : Number(e.target.value))
+              }
+            />
+          </FormField>
+
+          <FormField
+            label="Original estimate (hours)"
+            htmlFor="originalEstimateHours"
+            error={errors.originalEstimateHours?.message}
+          >
+            <Input
+              id="originalEstimateHours"
+              type="number"
+              min={0}
+              max={10000}
+              step={0.5}
+              value={originalEstimateHours ?? ''}
+              onChange={(e) =>
+                setValue(
+                  'originalEstimateHours',
+                  e.target.value === '' ? null : Number(e.target.value),
+                )
+              }
+            />
+          </FormField>
+        </div>
       )}
 
       <FormField label="Assignee" htmlFor="assignee" error={errors.assignee?.message}>
