@@ -16,6 +16,7 @@ import { TaskForm } from '@/components/tasks/TaskForm'
 import { TaskActivityFeed } from '@/components/tasks/TaskActivityFeed'
 import { AttachmentList } from '@/components/tasks/AttachmentList'
 import { SubtaskChecklist } from '@/components/tasks/SubtaskChecklist'
+import { IssueLinksSection } from '@/components/tasks/IssueLinksSection'
 import { resolveIssueTypes, standardIssueTypeNames } from '@/types/issue-type.types'
 import { CommentList } from '@/components/comments/CommentList'
 import { useTask } from '@/hooks/queries/useTasks'
@@ -347,6 +348,8 @@ export function TaskDetailPage() {
               canManage={canCreateSubtask}
             />
           )}
+
+          <IssueLinksSection taskId={task.id} canManage={canEditOther} />
 
           <TaskActivityFeed taskId={task.id} />
 

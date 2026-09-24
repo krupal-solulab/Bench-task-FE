@@ -43,6 +43,7 @@ import { WorkflowCanvas } from '@/components/projects/WorkflowCanvas'
 import { FieldsSettingsForm } from '@/components/projects/FieldsSettingsForm'
 import { CustomFieldOverridesForm } from '@/components/projects/CustomFieldOverridesForm'
 import { SlaPolicySettingsForm } from '@/components/projects/SlaPolicySettingsForm'
+import { DependencyGraphView } from '@/components/projects/DependencyGraphView'
 import { EpicProgressTable } from '@/components/projects/EpicProgressTable'
 import { IssueTypesSettingsForm } from '@/components/projects/IssueTypesSettingsForm'
 import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
@@ -356,6 +357,7 @@ export function ProjectDetailPage() {
             <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="stats">Stats</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
+            <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="workflow">Workflow</TabsTrigger>
             <TabsTrigger value="fields">Fields</TabsTrigger>
@@ -771,6 +773,10 @@ export function ProjectDetailPage() {
             notificationScheme={project.notificationScheme}
             canManage={canManage}
           />
+        </TabsContent>
+
+        <TabsContent value="dependencies">
+          <DependencyGraphView projectId={id ?? ''} />
         </TabsContent>
 
         <TabsContent value="sla">

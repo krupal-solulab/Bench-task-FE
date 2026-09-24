@@ -12,8 +12,10 @@ import { ProjectsListPage } from '@/pages/projects/ProjectsListPage'
 import { ProjectDetailPage } from '@/pages/projects/ProjectDetailPage'
 import { MyTasksPage } from '@/pages/tasks/MyTasksPage'
 import { TaskDetailPage } from '@/pages/tasks/TaskDetailPage'
+import { RoadmapPage } from '@/pages/roadmap/RoadmapPage'
 import { UsersPage } from '@/pages/admin/UsersPage'
 import { PermissionSchemesPage } from '@/pages/admin/PermissionSchemesPage'
+import { LinkTypesPage } from '@/pages/admin/LinkTypesPage'
 import { BillingPage } from '@/pages/admin/BillingPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { CannedResponsesPage } from '@/pages/CannedResponsesPage'
@@ -41,6 +43,7 @@ export function AppRouter() {
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
             <Route path="/tasks/my-tasks" element={<MyTasksPage />} />
             <Route path="/tasks/:id" element={<TaskDetailPage />} />
+            <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/canned-responses" element={<CannedResponsesPage />} />
             <Route path="/403" element={<ForbiddenPage />} />
@@ -48,6 +51,7 @@ export function AppRouter() {
             <Route element={<RoleRoute roles={['Admin']} />}>
               <Route path="/admin/users" element={<UsersPage />} />
               <Route path="/admin/permission-schemes" element={<PermissionSchemesPage />} />
+              <Route path="/admin/link-types" element={<LinkTypesPage />} />
               <Route path="/admin/billing" element={<BillingPage />} />
             </Route>
           </Route>

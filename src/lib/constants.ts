@@ -163,4 +163,10 @@ export const queryKeys = {
   cannedResponses: {
     all: ['canned-responses'] as const,
   },
+  planning: {
+    linkTypes: ['link-types'] as const,
+    taskLinks: (taskId: string) => ['task-links', taskId] as const,
+    dependencyGraph: (projectId: string) => ['dependency-graph', projectId] as const,
+    roadmap: (query: unknown) => ['roadmap', query] as const,
+  },
 } as const

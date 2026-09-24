@@ -3,9 +3,11 @@ import {
   ChevronsRight,
   CreditCard,
   LayoutDashboard,
+  Link2,
   ListChecks,
   Lock,
   MessageSquareText,
+  Milestone,
   ShieldCheck,
   FolderKanban,
 } from 'lucide-react'
@@ -27,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/projects', label: 'Projects', icon: FolderKanban },
   { to: '/tasks/my-tasks', label: 'My Tasks', icon: ListChecks },
+  { to: '/roadmap', label: 'Roadmap', icon: Milestone },
   { to: '/canned-responses', label: 'Canned Responses', icon: MessageSquareText },
   { to: '/admin/users', label: 'Admin', icon: ShieldCheck, roles: ['Admin'] },
   {
@@ -35,6 +38,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: Lock,
     roles: ['Admin'],
   },
+  { to: '/admin/link-types', label: 'Link Types', icon: Link2, roles: ['Admin'] },
   { to: '/admin/billing', label: 'Billing', icon: CreditCard, roles: ['Admin'] },
 ]
 
