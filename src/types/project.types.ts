@@ -221,3 +221,29 @@ export interface AutomationLogEntry {
   task: { id: string; title: string; issueKey: string } | null
   createdAt: string
 }
+
+/** Module 9's Cumulative Flow Diagram: one point per day, counting tasks by status category as of
+ * that day's end (reconstructed server-side from each task's status-change history). */
+export interface CfdPoint {
+  date: string
+  toDo: number
+  inProgress: number
+  done: number
+}
+
+/** Module 9's Control Chart: per-issue lead time (creation to completion) and cycle time (first
+ * status change to completion) for every issue completed within the requested window. */
+export interface CycleTimePoint {
+  taskId: string
+  issueKey: string | null
+  title: string
+  completedAt: string
+  leadTimeHours: number
+  cycleTimeHours: number
+}
+
+export interface CycleTimeReport {
+  points: CycleTimePoint[]
+  averageLeadTimeHours: number | null
+  averageCycleTimeHours: number | null
+}

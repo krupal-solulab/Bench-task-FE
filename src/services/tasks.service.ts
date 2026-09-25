@@ -8,6 +8,7 @@ import type {
   BulkRelabelPayload,
   BulkStatusPayload,
   CreateTaskPayload,
+  EpicBurndownResult,
   EpicProgress,
   Task,
   TaskActivityEntry,
@@ -99,4 +100,6 @@ export const tasksService = {
     apiGetPaginated<TaskActivityEntry>(`/tasks/${id}/activity`, query),
 
   epicProgress: (id: string) => apiGet<EpicProgress>(`/tasks/${id}/epic-progress`),
+
+  epicBurndown: (id: string) => apiGet<EpicBurndownResult>(`/tasks/${id}/epic-burndown`),
 }

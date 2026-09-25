@@ -119,3 +119,19 @@ export function useEpicProgressReport(id: string | undefined) {
     enabled: !!id,
   })
 }
+
+export function useCfdReport(id: string | undefined, days = 30) {
+  return useQuery({
+    queryKey: queryKeys.projects.cfd(id ?? '', days),
+    queryFn: () => projectsService.cfdReport(id!, days),
+    enabled: !!id,
+  })
+}
+
+export function useCycleTimeReport(id: string | undefined, days = 90) {
+  return useQuery({
+    queryKey: queryKeys.projects.cycleTime(id ?? '', days),
+    queryFn: () => projectsService.cycleTimeReport(id!, days),
+    enabled: !!id,
+  })
+}

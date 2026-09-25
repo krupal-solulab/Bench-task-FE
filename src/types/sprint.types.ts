@@ -78,3 +78,21 @@ export interface SprintBurndownResult {
   points: SprintBurndownPoint[]
   hasStoryPoints: boolean
 }
+
+/** Module 9's sprint retrospective. `carryoverCount`/`carryoverPoints` means "not Done as of now" -
+ * meaningful for both an Active sprint (still remaining) and a Completed one (carried over at
+ * completion); label it based on the sprint's own status. `addedCount`/`addedPoints` is a raw
+ * scope-churn figure - it still includes a task that was added and later explicitly removed. */
+export interface SprintRetrospective {
+  plannedCount: number
+  plannedPoints: number
+  addedCount: number
+  addedPoints: number
+  completedCount: number
+  completedPoints: number
+  removedCount: number
+  removedPoints: number
+  carryoverCount: number
+  carryoverPoints: number
+  completionRatePercent: number | null
+}

@@ -2,6 +2,7 @@ import type { SortOrder } from './api.types'
 import type { User } from './user.types'
 import type { StatusCategory } from './workflow.types'
 import type { ReleaseSummary } from './release.types'
+import type { SprintBurndownPoint } from './sprint.types'
 
 // The system default workflow's 4 status names - still used as the fallback status list/filter
 // options for any project that hasn't configured a custom workflow (see status-transitions.ts's
@@ -194,6 +195,15 @@ export interface EpicProgressReportEntry {
   // fixtures/mocks predating this field don't all need updating.
   dueDate?: string | null
   createdAt?: string
+}
+
+/** Module 9's Epic Burndown - reuses sprint burndown's own point shape (an Epic's direct children
+ * are the same {storyPoints, completedAt} data). `hasIdealLine` is false when the Epic has no due
+ * date, since a made-up end date would mislead rather than merely simplify. */
+export interface EpicBurndownResult {
+  points: SprintBurndownPoint[]
+  hasStoryPoints: boolean
+  hasIdealLine: boolean
 }
 
 /** A JQL-lite compound query (Search/Dashboards v2) - see the backend's jql.util.ts for the
