@@ -19,6 +19,7 @@ import { TaskActivityFeed } from '@/components/tasks/TaskActivityFeed'
 import { AttachmentList } from '@/components/tasks/AttachmentList'
 import { SubtaskChecklist } from '@/components/tasks/SubtaskChecklist'
 import { IssueLinksSection } from '@/components/tasks/IssueLinksSection'
+import { TaskSummaryPanel } from '@/components/tasks/TaskSummaryPanel'
 import { WorkLogSection } from '@/components/worklogs/WorkLogSection'
 import { resolveIssueTypes, standardIssueTypeNames } from '@/types/issue-type.types'
 import { CommentList } from '@/components/comments/CommentList'
@@ -37,6 +38,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useSocket } from '@/hooks/useSocket'
+import { addRecentlyViewed } from '@/hooks/useRecentlyViewed'
 import { useToast } from '@/hooks/useToast'
 import { formatDate, formatDateTime } from '@/lib/date'
 import { toApiError } from '@/lib/error'
@@ -71,6 +73,18 @@ export function TaskDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const { data: task, isLoading, isError, error, refetch } = useTask(id)
+
+  useEffect(() => {
+    if (task) {
+      addRecentlyViewed({
+        id: task.id,
+        type: 'task',
+        label: task.issueKey ? `${task.issueKey} ${task.title}` : task.title,
+        path: `/tasks/${task.id}`,
+      })
+    }
+  }, [task])
+
   const { data: project } = useProject(task?.project.id)
   const { data: workflow } = useProjectWorkflow(task?.project.id)
   const { data: effectiveCustomFields } = useEffectiveCustomFields(
@@ -405,6 +419,7 @@ export function TaskDetailPage() {
           )}
 
           <IssueLinksSection taskId={task.id} canManage={canEditOther} />
+          <TaskSummaryPanel taskId={task.id} />
 
           <WorkLogSection taskId={task.id} />
 

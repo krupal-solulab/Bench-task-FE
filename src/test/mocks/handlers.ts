@@ -139,6 +139,11 @@ export const handlers = [
   http.get(url('/teams'), () => HttpResponse.json(ok([]))),
   http.get(url('/project-roles'), () => HttpResponse.json(ok([]))),
   http.get(url('/security-schemes'), () => HttpResponse.json(ok([]))),
+  // Module 10 - TaskForm calls this unconditionally in create mode, so every test rendering it
+  // needs a default even when the field-suggestion feature isn't the thing under test.
+  http.get(url('/projects/:id/tasks/suggested-fields'), () =>
+    HttpResponse.json(ok({ suggestedAssigneeId: null, suggestedLabels: [] })),
+  ),
   http.get(url('/tasks/search/autocomplete-fields'), () =>
     HttpResponse.json(ok({ fields: [], keywords: [] })),
   ),

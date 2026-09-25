@@ -20,7 +20,7 @@ import type { EpicProgressReportEntry } from '@/types/task.types'
 import type { ProjectStatus } from '@/types/project.types'
 import type { IssueTypeDefinition } from '@/types/issue-type.types'
 import type { PageQuery } from '@/types/api.types'
-import type { Task, TaskListQuery } from '@/types/task.types'
+import type { SuggestedTaskFields, Task, TaskListQuery } from '@/types/task.types'
 import { toTaskListParams } from './tasks.service'
 import type { Workflow } from '@/types/workflow.types'
 import type { NotificationSchemeRule } from '@/types/notification-scheme.types'
@@ -139,4 +139,10 @@ export const projectsService = {
 
   cycleTimeReport: (id: string, days: number) =>
     apiGet<CycleTimeReport>(`/projects/${id}/reports/cycle-time`, { days }),
+
+  suggestedTaskFields: (id: string, issueType?: string) =>
+    apiGet<SuggestedTaskFields>(
+      `/projects/${id}/tasks/suggested-fields`,
+      issueType ? { issueType } : undefined,
+    ),
 }

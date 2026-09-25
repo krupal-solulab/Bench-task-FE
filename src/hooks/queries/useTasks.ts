@@ -55,6 +55,15 @@ export function useEpicBurndown(id: string | undefined) {
   })
 }
 
+/** Module 10's deterministic (non-LLM) issue summary. */
+export function useTaskSummary(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.tasks.summary(id ?? ''),
+    queryFn: () => tasksService.summary(id!),
+    enabled: !!id,
+  })
+}
+
 /** JQL-lite compound search (Search/Dashboards v2) - disabled until a query has actually been
  * submitted (a partial/empty `jql` while the user is still typing should not fire a request). */
 export function useTaskSearch(query: TaskSearchQuery | null) {

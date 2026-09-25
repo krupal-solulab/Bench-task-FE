@@ -17,8 +17,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useEffectiveCustomFields, useProject, useProjectLabels } from '@/hooks/queries/useProjects'
+import {
+  useEffectiveCustomFields,
+  useProject,
+  useProjectLabels,
+  useSuggestedTaskFields,
+} from '@/hooks/queries/useProjects'
 import { useSecuritySchemes } from '@/hooks/queries/useSecuritySchemes'
+import { useTaskSearch } from '@/hooks/queries/useTasks'
+import { useAssignableUsers } from '@/hooks/queries/useUsers'
+import { useDebounce } from '@/hooks/useDebounce'
 import { taskSchema, type TaskFormValues } from '@/schemas/task.schema'
 import { TASK_PRIORITIES, type Task } from '@/types/task.types'
 import { resolveIssueTypes } from '@/types/issue-type.types'
@@ -75,6 +83,7 @@ export function TaskForm({
   const { data: securitySchemes } = useSecuritySchemes()
   const assignedSecurityScheme = securitySchemes?.find((s) => s.id === project?.securitySchemeId)
 
+  const title = watch('title')
   const dueDate = watch('dueDate')
   const assignee = watch('assignee')
   const priority = watch('priority')
@@ -105,11 +114,66 @@ export function TaskForm({
   const { data: effectiveCustomFields } = useEffectiveCustomFields(projectId, issueType)
   const customFields = effectiveCustomFields ?? project?.customFields ?? []
 
+  // Module 10's deterministic (non-LLM) duplicate-detection: the same JQL `text ~` search
+  // IssueLinksSection already uses, scoped to this project, fired once the title looks like a
+  // real search term - create-mode only, since an existing issue isn't a duplicate of itself.
+  const debouncedTitle = useDebounce(title, 400)
+  const duplicateSearchQuery =
+    !isEditingExisting && debouncedTitle.trim().length >= 4
+      ? {
+          jql: `text ~ '${debouncedTitle.trim().replace(/'/g, '')}' AND project = "${projectId}"`,
+          page: 1,
+          limit: 5,
+        }
+      : null
+  const { data: duplicateResults, isLoading: isSearchingDuplicates } =
+    useTaskSearch(duplicateSearchQuery)
+  const possibleDuplicates = (duplicateResults?.data ?? []).filter(
+    (t) => t.id !== initialValues?.id,
+  )
+
+  // Module 10's deterministic (non-LLM) field suggestion: the most-frequent assignee/labels for
+  // this project's existing issues of the chosen type - create-mode only, and only once an
+  // issueType is picked (the suggestion is scoped to it).
+  const { data: suggestedFields } = useSuggestedTaskFields(
+    !isEditingExisting ? projectId : undefined,
+    issueType,
+  )
+  const { data: assignableUsers } = useAssignableUsers()
+  const suggestedAssigneeId = suggestedFields?.suggestedAssigneeId ?? null
+  const suggestedAssigneeName = assignableUsers?.data.find(
+    (u) => u.id === suggestedAssigneeId,
+  )?.name
+  const suggestedLabels = suggestedFields?.suggestedLabels ?? []
+  const hasUnappliedAssigneeSuggestion =
+    !isEditingExisting && !!suggestedAssigneeId && assignee !== suggestedAssigneeId
+  const unappliedSuggestedLabels = suggestedLabels.filter((l) => !labels.includes(l))
+  const hasFieldSuggestions =
+    !isEditingExisting && (hasUnappliedAssigneeSuggestion || unappliedSuggestedLabels.length > 0)
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <FormField label="Title" htmlFor="title" error={errors.title?.message} required>
         <Input id="title" {...register('title')} />
       </FormField>
+
+      {duplicateSearchQuery && (isSearchingDuplicates || possibleDuplicates.length > 0) && (
+        <div className="rounded-md border border-dashed bg-muted/30 p-2 text-xs">
+          <p className="mb-1 font-medium text-muted-foreground">
+            {isSearchingDuplicates ? 'Checking for similar issues…' : 'Possibly similar issues:'}
+          </p>
+          {!isSearchingDuplicates && (
+            <ul className="space-y-1">
+              {possibleDuplicates.map((t) => (
+                <li key={t.id} className="flex items-center gap-2 text-muted-foreground">
+                  {t.issueKey && <span className="font-mono">{t.issueKey}</span>}
+                  <span className="truncate">{t.title}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <FormField label="Description" htmlFor="description" error={errors.description?.message}>
         <Textarea id="description" rows={4} {...register('description')} />
@@ -243,6 +307,42 @@ export function TaskForm({
               }
             />
           </FormField>
+        </div>
+      )}
+
+      {hasFieldSuggestions && (
+        <div className="space-y-1.5 rounded-md border border-dashed bg-muted/30 p-2 text-xs">
+          <p className="font-medium text-muted-foreground">
+            Suggested, based on this project's existing issues:
+          </p>
+          {hasUnappliedAssigneeSuggestion && (
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">
+                Assign to {suggestedAssigneeName ?? 'a common assignee'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setValue('assignee', suggestedAssigneeId)}
+                className="font-medium text-primary hover:underline"
+              >
+                Apply
+              </button>
+            </div>
+          )}
+          {unappliedSuggestedLabels.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-muted-foreground">
+                Common labels: {unappliedSuggestedLabels.join(', ')}
+              </span>
+              <button
+                type="button"
+                onClick={() => setValue('labels', [...labels, ...unappliedSuggestedLabels])}
+                className="font-medium text-primary hover:underline"
+              >
+                Apply
+              </button>
+            </div>
+          )}
         </div>
       )}
 

@@ -135,3 +135,12 @@ export function useCycleTimeReport(id: string | undefined, days = 90) {
     enabled: !!id,
   })
 }
+
+/** Module 10's deterministic (non-LLM) field suggester for new-issue creation. */
+export function useSuggestedTaskFields(id: string | undefined, issueType: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.projects.suggestedTaskFields(id ?? '', issueType),
+    queryFn: () => projectsService.suggestedTaskFields(id!, issueType),
+    enabled: !!id,
+  })
+}

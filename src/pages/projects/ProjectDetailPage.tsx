@@ -37,6 +37,7 @@ import { CalendarView } from '@/components/sprints/CalendarView'
 import { SprintBurndownChart } from '@/components/sprints/SprintBurndownChart'
 import { SprintVelocityChart } from '@/components/sprints/SprintVelocityChart'
 import { SprintRetrospective } from '@/components/sprints/SprintRetrospective'
+import { SprintPlanningSuggestion } from '@/components/sprints/SprintPlanningSuggestion'
 import { EpicsList } from '@/components/tasks/EpicsList'
 import { EpicRoadmapTimeline } from '@/components/projects/EpicRoadmapTimeline'
 import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm'
@@ -73,6 +74,7 @@ import { useCreateTask } from '@/hooks/mutations/useTaskMutations'
 import { useCreateSprint, useUpdateSprint } from '@/hooks/mutations/useSprintMutations'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { useAuth } from '@/hooks/useAuth'
+import { addRecentlyViewed } from '@/hooks/useRecentlyViewed'
 import { useSocket } from '@/hooks/useSocket'
 import { useToast } from '@/hooks/useToast'
 import { formatDate } from '@/lib/date'
@@ -132,6 +134,17 @@ export function ProjectDetailPage() {
   >([])
 
   const { data: project, isLoading, isError, error, refetch } = useProject(id)
+
+  useEffect(() => {
+    if (project) {
+      addRecentlyViewed({
+        id: project.id,
+        type: 'project',
+        label: project.name,
+        path: `/projects/${project.id}`,
+      })
+    }
+  }, [project])
   const { data: labelOptions } = useProjectLabels(id)
   // A project's own Standard-level type names (the BRD's "extensible" level) - falls back to the
   // 5 built-ins' Story/Task/Bug when the project hasn't customized its issue types. A user's
@@ -459,6 +472,9 @@ export function ProjectDetailPage() {
                     {sprint.goal && ` · ${sprint.goal}`}
                   </p>
                   <SprintCapacityIndicator projectId={id ?? ''} sprint={sprint} />
+                  {sprint.status === 'Planned' && id && (
+                    <SprintPlanningSuggestion projectId={id} sprint={sprint} />
+                  )}
                 </div>
                 <SprintLifecycleControls
                   sprint={sprint}
