@@ -36,6 +36,7 @@ import { BacklogBoard } from '@/components/sprints/BacklogBoard'
 import { CalendarView } from '@/components/sprints/CalendarView'
 import { SprintBurndownChart } from '@/components/sprints/SprintBurndownChart'
 import { SprintVelocityChart } from '@/components/sprints/SprintVelocityChart'
+import { SprintRetrospective } from '@/components/sprints/SprintRetrospective'
 import { EpicsList } from '@/components/tasks/EpicsList'
 import { EpicRoadmapTimeline } from '@/components/projects/EpicRoadmapTimeline'
 import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm'
@@ -47,6 +48,9 @@ import { DependencyGraphView } from '@/components/projects/DependencyGraphView'
 import { ReleasesPanel } from '@/components/releases/ReleasesPanel'
 import { TimesheetPanel } from '@/components/worklogs/TimesheetPanel'
 import { EpicProgressTable } from '@/components/projects/EpicProgressTable'
+import { CfdChart } from '@/components/projects/CfdChart'
+import { CycleTimeChart } from '@/components/projects/CycleTimeChart'
+import { EpicBurndownChart } from '@/components/projects/EpicBurndownChart'
 import { IssueTypesSettingsForm } from '@/components/projects/IssueTypesSettingsForm'
 import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
 import { AutomationLogList } from '@/components/projects/AutomationLogList'
@@ -660,8 +664,12 @@ export function ProjectDetailPage() {
                 </Select>
               </FormField>
               <SprintBurndownChart projectId={id} sprintId={effectiveReportsSprintId} />
+              <SprintRetrospective projectId={id} sprintId={effectiveReportsSprintId} />
               <SprintVelocityChart projectId={id} />
+              <CfdChart projectId={id} />
+              <CycleTimeChart projectId={id} />
               <EpicProgressTable projectId={id} />
+              <EpicBurndownChart projectId={id} />
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Sprint history</h3>
                 <SprintHistoryList projectId={id} />

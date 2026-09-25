@@ -46,6 +46,15 @@ export function useEpicProgress(id: string | undefined, options: { enabled?: boo
   })
 }
 
+/** Module 9's Epic Burndown - only meaningful for an Epic. */
+export function useEpicBurndown(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.tasks.epicBurndown(id ?? ''),
+    queryFn: () => tasksService.epicBurndown(id!),
+    enabled: !!id,
+  })
+}
+
 /** JQL-lite compound search (Search/Dashboards v2) - disabled until a query has actually been
  * submitted (a partial/empty `jql` while the user is still typing should not fire a request). */
 export function useTaskSearch(query: TaskSearchQuery | null) {

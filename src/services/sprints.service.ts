@@ -6,6 +6,7 @@ import type {
   SprintActivityEntry,
   SprintBurndownResult,
   SprintListQuery,
+  SprintRetrospective,
   SprintVelocityEntry,
   UpdateSprintPayload,
 } from '@/types/sprint.types'
@@ -47,4 +48,7 @@ export const sprintsService = {
 
   burndown: (projectId: string, sprintId: string) =>
     apiGet<SprintBurndownResult>(`/projects/${projectId}/sprints/${sprintId}/burndown`),
+
+  retrospective: (projectId: string, sprintId: string) =>
+    apiGet<SprintRetrospective>(`/projects/${projectId}/sprints/${sprintId}/retrospective`),
 }

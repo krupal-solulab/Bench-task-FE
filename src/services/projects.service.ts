@@ -2,9 +2,11 @@ import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost, apiPut } from '.
 import type {
   AutomationLogEntry,
   AutomationRule,
+  CfdPoint,
   CreateProjectPayload,
   CustomFieldDefinition,
   CustomFieldOverrideByType,
+  CycleTimeReport,
   MemberPermissions,
   Project,
   ProjectActivityEntry,
@@ -131,4 +133,10 @@ export const projectsService = {
 
   automationLog: (id: string, query: { page?: number; limit?: number }) =>
     apiGetPaginated<AutomationLogEntry>(`/projects/${id}/automation-log`, query),
+
+  cfdReport: (id: string, days: number) =>
+    apiGet<CfdPoint[]>(`/projects/${id}/reports/cfd`, { days }),
+
+  cycleTimeReport: (id: string, days: number) =>
+    apiGet<CycleTimeReport>(`/projects/${id}/reports/cycle-time`, { days }),
 }

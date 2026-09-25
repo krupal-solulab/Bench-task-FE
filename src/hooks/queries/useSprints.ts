@@ -58,6 +58,17 @@ export function useSprintBurndown(projectId: string | undefined, sprintId: strin
   })
 }
 
+export function useSprintRetrospective(
+  projectId: string | undefined,
+  sprintId: string | undefined,
+) {
+  return useQuery({
+    queryKey: queryKeys.sprints.retrospective(sprintId ?? ''),
+    queryFn: () => sprintsService.retrospective(projectId!, sprintId!),
+    enabled: !!projectId && !!sprintId,
+  })
+}
+
 /** BRD 6.3's Sprint History - every past (Completed) sprint, with its date range/goal/completion
  * rate already on the document. */
 export function useSprintHistory(projectId: string | undefined) {

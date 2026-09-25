@@ -55,6 +55,10 @@ export const CHART_COLORS = {
   sla: { compliant: '#10b981', breached: '#ef4444' },
   velocityTrend: '#3b82f6',
   single: '#3b82f6',
+  // Module 9 - mirrors taskStatus's Todo/In Progress/Done hex values for visual continuity (the
+  // CFD buckets by the 3-value StatusCategory, not the 4-value per-project status name).
+  cfd: { toDo: '#64748b', inProgress: '#3b82f6', done: '#10b981' },
+  cycleTime: { point: '#3b82f6', average: '#ef4444' },
 } as const
 
 export const DEFAULT_PAGE_SIZE = 20
@@ -96,6 +100,9 @@ export const queryKeys = {
     slaPolicy: (id: string) => ['projects', 'detail', id, 'sla-policy'] as const,
     epicProgressReport: (id: string) =>
       ['projects', 'detail', id, 'reports', 'epic-progress'] as const,
+    cfd: (id: string, days: number) => ['projects', 'detail', id, 'reports', 'cfd', days] as const,
+    cycleTime: (id: string, days: number) =>
+      ['projects', 'detail', id, 'reports', 'cycle-time', days] as const,
   },
   workflowTemplates: {
     all: ['workflow-templates'] as const,
@@ -108,6 +115,7 @@ export const queryKeys = {
     myTasks: (filters: unknown) => ['tasks', 'my-tasks', filters] as const,
     activity: (id: string) => ['tasks', 'detail', id, 'activity'] as const,
     epicProgress: (id: string) => ['tasks', 'detail', id, 'epic-progress'] as const,
+    epicBurndown: (id: string) => ['tasks', 'detail', id, 'epic-burndown'] as const,
     search: (filters: unknown) => ['tasks', 'search', filters] as const,
     autocompleteFields: ['tasks', 'search', 'autocomplete-fields'] as const,
     autocompleteValues: (field: string) =>
@@ -125,6 +133,7 @@ export const queryKeys = {
     velocity: (projectId: string, limit?: number) =>
       ['sprints', 'velocity', projectId, limit] as const,
     burndown: (id: string) => ['sprints', 'detail', id, 'burndown'] as const,
+    retrospective: (id: string) => ['sprints', 'detail', id, 'retrospective'] as const,
     history: (projectId: string) => ['sprints', 'history', projectId] as const,
   },
   releases: {

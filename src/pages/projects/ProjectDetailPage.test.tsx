@@ -416,6 +416,21 @@ describe('ProjectDetailPage', () => {
         http.get(url('/projects/:id/sprints/velocity'), () =>
           HttpResponse.json({ success: true, data: [] }),
         ),
+        // Module 9's new Reports-tab widgets - unconditionally rendered whenever this tab is
+        // shown, so every test that opens it needs a default here (same reasoning as the
+        // grant/level pickers noted elsewhere in this codebase's MSW setup).
+        http.get(url('/projects/:id/reports/cfd'), () =>
+          HttpResponse.json({ success: true, data: [] }),
+        ),
+        http.get(url('/projects/:id/reports/cycle-time'), () =>
+          HttpResponse.json({
+            success: true,
+            data: { points: [], averageLeadTimeHours: null, averageCycleTimeHours: null },
+          }),
+        ),
+        http.get(url('/projects/:id/reports/epic-progress'), () =>
+          HttpResponse.json({ success: true, data: [] }),
+        ),
       )
     })
 
@@ -427,6 +442,19 @@ describe('ProjectDetailPage', () => {
       expect(screen.getByText('No completed sprints yet.')).toBeInTheDocument()
       expect(screen.getByText('Burndown')).toBeInTheDocument()
       expect(screen.getByText('Select a sprint to view its burndown.')).toBeInTheDocument()
+    })
+
+    it('shows the new Module 9 reports: CFD, Control Chart, retrospective, and Epic Burndown', async () => {
+      renderProjectDetail(makeAuthValue(), '/projects/p-1?tab=reports')
+
+      await waitFor(() => expect(screen.getByText('Website Revamp')).toBeInTheDocument())
+      expect(await screen.findByText('Cumulative Flow Diagram')).toBeInTheDocument()
+      expect(screen.getByText('No tasks yet.')).toBeInTheDocument()
+      expect(screen.getByText('Control Chart')).toBeInTheDocument()
+      expect(screen.getByText('No issues completed in this period.')).toBeInTheDocument()
+      expect(screen.getByText('Select a sprint to view its retrospective.')).toBeInTheDocument()
+      expect(screen.getByText('Epic Burndown')).toBeInTheDocument()
+      expect(screen.getByText('Select an epic.')).toBeInTheDocument()
     })
   })
 })
