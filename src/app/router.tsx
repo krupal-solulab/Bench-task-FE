@@ -24,6 +24,8 @@ import { BillingPage } from '@/pages/admin/BillingPage'
 import { OrganizationSettingsPage } from '@/pages/admin/OrganizationSettingsPage'
 import { AuditLogPage } from '@/pages/admin/AuditLogPage'
 import { ProfilePage } from '@/pages/ProfilePage'
+import { NotificationsPage } from '@/pages/NotificationsPage'
+import { SearchResultsPage } from '@/pages/SearchResultsPage'
 import { CannedResponsesPage } from '@/pages/CannedResponsesPage'
 import { PlatformOrganizationsListPage } from '@/pages/platform/PlatformOrganizationsListPage'
 import { PlatformOrganizationDetailPage } from '@/pages/platform/PlatformOrganizationDetailPage'
@@ -51,6 +53,8 @@ export function AppRouter() {
             <Route path="/issues" element={<IssueNavigatorPage />} />
             <Route path="/tasks/:id" element={<TaskDetailPage />} />
             <Route path="/roadmap" element={<RoadmapPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/search" element={<SearchResultsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/canned-responses" element={<CannedResponsesPage />} />
             <Route path="/403" element={<ForbiddenPage />} />

@@ -6,7 +6,7 @@ import type {
   LoginPayload,
   RegisterOrganizationPayload,
 } from '@/types/auth.types'
-import type { User } from '@/types/user.types'
+import type { UpdateUserPayload, User } from '@/types/user.types'
 
 export const authService = {
   login: (payload: LoginPayload) => apiPost<AuthResponse>('/auth/login', payload),
@@ -19,6 +19,8 @@ export const authService = {
   logout: () => apiPost<void>('/auth/logout'),
 
   me: () => apiGet<User>('/auth/me'),
+
+  updateMe: (payload: UpdateUserPayload) => apiPatch<User>('/auth/me', payload),
 
   changePassword: (payload: ChangePasswordPayload) => apiPatch<void>('/auth/me/password', payload),
 }

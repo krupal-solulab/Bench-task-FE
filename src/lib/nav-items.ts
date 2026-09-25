@@ -1,4 +1,5 @@
 import {
+  Bell,
   CreditCard,
   LayoutDashboard,
   Link2,
@@ -33,6 +34,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/tasks/my-tasks', label: 'My Tasks', icon: ListChecks },
   { to: '/issues', label: 'Issue Navigator', icon: Search },
   { to: '/roadmap', label: 'Roadmap', icon: Milestone },
+  { to: '/notifications', label: 'Notifications', icon: Bell },
   { to: '/canned-responses', label: 'Canned Responses', icon: MessageSquareText },
   { to: '/admin/users', label: 'Admin', icon: ShieldCheck, roles: ['Admin'] },
   {

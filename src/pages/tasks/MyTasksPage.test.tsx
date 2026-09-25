@@ -28,6 +28,7 @@ function makeAuthValue(): AuthContextValue {
     registerOrganization: async () => {},
     logout: async () => {},
     hasRole: () => false,
+    updateUser: () => {},
   }
 }
 

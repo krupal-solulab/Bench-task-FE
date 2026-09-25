@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
 import { useToast } from '@/hooks/useToast'
 import { APP_NAME } from '@/lib/constants'
+import { GlobalSearchBar } from './GlobalSearchBar'
 import { NotificationBell } from './NotificationBell'
 
 export function Topbar() {
@@ -29,14 +30,17 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-card/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-      <span className="flex items-center gap-2 font-semibold tracking-tight">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-card/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+      <span className="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
         <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
           {APP_NAME.charAt(0)}
         </span>
         {APP_NAME}
       </span>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-1 justify-center">
+        <GlobalSearchBar />
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
