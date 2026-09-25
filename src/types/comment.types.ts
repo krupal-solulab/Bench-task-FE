@@ -6,6 +6,8 @@ export interface Comment {
   taskId: string
   body: string
   author: User
+  // Module 7 - derived server-side from `body`'s @[Name](userId) markup (see lib/mentions.ts).
+  mentionedUserIds: User[]
   createdAt: string
   updatedAt: string
 }

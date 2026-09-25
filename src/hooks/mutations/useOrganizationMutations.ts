@@ -5,6 +5,7 @@ import type {
   AddOrganizationAdminPayload,
   CreateOrganizationPayload,
   OrganizationStatus,
+  UpdateOrganizationSettingsPayload,
 } from '@/types/organization.types'
 
 export function useCreateOrganization() {
@@ -37,5 +38,18 @@ export function useAddOrganizationAdmin(id: string) {
     mutationFn: (payload: AddOrganizationAdminPayload) =>
       organizationsService.addAdmin(id, payload),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.organizations.all }),
+  })
+}
+
+/** A singleton (one org settings record per caller), so a successful update writes straight into
+ * the cache instead of invalidating - mirrors useUpdateNotificationPreferences. */
+export function useUpdateMyOrganization() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: UpdateOrganizationSettingsPayload) =>
+      organizationsService.updateMine(payload),
+    onSuccess: (settings) => {
+      queryClient.setQueryData(queryKeys.organizations.mine, settings)
+    },
   })
 }

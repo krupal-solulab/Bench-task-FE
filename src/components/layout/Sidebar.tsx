@@ -8,7 +8,9 @@ import {
   Lock,
   MessageSquareText,
   Milestone,
+  ScrollText,
   Search,
+  Settings,
   ShieldCheck,
   FolderKanban,
   Users,
@@ -52,6 +54,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/admin/teams', label: 'Teams', icon: Users, roles: ['Admin', 'Manager'] },
   { to: '/admin/link-types', label: 'Link Types', icon: Link2, roles: ['Admin'] },
   { to: '/admin/billing', label: 'Billing', icon: CreditCard, roles: ['Admin'] },
+  { to: '/admin/org-settings', label: 'Org Settings', icon: Settings, roles: ['Admin'] },
+  { to: '/admin/audit-log', label: 'Audit Log', icon: ScrollText, roles: ['Admin'] },
 ]
 
 export function Sidebar() {

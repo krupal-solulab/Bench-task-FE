@@ -48,3 +48,18 @@ export interface PlatformStats {
   organizationCount: number
   totalUserCount: number
 }
+
+/** Module 8's self-service org settings (`GET/PATCH organizations/me`) - distinct from the
+ * PlatformAdmin-only `Organization` above (which covers any org, by id, rename+status only). */
+export interface OrganizationSettings {
+  id: string
+  name: string
+  timezone: string
+  logoUrl: string | null
+}
+
+export interface UpdateOrganizationSettingsPayload {
+  name?: string
+  timezone?: string
+  logoUrl?: string | null
+}

@@ -18,6 +18,7 @@ function makeComment(overrides: Partial<Comment> = {}): Comment {
     taskId: 't-1',
     body: 'Original body',
     author: AUTHOR,
+    mentionedUserIds: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     ...overrides,
@@ -84,5 +85,19 @@ describe('CommentItem', () => {
     renderComment(makeComment({ body: 'hello there' }), makeAuthValue({ user: AUTHOR }))
     expect(screen.getByText('hello there')).toBeInTheDocument()
     expect(screen.getByText(AUTHOR.name)).toBeInTheDocument()
+  })
+
+  it('renders @[Name](userId) mention markup as a highlighted chip, not raw text (Module 7)', () => {
+    // The mention pattern requires a real-looking 24-char hex Mongo id (matching the backend's own
+    // mention.util.ts) - OTHER_DEV's short fixture id ('u-dev2') deliberately isn't one, so a
+    // realistic id is used here instead, just for this markup.
+    renderComment(
+      makeComment({
+        body: `Hey @[${OTHER_DEV.name}](507f1f77bcf86cd799439011) can you check this?`,
+      }),
+      makeAuthValue({ user: AUTHOR }),
+    )
+    expect(screen.getByText(`@${OTHER_DEV.name}`)).toBeInTheDocument()
+    expect(screen.queryByText(/\[.*\]\(.*\)/)).not.toBeInTheDocument()
   })
 })

@@ -151,6 +151,10 @@ export const queryKeys = {
     all: ['organizations'] as const,
     list: (filters: unknown) => ['organizations', 'list', filters] as const,
     detail: (id: string) => ['organizations', 'detail', id] as const,
+    mine: ['organizations', 'me'] as const,
+  },
+  auditLog: {
+    list: (filters: unknown) => ['audit-log', 'list', filters] as const,
   },
   platform: {
     stats: ['platform', 'stats'] as const,

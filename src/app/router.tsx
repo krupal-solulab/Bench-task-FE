@@ -21,6 +21,8 @@ import { ProjectRolesPage } from '@/pages/admin/ProjectRolesPage'
 import { SecuritySchemesPage } from '@/pages/admin/SecuritySchemesPage'
 import { LinkTypesPage } from '@/pages/admin/LinkTypesPage'
 import { BillingPage } from '@/pages/admin/BillingPage'
+import { OrganizationSettingsPage } from '@/pages/admin/OrganizationSettingsPage'
+import { AuditLogPage } from '@/pages/admin/AuditLogPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { CannedResponsesPage } from '@/pages/CannedResponsesPage'
 import { PlatformOrganizationsListPage } from '@/pages/platform/PlatformOrganizationsListPage'
@@ -60,6 +62,8 @@ export function AppRouter() {
               <Route path="/admin/security-schemes" element={<SecuritySchemesPage />} />
               <Route path="/admin/link-types" element={<LinkTypesPage />} />
               <Route path="/admin/billing" element={<BillingPage />} />
+              <Route path="/admin/org-settings" element={<OrganizationSettingsPage />} />
+              <Route path="/admin/audit-log" element={<AuditLogPage />} />
             </Route>
 
             <Route element={<RoleRoute roles={['Admin', 'Manager']} />}>

@@ -203,6 +203,40 @@ export function useBulkDeleteTasks() {
   })
 }
 
+/** Module 7's Watchers/Voting - each just replaces the cached task detail with the server's
+ * updated watcherIds/voterIds, same shape as every other single-task mutation here. */
+export function useWatchTask(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => tasksService.watch(id),
+    onSuccess: (task) => queryClient.setQueryData(queryKeys.tasks.detail(id), task),
+  })
+}
+
+export function useUnwatchTask(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => tasksService.unwatch(id),
+    onSuccess: (task) => queryClient.setQueryData(queryKeys.tasks.detail(id), task),
+  })
+}
+
+export function useVoteTask(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => tasksService.vote(id),
+    onSuccess: (task) => queryClient.setQueryData(queryKeys.tasks.detail(id), task),
+  })
+}
+
+export function useUnvoteTask(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => tasksService.unvote(id),
+    onSuccess: (task) => queryClient.setQueryData(queryKeys.tasks.detail(id), task),
+  })
+}
+
 export function useDeleteTask() {
   const queryClient = useQueryClient()
   return useMutation({

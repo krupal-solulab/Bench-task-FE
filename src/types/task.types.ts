@@ -74,6 +74,10 @@ export interface Task {
   // Module 6 - a level name from the project's assigned Security Scheme, or null (no restriction,
   // every existing task and any task on a project with no scheme assigned).
   securityLevel: string | null
+  // Module 7's Watchers/Voting - the reporter and current assignee are auto-watchers (never
+  // auto-removed); voting is purely a signal of interest, with no permission effect.
+  watcherIds: User[]
+  voterIds: User[]
   createdAt: string
   updatedAt: string
 }

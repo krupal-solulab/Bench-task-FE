@@ -9,7 +9,25 @@ import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/cn'
 import { formatRelativeTime } from '@/lib/date'
 import { toApiError } from '@/lib/error'
+import { parseCommentBody } from '@/lib/mentions'
 import type { Comment } from '@/types/comment.types'
+
+/** Renders `@[Name](userId)` markup as a highlighted mention chip instead of raw text. */
+function CommentBody({ body }: { body: string }) {
+  return (
+    <>
+      {parseCommentBody(body).map((segment, index) =>
+        segment.type === 'mention' ? (
+          <span key={index} className="rounded bg-primary/10 px-1 py-0.5 font-medium text-primary">
+            @{segment.name}
+          </span>
+        ) : (
+          <span key={index}>{segment.value}</span>
+        ),
+      )}
+    </>
+  )
+}
 
 export function CommentItem({ comment, taskId }: { comment: Comment; taskId: string }) {
   const { user, hasRole } = useAuth()
@@ -73,7 +91,9 @@ export function CommentItem({ comment, taskId }: { comment: Comment; taskId: str
             </div>
           </div>
         ) : (
-          <p className="rounded-lg rounded-tl-none bg-muted/60 px-3 py-2 text-sm">{comment.body}</p>
+          <p className="rounded-lg rounded-tl-none bg-muted/60 px-3 py-2 text-sm">
+            <CommentBody body={comment.body} />
+          </p>
         )}
 
         {canModify && !editing && !isOptimistic && (
