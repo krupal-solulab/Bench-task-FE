@@ -47,6 +47,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     affectsVersions: [],
     originalEstimateHours: null,
     customFieldValues: {},
+    securityLevel: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,

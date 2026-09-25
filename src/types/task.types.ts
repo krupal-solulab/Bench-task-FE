@@ -71,6 +71,9 @@ export interface Task {
   originalEstimateHours: number | null
   // Keyed by the project's CustomFieldDefinition.id, not name.
   customFieldValues: Record<string, unknown>
+  // Module 6 - a level name from the project's assigned Security Scheme, or null (no restriction,
+  // every existing task and any task on a project with no scheme assigned).
+  securityLevel: string | null
   createdAt: string
   updatedAt: string
 }
@@ -114,6 +117,7 @@ export interface CreateTaskPayload {
   affectsVersions?: string[]
   originalEstimateHours?: number | null
   customFieldValues?: Record<string, unknown>
+  securityLevel?: string | null
 }
 
 export type UpdateTaskPayload = Partial<Omit<CreateTaskPayload, 'project'>>

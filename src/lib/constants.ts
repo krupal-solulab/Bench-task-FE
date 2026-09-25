@@ -186,6 +186,15 @@ export const queryKeys = {
   permissionSchemes: {
     all: ['permission-schemes'] as const,
   },
+  teams: {
+    all: ['teams'] as const,
+  },
+  projectRoles: {
+    all: ['project-roles'] as const,
+  },
+  securitySchemes: {
+    all: ['security-schemes'] as const,
+  },
   cannedResponses: {
     all: ['canned-responses'] as const,
   },

@@ -23,6 +23,9 @@ export const taskSchema = z
     // Required-field enforcement for custom fields happens server-side - the project's field
     // definitions aren't known to this static schema.
     customFieldValues: z.record(z.unknown()).optional().default({}),
+    // Module 6 - a level name from the project's assigned Security Scheme, validated server-side
+    // against that scheme's actual levels (not known to this static schema).
+    securityLevel: z.string().nullable().optional(),
   })
   .refine((data) => data.issueType !== 'Sub-task' || !!data.parent, {
     message: 'A Sub-task requires a parent issue',

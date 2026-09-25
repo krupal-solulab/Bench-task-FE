@@ -18,9 +18,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useEffectiveCustomFields, useProject, useProjectLabels } from '@/hooks/queries/useProjects'
+import { useSecuritySchemes } from '@/hooks/queries/useSecuritySchemes'
 import { taskSchema, type TaskFormValues } from '@/schemas/task.schema'
 import { TASK_PRIORITIES, type Task } from '@/types/task.types'
 import { resolveIssueTypes } from '@/types/issue-type.types'
+
+const NO_SECURITY_LEVEL = '__none__'
 
 export interface TaskFormProps {
   projectId: string
@@ -63,11 +66,14 @@ export function TaskForm({
       fixVersions: initialValues?.fixVersions?.map((r) => r.id) ?? [],
       affectsVersions: initialValues?.affectsVersions?.map((r) => r.id) ?? [],
       customFieldValues: initialValues?.customFieldValues ?? {},
+      securityLevel: initialValues?.securityLevel ?? null,
     },
   })
 
   const { data: project } = useProject(projectId)
   const { data: labelSuggestions } = useProjectLabels(projectId)
+  const { data: securitySchemes } = useSecuritySchemes()
+  const assignedSecurityScheme = securitySchemes?.find((s) => s.id === project?.securitySchemeId)
 
   const dueDate = watch('dueDate')
   const assignee = watch('assignee')
@@ -81,6 +87,7 @@ export function TaskForm({
   const fixVersions = watch('fixVersions') ?? []
   const affectsVersions = watch('affectsVersions') ?? []
   const customFieldValues = watch('customFieldValues') ?? {}
+  const securityLevel = watch('securityLevel')
 
   // Hierarchy position is fixed at creation - the API doesn't accept issueType/parent changes on
   // an existing issue, so editing shows it read-only instead of a control nothing would apply.
@@ -247,6 +254,27 @@ export function TaskForm({
           memberIds={memberIds}
         />
       </FormField>
+
+      {assignedSecurityScheme && (
+        <FormField label="Security level" htmlFor="securityLevel">
+          <Select
+            value={securityLevel ?? NO_SECURITY_LEVEL}
+            onValueChange={(v) => setValue('securityLevel', v === NO_SECURITY_LEVEL ? null : v)}
+          >
+            <SelectTrigger id="securityLevel">
+              <SelectValue placeholder="None (no restriction)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_SECURITY_LEVEL}>None (no restriction)</SelectItem>
+              {assignedSecurityScheme.levels.map((level) => (
+                <SelectItem key={level.name} value={level.name}>
+                  {level.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+      )}
 
       <FormField label="Labels" htmlFor="labels">
         <TagInput

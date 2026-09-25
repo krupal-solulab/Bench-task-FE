@@ -16,6 +16,9 @@ import { TaskDetailPage } from '@/pages/tasks/TaskDetailPage'
 import { RoadmapPage } from '@/pages/roadmap/RoadmapPage'
 import { UsersPage } from '@/pages/admin/UsersPage'
 import { PermissionSchemesPage } from '@/pages/admin/PermissionSchemesPage'
+import { TeamsPage } from '@/pages/admin/TeamsPage'
+import { ProjectRolesPage } from '@/pages/admin/ProjectRolesPage'
+import { SecuritySchemesPage } from '@/pages/admin/SecuritySchemesPage'
 import { LinkTypesPage } from '@/pages/admin/LinkTypesPage'
 import { BillingPage } from '@/pages/admin/BillingPage'
 import { ProfilePage } from '@/pages/ProfilePage'
@@ -53,8 +56,14 @@ export function AppRouter() {
             <Route element={<RoleRoute roles={['Admin']} />}>
               <Route path="/admin/users" element={<UsersPage />} />
               <Route path="/admin/permission-schemes" element={<PermissionSchemesPage />} />
+              <Route path="/admin/project-roles" element={<ProjectRolesPage />} />
+              <Route path="/admin/security-schemes" element={<SecuritySchemesPage />} />
               <Route path="/admin/link-types" element={<LinkTypesPage />} />
               <Route path="/admin/billing" element={<BillingPage />} />
+            </Route>
+
+            <Route element={<RoleRoute roles={['Admin', 'Manager']} />}>
+              <Route path="/admin/teams" element={<TeamsPage />} />
             </Route>
           </Route>
         </Route>

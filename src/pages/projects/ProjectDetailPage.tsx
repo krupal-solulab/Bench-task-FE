@@ -52,6 +52,8 @@ import { AutomationRulesForm } from '@/components/projects/AutomationRulesForm'
 import { AutomationLogList } from '@/components/projects/AutomationLogList'
 import { NotificationSchemeForm } from '@/components/projects/NotificationSchemeForm'
 import { PermissionSchemeAssignment } from '@/components/projects/PermissionSchemeAssignment'
+import { SecuritySchemeAssignment } from '@/components/projects/SecuritySchemeAssignment'
+import { RoleAssignmentsPanel } from '@/components/projects/RoleAssignmentsPanel'
 import { ImportExportPanel } from '@/components/projects/ImportExportPanel'
 import {
   useProject,
@@ -801,12 +803,23 @@ export function ProjectDetailPage() {
           <SlaPolicySettingsForm projectId={id ?? ''} canManage={canManage} />
         </TabsContent>
 
-        <TabsContent value="permissions">
+        <TabsContent value="permissions" className="space-y-6">
           <PermissionSchemeAssignment
             projectId={id ?? ''}
             permissionSchemeId={project.permissionSchemeId}
             canManage={canManage}
           />
+          <SecuritySchemeAssignment
+            projectId={id ?? ''}
+            securitySchemeId={project.securitySchemeId ?? null}
+            canManage={canManage}
+          />
+          {canManage && (
+            <RoleAssignmentsPanel
+              projectId={id ?? ''}
+              roleAssignments={project.roleAssignments ?? []}
+            />
+          )}
         </TabsContent>
       </Tabs>
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Lock } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/common/Button'
@@ -123,6 +124,7 @@ export function TaskDetailPage() {
         fixVersions: values.fixVersions,
         affectsVersions: values.affectsVersions,
         customFieldValues: values.customFieldValues,
+        securityLevel: values.securityLevel,
       })
       showToast({ title: 'Task updated', variant: 'success' })
       setEditOpen(false)
@@ -353,6 +355,16 @@ export function TaskDetailPage() {
                         </span>
                       ))}
                     </div>
+                  </div>
+                )}
+                {task.securityLevel && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Security level
+                    </p>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                      <Lock className="h-3 w-3" /> {task.securityLevel}
+                    </span>
                   </div>
                 )}
               </div>

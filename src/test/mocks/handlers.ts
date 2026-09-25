@@ -125,6 +125,13 @@ export const handlers = [
   http.get(url('/projects/:id/sprints'), () => HttpResponse.json(paginated([]))),
   http.get(url('/projects/:id/sprints/active'), () => HttpResponse.json(ok(null))),
   http.get(url('/projects/:id/releases'), () => HttpResponse.json(paginated([]))),
+  // Module 6 - a plain array (not paginated), matching the backend's actual response shape.
+  // Grant/level pickers (GrantTeamsAndRoles, PermissionSchemeForm, SecuritySchemeForm,
+  // RoleAssignmentsPanel) call these unconditionally, so every test rendering them needs a
+  // default even when teams/project-roles aren't the thing under test.
+  http.get(url('/teams'), () => HttpResponse.json(ok([]))),
+  http.get(url('/project-roles'), () => HttpResponse.json(ok([]))),
+  http.get(url('/security-schemes'), () => HttpResponse.json(ok([]))),
   http.get(url('/tasks/search/autocomplete-fields'), () =>
     HttpResponse.json(ok({ fields: [], keywords: [] })),
   ),

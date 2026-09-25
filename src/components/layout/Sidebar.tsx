@@ -11,6 +11,8 @@ import {
   Search,
   ShieldCheck,
   FolderKanban,
+  Users,
+  UserCog,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
@@ -40,6 +42,14 @@ const NAV_ITEMS: NavItem[] = [
     icon: Lock,
     roles: ['Admin'],
   },
+  {
+    to: '/admin/security-schemes',
+    label: 'Security Schemes',
+    icon: ShieldCheck,
+    roles: ['Admin'],
+  },
+  { to: '/admin/project-roles', label: 'Project Roles', icon: UserCog, roles: ['Admin'] },
+  { to: '/admin/teams', label: 'Teams', icon: Users, roles: ['Admin', 'Manager'] },
   { to: '/admin/link-types', label: 'Link Types', icon: Link2, roles: ['Admin'] },
   { to: '/admin/billing', label: 'Billing', icon: CreditCard, roles: ['Admin'] },
 ]

@@ -14,6 +14,9 @@ export interface PermissionGrant {
   action: SchemeAction
   allowedRoles: Role[]
   allowedUserIds: string[]
+  // Module 6 - optional so a scheme saved before this feature existed still parses.
+  allowedTeamIds?: string[]
+  allowedProjectRoleIds?: string[]
 }
 
 export interface PermissionScheme {

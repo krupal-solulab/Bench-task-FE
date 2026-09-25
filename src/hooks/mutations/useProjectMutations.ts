@@ -236,6 +236,31 @@ export function useAssignPermissionScheme(id: string) {
   })
 }
 
+export function useAssignSecurityScheme(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (securitySchemeId: string | null) =>
+      projectsService.assignSecurityScheme(id, securitySchemeId),
+    onSuccess: (project) => {
+      queryClient.setQueryData(queryKeys.projects.detail(id), project)
+    },
+  })
+}
+
+export function useSetRoleAssignment(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      projectRoleId,
+      ...patch
+    }: { projectRoleId: string } & { userIds?: string[]; teamIds?: string[] }) =>
+      projectsService.setRoleAssignment(id, projectRoleId, patch),
+    onSuccess: (project) => {
+      queryClient.setQueryData(queryKeys.projects.detail(id), project)
+    },
+  })
+}
+
 export function useSetMemberPermissions(id: string) {
   const queryClient = useQueryClient()
   return useMutation({

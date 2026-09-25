@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { UserSelect } from '@/components/common/UserSelect'
 import { useAssignableUsers } from '@/hooks/queries/useUsers'
+import { GrantTeamsAndRoles } from './GrantTeamsAndRoles'
 import { ORG_ROLES } from '@/types/user.types'
 import { SCHEME_ACTIONS } from '@/types/permission-scheme.types'
 import type {
@@ -24,16 +25,30 @@ const ACTION_LABELS: Record<SchemeAction, string> = {
 }
 
 function emptyGrants(): PermissionGrant[] {
-  return SCHEME_ACTIONS.map((action) => ({ action, allowedRoles: [], allowedUserIds: [] }))
+  return SCHEME_ACTIONS.map((action) => ({
+    action,
+    allowedRoles: [],
+    allowedUserIds: [],
+    allowedTeamIds: [],
+    allowedProjectRoleIds: [],
+  }))
 }
 
 /** Fills in any action the scheme doesn't yet have a grant row for (e.g. an older scheme saved
- * before a new action existed) so every row always renders, defaulted to "nobody". */
+ * before a new action existed), and backfills allowedTeamIds/allowedProjectRoleIds for a scheme
+ * saved before Module 6 - so every row always renders with every field defined. */
 function withAllActions(grants: PermissionGrant[]): PermissionGrant[] {
   const byAction = new Map(grants.map((g) => [g.action, g]))
-  return SCHEME_ACTIONS.map(
-    (action) => byAction.get(action) ?? { action, allowedRoles: [], allowedUserIds: [] },
-  )
+  return SCHEME_ACTIONS.map((action) => {
+    const existing = byAction.get(action)
+    return {
+      action,
+      allowedRoles: existing?.allowedRoles ?? [],
+      allowedUserIds: existing?.allowedUserIds ?? [],
+      allowedTeamIds: existing?.allowedTeamIds ?? [],
+      allowedProjectRoleIds: existing?.allowedProjectRoleIds ?? [],
+    }
+  })
 }
 
 export interface PermissionSchemeFormProps {
@@ -143,6 +158,16 @@ export function PermissionSchemeForm({
               onChange={(userId) => addUser(grant.action, userId)}
               allowUnassigned={false}
               placeholder="+ Add an individual…"
+            />
+
+            <GrantTeamsAndRoles
+              idPrefix={ACTION_LABELS[grant.action]}
+              allowedTeamIds={grant.allowedTeamIds ?? []}
+              allowedProjectRoleIds={grant.allowedProjectRoleIds ?? []}
+              onChangeTeamIds={(ids) => updateGrant(grant.action, { allowedTeamIds: ids })}
+              onChangeProjectRoleIds={(ids) =>
+                updateGrant(grant.action, { allowedProjectRoleIds: ids })
+              }
             />
           </div>
         ))}

@@ -151,8 +151,19 @@ export interface Project {
   // Optional (rather than required) so existing test fixtures/mocks predating this field don't
   // all need updating - absent means Scrum, matching the backend's own default.
   boardType?: BoardType
+  // Module 6 - optional (rather than required) so existing test fixtures/mocks predating this
+  // field don't all need updating; absent means "no Project Roles assigned yet" / "no security
+  // scheme assigned", matching the backend's own defaults.
+  roleAssignments?: ProjectRoleAssignment[]
+  securitySchemeId?: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface ProjectRoleAssignment {
+  projectRoleId: string
+  userIds: string[]
+  teamIds: string[]
 }
 
 export interface ProjectListQuery {

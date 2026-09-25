@@ -109,6 +109,15 @@ export const projectsService = {
   assignPermissionScheme: (id: string, permissionSchemeId: string | null) =>
     apiPatch<Project>(`/projects/${id}/permission-scheme`, { permissionSchemeId }),
 
+  assignSecurityScheme: (id: string, securitySchemeId: string | null) =>
+    apiPatch<Project>(`/projects/${id}/security-scheme`, { securitySchemeId }),
+
+  setRoleAssignment: (
+    id: string,
+    projectRoleId: string,
+    patch: { userIds?: string[]; teamIds?: string[] },
+  ) => apiPatch<Project>(`/projects/${id}/role-assignments/${projectRoleId}`, patch),
+
   updateNotificationScheme: (id: string, rules: NotificationSchemeRule[]) =>
     apiPut<Project>(`/projects/${id}/notification-scheme`, { rules }),
 
