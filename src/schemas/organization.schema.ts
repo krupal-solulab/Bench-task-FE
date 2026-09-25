@@ -25,3 +25,12 @@ export const addOrganizationAdminSchema = z.object({
 })
 
 export type AddOrganizationAdminFormValues = z.infer<typeof addOrganizationAdminSchema>
+
+export const organizationSettingsSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(120, 'Name is too long'),
+  timezone: z.string().min(1, 'Timezone is required').max(60, 'Timezone is too long'),
+  // '' represents "no logo" in the form; the page maps it to `null` before submitting.
+  logoUrl: z.union([z.string().url('Enter a valid URL'), z.literal('')]),
+})
+
+export type OrganizationSettingsFormValues = z.infer<typeof organizationSettingsSchema>

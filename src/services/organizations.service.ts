@@ -5,8 +5,10 @@ import type {
   Organization,
   OrganizationDetail,
   OrganizationListQuery,
+  OrganizationSettings,
   OrganizationStatus,
   PlatformStats,
+  UpdateOrganizationSettingsPayload,
 } from '@/types/organization.types'
 import type { User } from '@/types/user.types'
 
@@ -29,4 +31,9 @@ export const organizationsService = {
     apiPost<User>(`/platform/organizations/${id}/admins`, payload),
 
   stats: () => apiGet<PlatformStats>('/platform/stats'),
+
+  getMine: () => apiGet<OrganizationSettings>('/organizations/me'),
+
+  updateMine: (payload: UpdateOrganizationSettingsPayload) =>
+    apiPatch<OrganizationSettings>('/organizations/me', payload),
 }

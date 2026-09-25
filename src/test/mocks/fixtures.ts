@@ -1,4 +1,6 @@
+import type { AuditLogEntry } from '@/types/audit-log.types'
 import type { Comment } from '@/types/comment.types'
+import type { OrganizationSettings } from '@/types/organization.types'
 import type { Project } from '@/types/project.types'
 import type { Task } from '@/types/task.types'
 import type { User } from '@/types/user.types'
@@ -177,5 +179,26 @@ export const mockComments: Comment[] = [
     mentionedUserIds: [],
     createdAt: '2025-01-12T00:00:00.000Z',
     updatedAt: '2025-01-12T00:00:00.000Z',
+  },
+]
+
+export const mockOrganizationSettings: OrganizationSettings = {
+  id: 'org-1',
+  name: 'Acme Inc',
+  timezone: 'UTC',
+  logoUrl: null,
+}
+
+export const mockAuditLogEntries: AuditLogEntry[] = [
+  {
+    id: 'audit-1',
+    organizationId: 'org-1',
+    actor: { id: 'u-admin', name: 'Ada Admin', email: 'admin@example.com' },
+    action: 'UserCreated',
+    targetType: 'User',
+    targetId: 'u-dev1',
+    targetLabel: 'Dev One',
+    metadata: { role: 'Developer' },
+    createdAt: '2025-02-01T00:00:00.000Z',
   },
 ]

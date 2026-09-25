@@ -25,3 +25,10 @@ export function usePlatformStats() {
     queryFn: () => organizationsService.stats(),
   })
 }
+
+export function useMyOrganization() {
+  return useQuery({
+    queryKey: queryKeys.organizations.mine,
+    queryFn: () => organizationsService.getMine(),
+  })
+}

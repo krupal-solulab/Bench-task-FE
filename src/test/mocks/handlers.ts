@@ -1,5 +1,12 @@
 import { HttpResponse, http } from 'msw'
-import { mockComments, mockProjects, mockTasks, mockUsers } from './fixtures'
+import {
+  mockAuditLogEntries,
+  mockComments,
+  mockOrganizationSettings,
+  mockProjects,
+  mockTasks,
+  mockUsers,
+} from './fixtures'
 import type { ApiErrorResponse, ApiSuccess, PaginatedResponse } from '@/types/api.types'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
@@ -263,6 +270,14 @@ export const handlers = [
   http.get(url('/saved-filters'), () => HttpResponse.json(ok([]))),
 
   http.get(url('/canned-responses'), () => HttpResponse.json(ok([]))),
+
+  http.get(url('/organizations/me'), () => HttpResponse.json(ok(mockOrganizationSettings))),
+  http.patch(url('/organizations/me'), async ({ request }) => {
+    const body = (await request.json()) as Partial<typeof mockOrganizationSettings>
+    return HttpResponse.json(ok({ ...mockOrganizationSettings, ...body }))
+  }),
+
+  http.get(url('/audit-log'), () => HttpResponse.json(paginated(mockAuditLogEntries))),
 
   http.get(url('/platform/integrations/health'), () =>
     HttpResponse.json(
