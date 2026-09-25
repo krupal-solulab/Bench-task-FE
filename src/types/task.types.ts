@@ -224,3 +224,17 @@ export interface TaskActivityEntry {
   viaAutomationRule: string | null
   createdAt: string
 }
+
+/** Module 10's deterministic (non-LLM - see the backend's `task-summary.util.ts`) issue summary:
+ * a headline plus a handful of bullet facts composed from real field values, not generated prose. */
+export interface TaskSummary {
+  headline: string
+  bullets: string[]
+  generatedAt: string
+}
+
+/** Module 10's frequency-based field suggester for new-issue creation. */
+export interface SuggestedTaskFields {
+  suggestedAssigneeId: string | null
+  suggestedLabels: string[]
+}

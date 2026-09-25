@@ -96,3 +96,14 @@ export interface SprintRetrospective {
   carryoverPoints: number
   completionRatePercent: number | null
 }
+
+/** Module 10's deterministic (non-LLM - see the backend's `sprint-planning.util.ts`) sprint
+ * planning suggestion: which ranked backlog items would fit this Planned sprint. */
+export interface SprintPlanningSuggestion {
+  suggestedTaskIds: string[]
+  suggestedPoints: number
+  suggestedCount: number
+  targetPoints: number | null
+  targetCount: number | null
+  basis: 'capacity' | 'velocity' | 'none'
+}
