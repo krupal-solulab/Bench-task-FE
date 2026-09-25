@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useLocation, useOutlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
+import { CommandPalette } from './CommandPalette'
 
 export function AppLayout() {
   const location = useLocation()
@@ -26,6 +27,7 @@ export function AppLayout() {
           </AnimatePresence>
         </main>
       </div>
+      <CommandPalette />
     </div>
   )
 }

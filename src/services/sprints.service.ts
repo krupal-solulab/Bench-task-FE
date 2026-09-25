@@ -6,6 +6,7 @@ import type {
   SprintActivityEntry,
   SprintBurndownResult,
   SprintListQuery,
+  SprintPlanningSuggestion,
   SprintRetrospective,
   SprintVelocityEntry,
   UpdateSprintPayload,
@@ -51,4 +52,9 @@ export const sprintsService = {
 
   retrospective: (projectId: string, sprintId: string) =>
     apiGet<SprintRetrospective>(`/projects/${projectId}/sprints/${sprintId}/retrospective`),
+
+  planningSuggestion: (projectId: string, sprintId: string) =>
+    apiGet<SprintPlanningSuggestion>(
+      `/projects/${projectId}/sprints/${sprintId}/planning-suggestion`,
+    ),
 }

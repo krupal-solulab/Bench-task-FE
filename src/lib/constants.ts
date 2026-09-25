@@ -103,6 +103,8 @@ export const queryKeys = {
     cfd: (id: string, days: number) => ['projects', 'detail', id, 'reports', 'cfd', days] as const,
     cycleTime: (id: string, days: number) =>
       ['projects', 'detail', id, 'reports', 'cycle-time', days] as const,
+    suggestedTaskFields: (id: string, issueType: string | undefined) =>
+      ['projects', 'detail', id, 'suggested-fields', issueType ?? null] as const,
   },
   workflowTemplates: {
     all: ['workflow-templates'] as const,
@@ -116,6 +118,7 @@ export const queryKeys = {
     activity: (id: string) => ['tasks', 'detail', id, 'activity'] as const,
     epicProgress: (id: string) => ['tasks', 'detail', id, 'epic-progress'] as const,
     epicBurndown: (id: string) => ['tasks', 'detail', id, 'epic-burndown'] as const,
+    summary: (id: string) => ['tasks', 'detail', id, 'summary'] as const,
     search: (filters: unknown) => ['tasks', 'search', filters] as const,
     autocompleteFields: ['tasks', 'search', 'autocomplete-fields'] as const,
     autocompleteValues: (field: string) =>
@@ -134,6 +137,7 @@ export const queryKeys = {
       ['sprints', 'velocity', projectId, limit] as const,
     burndown: (id: string) => ['sprints', 'detail', id, 'burndown'] as const,
     retrospective: (id: string) => ['sprints', 'detail', id, 'retrospective'] as const,
+    planningSuggestion: (id: string) => ['sprints', 'detail', id, 'planning-suggestion'] as const,
     history: (projectId: string) => ['sprints', 'history', projectId] as const,
   },
   releases: {
