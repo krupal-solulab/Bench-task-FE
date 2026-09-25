@@ -45,6 +45,8 @@ function makeEpic(overrides: Partial<Task> = {}): Task {
     originalEstimateHours: null,
     customFieldValues: {},
     securityLevel: null,
+    watcherIds: [],
+    voterIds: [],
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,

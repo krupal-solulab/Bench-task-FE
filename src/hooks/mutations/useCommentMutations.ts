@@ -28,6 +28,9 @@ export function useCreateComment(taskId: string) {
         taskId,
         body: payload.body,
         author: user!,
+        // Resolved server-side once the real comment arrives (see onSuccess below) - the
+        // optimistic placeholder has no way to know which @mentions will actually resolve.
+        mentionedUserIds: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }

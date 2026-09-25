@@ -15,6 +15,9 @@ const ACTION_LABELS: Record<string, string> = {
   due_date_changed: 'changed the due date',
   updated: 'updated the task',
   deleted: 'deleted the task',
+  sprint_assigned: 'moved the task into a sprint',
+  sprint_removed: 'moved the task back to the backlog',
+  commented: 'commented',
 }
 
 export function TaskActivityFeed({ taskId }: { taskId: string }) {

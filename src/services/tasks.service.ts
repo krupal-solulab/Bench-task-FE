@@ -85,6 +85,14 @@ export const tasksService = {
   bulkDelete: (payload: BulkDeletePayload) =>
     apiPatch<BulkOperationResult>('/tasks/bulk-delete', payload),
 
+  watch: (id: string) => apiPost<Task>(`/tasks/${id}/watch`),
+
+  unwatch: (id: string) => apiDelete<Task>(`/tasks/${id}/watch`),
+
+  vote: (id: string) => apiPost<Task>(`/tasks/${id}/vote`),
+
+  unvote: (id: string) => apiDelete<Task>(`/tasks/${id}/vote`),
+
   remove: (id: string) => apiDelete<void>(`/tasks/${id}`),
 
   activity: (id: string, query: { page?: number; limit?: number }) =>

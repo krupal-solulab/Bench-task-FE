@@ -55,4 +55,41 @@ describe('CommentForm (Role-surface polish additions)', () => {
       ).toBeGreaterThan(0),
     )
   })
+
+  describe('Module 7: @mention picker', () => {
+    it('shows matching users once "@" plus a partial name is typed', async () => {
+      mockCannedResponses([])
+      const user = userEvent.setup()
+      renderForm()
+
+      await user.type(screen.getByLabelText('Add a comment'), 'Hey @Dev')
+
+      expect(await screen.findByText('Dev One')).toBeInTheDocument()
+      expect(await screen.findByText('Dev Two')).toBeInTheDocument()
+      expect(screen.queryByText('Ada Admin')).not.toBeInTheDocument()
+    })
+
+    it('inserts @[Name](userId) markup and closes the picker on selection', async () => {
+      mockCannedResponses([])
+      const user = userEvent.setup()
+      renderForm()
+
+      const textarea = screen.getByLabelText('Add a comment') as HTMLTextAreaElement
+      await user.type(textarea, 'Hey @Dev')
+      await user.click(await screen.findByText('Dev One'))
+
+      await waitFor(() => expect(textarea.value).toContain('@[Dev One](u-dev1)'))
+      expect(screen.queryByText('Dev Two')).not.toBeInTheDocument()
+    })
+
+    it('closes the picker once whitespace follows the "@" (mention context ended)', async () => {
+      mockCannedResponses([])
+      const user = userEvent.setup()
+      renderForm()
+
+      await user.type(screen.getByLabelText('Add a comment'), 'Hey @Dev ')
+
+      expect(screen.queryByText('Dev One')).not.toBeInTheDocument()
+    })
+  })
 })
