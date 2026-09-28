@@ -31,6 +31,18 @@ export function TaskStatusControl({
 
   const legalTargets = legalTaskTransitions(workflow, task.status)
 
+  // Module 12's Approval Workflows - the task is frozen from any further status change until the
+  // pending transition is approved or rejected (see TaskApprovalActions, rendered alongside this).
+  if (task.pendingApproval) {
+    return (
+      <StatusBadge
+        status={`${task.status} (awaiting approval to ${task.pendingApproval.toStatus})`}
+        kind="task"
+        category={task.statusCategory}
+      />
+    )
+  }
+
   if (!canEdit || legalTargets.length === 0) {
     return <StatusBadge status={task.status} kind="task" category={task.statusCategory} />
   }
@@ -38,8 +50,15 @@ export function TaskStatusControl({
   async function handleChange(next: string) {
     setPending(true)
     try {
-      await updateStatus.mutateAsync(next)
-      showToast({ title: `Task moved to ${next}`, variant: 'success' })
+      const updated = await updateStatus.mutateAsync(next)
+      // A requiresApproval transition doesn't apply immediately - the response's status is still
+      // the OLD one, with pendingApproval now set instead. Reflect that distinction in the toast
+      // rather than falsely claiming the move already happened.
+      if (updated.pendingApproval?.toStatus === next) {
+        showToast({ title: `Approval requested to move to ${next}`, variant: 'success' })
+      } else {
+        showToast({ title: `Task moved to ${next}`, variant: 'success' })
+      }
     } catch (err) {
       showToast({
         title: 'Could not change status',

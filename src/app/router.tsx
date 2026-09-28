@@ -19,6 +19,8 @@ import { PermissionSchemesPage } from '@/pages/admin/PermissionSchemesPage'
 import { TeamsPage } from '@/pages/admin/TeamsPage'
 import { ProjectRolesPage } from '@/pages/admin/ProjectRolesPage'
 import { SecuritySchemesPage } from '@/pages/admin/SecuritySchemesPage'
+import { FieldPermissionSchemesPage } from '@/pages/admin/FieldPermissionSchemesPage'
+import { IssueTemplatesPage } from '@/pages/admin/IssueTemplatesPage'
 import { LinkTypesPage } from '@/pages/admin/LinkTypesPage'
 import { BillingPage } from '@/pages/admin/BillingPage'
 import { OrganizationSettingsPage } from '@/pages/admin/OrganizationSettingsPage'
@@ -64,6 +66,10 @@ export function AppRouter() {
               <Route path="/admin/permission-schemes" element={<PermissionSchemesPage />} />
               <Route path="/admin/project-roles" element={<ProjectRolesPage />} />
               <Route path="/admin/security-schemes" element={<SecuritySchemesPage />} />
+              <Route
+                path="/admin/field-permission-schemes"
+                element={<FieldPermissionSchemesPage />}
+              />
               <Route path="/admin/link-types" element={<LinkTypesPage />} />
               <Route path="/admin/billing" element={<BillingPage />} />
               <Route path="/admin/org-settings" element={<OrganizationSettingsPage />} />
@@ -72,6 +78,7 @@ export function AppRouter() {
 
             <Route element={<RoleRoute roles={['Admin', 'Manager']} />}>
               <Route path="/admin/teams" element={<TeamsPage />} />
+              <Route path="/admin/issue-templates" element={<IssueTemplatesPage />} />
             </Route>
           </Route>
         </Route>

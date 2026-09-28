@@ -13,6 +13,7 @@ import { IssueTypeBadge } from '@/components/common/IssueTypeBadge'
 import { OverdueBadge } from '@/components/common/OverdueBadge'
 import { UserSelect } from '@/components/common/UserSelect'
 import { TaskStatusControl } from '@/components/tasks/TaskStatusControl'
+import { TaskApprovalActions } from '@/components/tasks/TaskApprovalActions'
 import { WatchVoteButtons } from '@/components/tasks/WatchVoteButtons'
 import { TaskForm } from '@/components/tasks/TaskForm'
 import { TaskActivityFeed } from '@/components/tasks/TaskActivityFeed'
@@ -188,6 +189,7 @@ export function TaskDetailPage() {
         actions={
           <div className="flex items-center gap-2">
             <TaskStatusControl task={task} canEdit={canEditStatus} workflow={workflow} />
+            <TaskApprovalActions task={task} />
             <WatchVoteButtons task={task} />
             {canEditOther && (
               <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>

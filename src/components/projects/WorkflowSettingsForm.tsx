@@ -4,6 +4,7 @@ import { Button } from '@/components/common/Button'
 import { FormField } from '@/components/common/FormField'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { UserSelect } from '@/components/common/UserSelect'
 import {
   Select,
   SelectContent,
@@ -12,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useResetWorkflow, useUpdateWorkflow } from '@/hooks/mutations/useProjectMutations'
+import { useAssignableUsers } from '@/hooks/queries/useUsers'
 import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
 import { STATUS_CATEGORIES } from '@/types/workflow.types'
@@ -48,6 +50,8 @@ export function WorkflowSettingsForm({
 
   const updateWorkflow = useUpdateWorkflow(projectId, issueType)
   const resetWorkflow = useResetWorkflow(projectId, issueType)
+  const { data: assignableUsers } = useAssignableUsers()
+  const userById = new Map((assignableUsers?.data ?? []).map((u) => [u.id, u]))
   const { showToast } = useToast()
 
   function applyWorkflow(next: Workflow) {
@@ -99,7 +103,15 @@ export function WorkflowSettingsForm({
     from: string,
     to: string,
     patch: Partial<
-      Pick<WorkflowTransition, 'allowedRoles' | 'requireComment' | 'requiredCustomFieldIds'>
+      Pick<
+        WorkflowTransition,
+        | 'allowedRoles'
+        | 'requireComment'
+        | 'requiredCustomFieldIds'
+        | 'requiresApproval'
+        | 'approverRoles'
+        | 'approverUserIds'
+      >
     >,
   ) {
     setTransitions(
@@ -120,13 +132,43 @@ export function WorkflowSettingsForm({
     updateTransitionRule(from, to, { requiredCustomFieldIds: next.length ? next : undefined })
   }
 
+  function toggleApproverRole(from: string, to: string, role: OrgRole, checked: boolean) {
+    const current = transitions.find((t) => t.from === from && t.to === to)?.approverRoles ?? []
+    const next = checked ? [...current, role] : current.filter((r) => r !== role)
+    updateTransitionRule(from, to, { approverRoles: next.length ? next : undefined })
+  }
+
+  function addApproverUser(from: string, to: string, userId: string | null) {
+    if (!userId) return
+    const current = transitions.find((t) => t.from === from && t.to === to)?.approverUserIds ?? []
+    if (current.includes(userId)) return
+    updateTransitionRule(from, to, { approverUserIds: [...current, userId] })
+  }
+
+  function removeApproverUser(from: string, to: string, userId: string) {
+    const current = transitions.find((t) => t.from === from && t.to === to)?.approverUserIds ?? []
+    const next = current.filter((id) => id !== userId)
+    updateTransitionRule(from, to, { approverUserIds: next.length ? next : undefined })
+  }
+
   const validStatusNames = statuses.map((s) => s.name.trim()).filter(Boolean)
   const hasDuplicates = new Set(validStatusNames).size !== validStatusNames.length
+  // Mirrors the backend's own assertValidWorkflowShape check - a requiresApproval transition with
+  // no approver configured at all would be permanently stuck the first time it's requested.
+  const hasUnapprovableTransition = transitions.some(
+    (t) =>
+      t.requiresApproval &&
+      !t.approverRoles?.length &&
+      !t.approverUserIds?.length &&
+      !t.approverTeamIds?.length &&
+      !t.approverProjectRoleIds?.length,
+  )
   const canSave =
     canManage &&
     statuses.length > 0 &&
     statuses.every((s) => s.name.trim().length > 0) &&
     !hasDuplicates &&
+    !hasUnapprovableTransition &&
     validStatusNames.includes(initialStatus)
 
   async function handleSave() {
@@ -363,6 +405,80 @@ export function WorkflowSettingsForm({
                     ))}
                   </div>
                 )}
+
+                <div className="mt-2 space-y-2 border-t pt-2">
+                  <label
+                    className="flex items-center gap-1 text-xs"
+                    htmlFor={`transition-approval-${t.from}-${t.to}`}
+                  >
+                    <Checkbox
+                      id={`transition-approval-${t.from}-${t.to}`}
+                      aria-label={`Require approval before ${t.from} to ${t.to}`}
+                      checked={t.requiresApproval ?? false}
+                      onCheckedChange={(checked) =>
+                        updateTransitionRule(t.from, t.to, { requiresApproval: checked === true })
+                      }
+                    />
+                    Requires approval before applying
+                  </label>
+
+                  {t.requiresApproval && (
+                    <div className="space-y-2 pl-5">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-xs text-muted-foreground">Approver roles:</span>
+                        {ORG_ROLES.map((role) => (
+                          <label
+                            key={role}
+                            className="flex items-center gap-1 text-xs"
+                            htmlFor={`transition-approver-role-${t.from}-${t.to}-${role}`}
+                          >
+                            <Checkbox
+                              id={`transition-approver-role-${t.from}-${t.to}-${role}`}
+                              aria-label={`Let ${role} approve ${t.from} to ${t.to}`}
+                              checked={t.approverRoles?.includes(role) ?? false}
+                              onCheckedChange={(checked) =>
+                                toggleApproverRole(t.from, t.to, role, checked === true)
+                              }
+                            />
+                            {role}
+                          </label>
+                        ))}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground">Approver users:</span>
+                        {(t.approverUserIds ?? []).map((userId) => (
+                          <span
+                            key={userId}
+                            className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground"
+                          >
+                            {userById.get(userId)?.name ?? userId}
+                            <button
+                              type="button"
+                              onClick={() => removeApproverUser(t.from, t.to, userId)}
+                              aria-label={`Remove ${userById.get(userId)?.name ?? userId} as an approver of ${t.from} to ${t.to}`}
+                              className="text-muted-foreground hover:text-foreground"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <UserSelect
+                        value={null}
+                        onChange={(userId) => addApproverUser(t.from, t.to, userId)}
+                        allowUnassigned={false}
+                        placeholder="+ Add an individual approver…"
+                      />
+
+                      {!t.approverRoles?.length && !t.approverUserIds?.length && (
+                        <p className="text-xs text-destructive">
+                          At least one approver role or user is required.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>

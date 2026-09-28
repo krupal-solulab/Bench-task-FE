@@ -215,6 +215,12 @@ export const queryKeys = {
   securitySchemes: {
     all: ['security-schemes'] as const,
   },
+  fieldPermissionSchemes: {
+    all: ['field-permission-schemes'] as const,
+  },
+  issueTemplates: {
+    all: (query: unknown) => ['issue-templates', query] as const,
+  },
   cannedResponses: {
     all: ['canned-responses'] as const,
   },

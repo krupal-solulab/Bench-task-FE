@@ -4,17 +4,36 @@ import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
+import { AuthContext, type AuthContextValue } from '@/context/AuthContext'
 import { server } from '@/test/mocks/server'
-import { mockProjects } from '@/test/mocks/fixtures'
+import { mockProjects, mockUsers } from '@/test/mocks/fixtures'
 import { TaskForm } from '@/components/tasks/TaskForm'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
 const url = (path: string) => `${BASE_URL}${path}`
 
+function makeAuthValue(overrides: Partial<AuthContextValue> = {}): AuthContextValue {
+  return {
+    user: mockUsers[2]!,
+    isAuthenticated: true,
+    isLoading: false,
+    login: async () => {},
+    registerOrganization: async () => {},
+    logout: async () => {},
+    hasRole: () => false,
+    updateUser: () => {},
+    ...overrides,
+  }
+}
+
 function renderTaskForm(props: Partial<Parameters<typeof TaskForm>[0]> = {}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   function Wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    return (
+      <QueryClientProvider client={queryClient}>
+        <AuthContext.Provider value={makeAuthValue()}>{children}</AuthContext.Provider>
+      </QueryClientProvider>
+    )
   }
   const onSubmit = vi.fn().mockResolvedValue(undefined)
   const onCancel = vi.fn()
@@ -87,6 +106,7 @@ describe('TaskForm', () => {
         securityLevel: null,
         watcherIds: [],
         voterIds: [],
+        pendingApproval: null,
         createdAt: '2026-01-01T00:00:00.000Z',
         updatedAt: '2026-01-01T00:00:00.000Z',
       },
@@ -153,6 +173,7 @@ describe('TaskForm', () => {
         securityLevel: null,
         watcherIds: [],
         voterIds: [],
+        pendingApproval: null,
         createdAt: '2026-01-01T00:00:00.000Z',
         updatedAt: '2026-01-01T00:00:00.000Z',
       },

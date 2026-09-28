@@ -139,6 +139,11 @@ export const handlers = [
   http.get(url('/teams'), () => HttpResponse.json(ok([]))),
   http.get(url('/project-roles'), () => HttpResponse.json(ok([]))),
   http.get(url('/security-schemes'), () => HttpResponse.json(ok([]))),
+  // Module 12 - TaskForm calls both of these unconditionally (field-permission gating, the
+  // template "Apply" picker), so every test rendering it needs a default even when neither
+  // feature is the thing under test.
+  http.get(url('/field-permission-schemes'), () => HttpResponse.json(ok([]))),
+  http.get(url('/issue-templates'), () => HttpResponse.json(ok([]))),
   // Module 10 - TaskForm calls this unconditionally in create mode, so every test rendering it
   // needs a default even when the field-suggestion feature isn't the thing under test.
   http.get(url('/projects/:id/tasks/suggested-fields'), () =>

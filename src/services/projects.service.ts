@@ -114,6 +114,9 @@ export const projectsService = {
   assignSecurityScheme: (id: string, securitySchemeId: string | null) =>
     apiPatch<Project>(`/projects/${id}/security-scheme`, { securitySchemeId }),
 
+  assignFieldPermissionScheme: (id: string, fieldPermissionSchemeId: string | null) =>
+    apiPatch<Project>(`/projects/${id}/field-permission-scheme`, { fieldPermissionSchemeId }),
+
   setRoleAssignment: (
     id: string,
     projectRoleId: string,

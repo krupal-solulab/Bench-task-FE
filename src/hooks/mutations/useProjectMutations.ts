@@ -247,6 +247,17 @@ export function useAssignSecurityScheme(id: string) {
   })
 }
 
+export function useAssignFieldPermissionScheme(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (fieldPermissionSchemeId: string | null) =>
+      projectsService.assignFieldPermissionScheme(id, fieldPermissionSchemeId),
+    onSuccess: (project) => {
+      queryClient.setQueryData(queryKeys.projects.detail(id), project)
+    },
+  })
+}
+
 export function useSetRoleAssignment(id: string) {
   const queryClient = useQueryClient()
   return useMutation({

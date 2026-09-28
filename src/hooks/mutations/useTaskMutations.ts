@@ -73,6 +73,32 @@ export function useUpdateTaskStatus(id: string) {
   })
 }
 
+/** Module 12's Approval Workflows - approve/reject a transition already awaiting a decision.
+ * Deliberately no optimistic update (unlike useUpdateTaskStatus): the exact new status/category
+ * depend on server-side workflow resolution, and getting it wrong optimistically would flash a
+ * status the request might not actually reach (e.g. an ineligible-approver 403). */
+export function useApproveTransition(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => tasksService.approveTransition(id),
+    onSuccess: (task) => {
+      queryClient.setQueryData(queryKeys.tasks.detail(id), task)
+      invalidateAfterTaskChange(queryClient, task)
+    },
+  })
+}
+
+export function useRejectTransition(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => tasksService.rejectTransition(id),
+    onSuccess: (task) => {
+      queryClient.setQueryData(queryKeys.tasks.detail(id), task)
+      invalidateAfterTaskChange(queryClient, task)
+    },
+  })
+}
+
 /**
  * Same shape as useUpdateTaskStatus, but takes the task id per-call instead of fixed at hook
  * creation time - needed by the Kanban board's drag handler, which can't call a hook

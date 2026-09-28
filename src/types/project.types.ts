@@ -156,6 +156,9 @@ export interface Project {
   // scheme assigned", matching the backend's own defaults.
   roleAssignments?: ProjectRoleAssignment[]
   securitySchemeId?: string | null
+  // Module 12 - optional for the same reason as securitySchemeId above; absent/null means no
+  // field is view/edit-restricted beyond what Security/Permission Schemes already cover.
+  fieldPermissionSchemeId?: string | null
   createdAt: string
   updatedAt: string
 }

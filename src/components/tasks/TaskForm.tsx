@@ -24,14 +24,19 @@ import {
   useSuggestedTaskFields,
 } from '@/hooks/queries/useProjects'
 import { useSecuritySchemes } from '@/hooks/queries/useSecuritySchemes'
+import { useFieldPermissionSchemes } from '@/hooks/queries/useFieldPermissionSchemes'
+import { useIssueTemplates } from '@/hooks/queries/useIssueTemplates'
 import { useTaskSearch } from '@/hooks/queries/useTasks'
 import { useAssignableUsers } from '@/hooks/queries/useUsers'
+import { useAuth } from '@/hooks/useAuth'
 import { useDebounce } from '@/hooks/useDebounce'
+import { canEditField, canViewField } from '@/lib/field-permissions'
 import { taskSchema, type TaskFormValues } from '@/schemas/task.schema'
 import { TASK_PRIORITIES, type Task } from '@/types/task.types'
 import { resolveIssueTypes } from '@/types/issue-type.types'
 
 const NO_SECURITY_LEVEL = '__none__'
+const NO_TEMPLATE = '__none__'
 
 export interface TaskFormProps {
   projectId: string
@@ -82,6 +87,19 @@ export function TaskForm({
   const { data: labelSuggestions } = useProjectLabels(projectId)
   const { data: securitySchemes } = useSecuritySchemes()
   const assignedSecurityScheme = securitySchemes?.find((s) => s.id === project?.securitySchemeId)
+
+  // Module 12's Field-Level Permissions - a UI affordance only (hide/read-only), the backend
+  // remains the real enforcement point. `role` is never null here: TaskForm only ever renders
+  // inside the authenticated app shell.
+  const { user } = useAuth()
+  const { data: fieldPermissionSchemes } = useFieldPermissionSchemes()
+  const assignedFieldPermissionScheme = fieldPermissionSchemes?.find(
+    (s) => s.id === project?.fieldPermissionSchemeId,
+  )
+  const canView = (fieldId: string) =>
+    !user || canViewField(assignedFieldPermissionScheme, fieldId, user.role)
+  const canEdit = (fieldId: string) =>
+    !user || canEditField(assignedFieldPermissionScheme, fieldId, user.role)
 
   const title = watch('title')
   const dueDate = watch('dueDate')
@@ -151,11 +169,53 @@ export function TaskForm({
   const hasFieldSuggestions =
     !isEditingExisting && (hasUnappliedAssigneeSuggestion || unappliedSuggestedLabels.length > 0)
 
+  // Module 12's Issue Templates - create-mode only, mirrors the suggested-fields "Apply" banner's
+  // own setValue-driven prefill mechanic rather than a new plumbing path. Applying overwrites the
+  // draft's title/description/priority/issueType and MERGES labels, the same "apply replaces
+  // scalars, merges lists" convention the suggested-labels Apply button above already uses.
+  const { data: issueTemplates } = useIssueTemplates(!isEditingExisting ? projectId : undefined)
+
+  function applyIssueTemplate(templateId: string) {
+    const template = issueTemplates?.find((t) => t.id === templateId)
+    if (!template) return
+    if (template.titleTemplate) setValue('title', template.titleTemplate)
+    if (template.description) setValue('description', template.description)
+    if (template.priority) setValue('priority', template.priority)
+    if (template.issueType) setValue('issueType', template.issueType as TaskFormValues['issueType'])
+    if (template.labels.length) {
+      setValue('labels', [...new Set([...labels, ...template.labels])])
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-      <FormField label="Title" htmlFor="title" error={errors.title?.message} required>
-        <Input id="title" {...register('title')} />
-      </FormField>
+      {!isEditingExisting && (issueTemplates?.length ?? 0) > 0 && (
+        <FormField
+          label="Apply a template"
+          htmlFor="issue-template"
+          hint="Pre-fills the fields below - manage templates from Admin › Issue Templates"
+        >
+          <Select value={NO_TEMPLATE} onValueChange={applyIssueTemplate}>
+            <SelectTrigger id="issue-template">
+              <SelectValue placeholder="None" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_TEMPLATE}>None</SelectItem>
+              {(issueTemplates ?? []).map((template) => (
+                <SelectItem key={template.id} value={template.id}>
+                  {template.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+      )}
+
+      {canView('title') && (
+        <FormField label="Title" htmlFor="title" error={errors.title?.message} required>
+          <Input id="title" disabled={!canEdit('title')} {...register('title')} />
+        </FormField>
+      )}
 
       {duplicateSearchQuery && (isSearchingDuplicates || possibleDuplicates.length > 0) && (
         <div className="rounded-md border border-dashed bg-muted/30 p-2 text-xs">
@@ -175,9 +235,16 @@ export function TaskForm({
         </div>
       )}
 
-      <FormField label="Description" htmlFor="description" error={errors.description?.message}>
-        <Textarea id="description" rows={4} {...register('description')} />
-      </FormField>
+      {canView('description') && (
+        <FormField label="Description" htmlFor="description" error={errors.description?.message}>
+          <Textarea
+            id="description"
+            rows={4}
+            disabled={!canEdit('description')}
+            {...register('description')}
+          />
+        </FormField>
+      )}
 
       {isEditingExisting ? (
         <p className="text-sm text-muted-foreground">
@@ -249,64 +316,84 @@ export function TaskForm({
       )}
 
       <div className="grid grid-cols-2 gap-4">
-        <FormField label="Priority" htmlFor="priority" error={errors.priority?.message} required>
-          <Select
-            value={priority}
-            onValueChange={(v) => setValue('priority', v as TaskFormValues['priority'])}
-          >
-            <SelectTrigger id="priority">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TASK_PRIORITIES.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormField>
+        {canView('priority') && (
+          <FormField label="Priority" htmlFor="priority" error={errors.priority?.message} required>
+            <Select
+              value={priority}
+              onValueChange={(v) => setValue('priority', v as TaskFormValues['priority'])}
+              disabled={!canEdit('priority')}
+            >
+              <SelectTrigger id="priority">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TASK_PRIORITIES.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+        )}
 
-        <FormField label="Due date" htmlFor="dueDate" error={errors.dueDate?.message}>
-          <DatePicker id="dueDate" value={dueDate} onChange={(v) => setValue('dueDate', v)} />
-        </FormField>
+        {canView('dueDate') && (
+          <FormField label="Due date" htmlFor="dueDate" error={errors.dueDate?.message}>
+            <DatePicker
+              id="dueDate"
+              value={dueDate}
+              onChange={(v) => setValue('dueDate', v)}
+              disabled={!canEdit('dueDate')}
+            />
+          </FormField>
+        )}
       </div>
 
       {isStandardIssue && (
         <div className="grid grid-cols-2 gap-4">
-          <FormField label="Story points" htmlFor="storyPoints" error={errors.storyPoints?.message}>
-            <Input
-              id="storyPoints"
-              type="number"
-              min={0}
-              max={1000}
-              value={storyPoints ?? ''}
-              onChange={(e) =>
-                setValue('storyPoints', e.target.value === '' ? null : Number(e.target.value))
-              }
-            />
-          </FormField>
+          {canView('storyPoints') && (
+            <FormField
+              label="Story points"
+              htmlFor="storyPoints"
+              error={errors.storyPoints?.message}
+            >
+              <Input
+                id="storyPoints"
+                type="number"
+                min={0}
+                max={1000}
+                disabled={!canEdit('storyPoints')}
+                value={storyPoints ?? ''}
+                onChange={(e) =>
+                  setValue('storyPoints', e.target.value === '' ? null : Number(e.target.value))
+                }
+              />
+            </FormField>
+          )}
 
-          <FormField
-            label="Original estimate (hours)"
-            htmlFor="originalEstimateHours"
-            error={errors.originalEstimateHours?.message}
-          >
-            <Input
-              id="originalEstimateHours"
-              type="number"
-              min={0}
-              max={10000}
-              step={0.5}
-              value={originalEstimateHours ?? ''}
-              onChange={(e) =>
-                setValue(
-                  'originalEstimateHours',
-                  e.target.value === '' ? null : Number(e.target.value),
-                )
-              }
-            />
-          </FormField>
+          {canView('originalEstimateHours') && (
+            <FormField
+              label="Original estimate (hours)"
+              htmlFor="originalEstimateHours"
+              error={errors.originalEstimateHours?.message}
+            >
+              <Input
+                id="originalEstimateHours"
+                type="number"
+                min={0}
+                max={10000}
+                step={0.5}
+                disabled={!canEdit('originalEstimateHours')}
+                value={originalEstimateHours ?? ''}
+                onChange={(e) =>
+                  setValue(
+                    'originalEstimateHours',
+                    e.target.value === '' ? null : Number(e.target.value),
+                  )
+                }
+              />
+            </FormField>
+          )}
         </div>
       )}
 
@@ -355,11 +442,12 @@ export function TaskForm({
         />
       </FormField>
 
-      {assignedSecurityScheme && (
+      {assignedSecurityScheme && canView('securityLevel') && (
         <FormField label="Security level" htmlFor="securityLevel">
           <Select
             value={securityLevel ?? NO_SECURITY_LEVEL}
             onValueChange={(v) => setValue('securityLevel', v === NO_SECURITY_LEVEL ? null : v)}
+            disabled={!canEdit('securityLevel')}
           >
             <SelectTrigger id="securityLevel">
               <SelectValue placeholder="None (no restriction)" />
@@ -376,17 +464,20 @@ export function TaskForm({
         </FormField>
       )}
 
-      <FormField label="Labels" htmlFor="labels">
-        <TagInput
-          id="labels"
-          value={labels}
-          onChange={(next) => setValue('labels', next)}
-          suggestions={labelSuggestions}
-          placeholder="Type a label and press Enter"
-        />
-      </FormField>
+      {canView('labels') && (
+        <FormField label="Labels" htmlFor="labels">
+          <TagInput
+            id="labels"
+            value={labels}
+            onChange={(next) => setValue('labels', next)}
+            suggestions={labelSuggestions}
+            placeholder="Type a label and press Enter"
+            disabled={!canEdit('labels')}
+          />
+        </FormField>
+      )}
 
-      {(project?.components.length ?? 0) > 0 && (
+      {(project?.components.length ?? 0) > 0 && canView('components') && (
         <FormField label="Components" htmlFor="components">
           <TagInput
             id="components"
@@ -394,125 +485,141 @@ export function TaskForm({
             onChange={(next) => setValue('components', next)}
             suggestions={project?.components ?? []}
             placeholder="Pick a component"
+            disabled={!canEdit('components')}
           />
         </FormField>
       )}
 
       <div className="grid grid-cols-2 gap-4">
-        <FormField label="Fix Version" htmlFor="fixVersions">
-          <ReleaseMultiSelect
-            id="fixVersions"
-            projectId={projectId}
-            value={fixVersions}
-            onChange={(next) => setValue('fixVersions', next)}
-            placeholder="No fix version"
-          />
-        </FormField>
+        {canView('fixVersions') && (
+          <FormField label="Fix Version" htmlFor="fixVersions">
+            <ReleaseMultiSelect
+              id="fixVersions"
+              projectId={projectId}
+              value={fixVersions}
+              onChange={(next) => setValue('fixVersions', next)}
+              placeholder="No fix version"
+            />
+          </FormField>
+        )}
 
-        <FormField label="Affects Version" htmlFor="affectsVersions">
-          <ReleaseMultiSelect
-            id="affectsVersions"
-            projectId={projectId}
-            value={affectsVersions}
-            onChange={(next) => setValue('affectsVersions', next)}
-            placeholder="No affects version"
-          />
-        </FormField>
+        {canView('affectsVersions') && (
+          <FormField label="Affects Version" htmlFor="affectsVersions">
+            <ReleaseMultiSelect
+              id="affectsVersions"
+              projectId={projectId}
+              value={affectsVersions}
+              onChange={(next) => setValue('affectsVersions', next)}
+              placeholder="No affects version"
+            />
+          </FormField>
+        )}
       </div>
 
-      {customFields.map((field) => (
-        <FormField
-          key={field.id}
-          label={field.name}
-          htmlFor={`custom-field-${field.id}`}
-          required={field.required}
-        >
-          {field.type === 'Text' && (
-            <Input
-              id={`custom-field-${field.id}`}
-              value={(customFieldValues[field.id] as string | undefined) ?? ''}
-              onChange={(e) =>
-                setValue('customFieldValues', { ...customFieldValues, [field.id]: e.target.value })
-              }
-            />
-          )}
-          {field.type === 'Number' && (
-            <Input
-              id={`custom-field-${field.id}`}
-              type="number"
-              value={(customFieldValues[field.id] as number | undefined) ?? ''}
-              onChange={(e) =>
-                setValue('customFieldValues', {
-                  ...customFieldValues,
-                  [field.id]: e.target.value === '' ? null : Number(e.target.value),
-                })
-              }
-            />
-          )}
-          {field.type === 'Date' && (
-            <DatePicker
-              id={`custom-field-${field.id}`}
-              value={(customFieldValues[field.id] as string | null | undefined) ?? null}
-              onChange={(v) =>
-                setValue('customFieldValues', { ...customFieldValues, [field.id]: v })
-              }
-            />
-          )}
-          {field.type === 'Dropdown' && (
-            <Select
-              value={(customFieldValues[field.id] as string | undefined) ?? ''}
-              onValueChange={(v) =>
-                setValue('customFieldValues', { ...customFieldValues, [field.id]: v })
-              }
-            >
-              <SelectTrigger id={`custom-field-${field.id}`}>
-                <SelectValue placeholder="Select…" />
-              </SelectTrigger>
-              <SelectContent>
-                {(field.options ?? []).map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          {field.type === 'Checkbox' && (
-            <Checkbox
-              id={`custom-field-${field.id}`}
-              checked={(customFieldValues[field.id] as boolean | undefined) ?? false}
-              onCheckedChange={(checked) =>
-                setValue('customFieldValues', {
-                  ...customFieldValues,
-                  [field.id]: checked === true,
-                })
-              }
-            />
-          )}
-          {field.type === 'MultiSelect' && (
-            <TagInput
-              id={`custom-field-${field.id}`}
-              value={(customFieldValues[field.id] as string[] | undefined) ?? []}
-              onChange={(next) =>
-                setValue('customFieldValues', { ...customFieldValues, [field.id]: next })
-              }
-              suggestions={field.options ?? []}
-              placeholder="Pick an option"
-            />
-          )}
-          {field.type === 'UserPicker' && (
-            <UserSelect
-              id={`custom-field-${field.id}`}
-              value={(customFieldValues[field.id] as string | null | undefined) ?? null}
-              onChange={(v) =>
-                setValue('customFieldValues', { ...customFieldValues, [field.id]: v })
-              }
-              memberIds={memberIds}
-              placeholder={`Select ${field.name.toLowerCase()}`}
-            />
-          )}
-        </FormField>
-      ))}
+      {customFields
+        .filter((field) => canView(field.id))
+        .map((field) => (
+          <FormField
+            key={field.id}
+            label={field.name}
+            htmlFor={`custom-field-${field.id}`}
+            required={field.required}
+          >
+            {field.type === 'Text' && (
+              <Input
+                id={`custom-field-${field.id}`}
+                disabled={!canEdit(field.id)}
+                value={(customFieldValues[field.id] as string | undefined) ?? ''}
+                onChange={(e) =>
+                  setValue('customFieldValues', {
+                    ...customFieldValues,
+                    [field.id]: e.target.value,
+                  })
+                }
+              />
+            )}
+            {field.type === 'Number' && (
+              <Input
+                id={`custom-field-${field.id}`}
+                type="number"
+                disabled={!canEdit(field.id)}
+                value={(customFieldValues[field.id] as number | undefined) ?? ''}
+                onChange={(e) =>
+                  setValue('customFieldValues', {
+                    ...customFieldValues,
+                    [field.id]: e.target.value === '' ? null : Number(e.target.value),
+                  })
+                }
+              />
+            )}
+            {field.type === 'Date' && (
+              <DatePicker
+                id={`custom-field-${field.id}`}
+                disabled={!canEdit(field.id)}
+                value={(customFieldValues[field.id] as string | null | undefined) ?? null}
+                onChange={(v) =>
+                  setValue('customFieldValues', { ...customFieldValues, [field.id]: v })
+                }
+              />
+            )}
+            {field.type === 'Dropdown' && (
+              <Select
+                value={(customFieldValues[field.id] as string | undefined) ?? ''}
+                onValueChange={(v) =>
+                  setValue('customFieldValues', { ...customFieldValues, [field.id]: v })
+                }
+                disabled={!canEdit(field.id)}
+              >
+                <SelectTrigger id={`custom-field-${field.id}`}>
+                  <SelectValue placeholder="Select…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(field.options ?? []).map((o) => (
+                    <SelectItem key={o} value={o}>
+                      {o}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {field.type === 'Checkbox' && (
+              <Checkbox
+                id={`custom-field-${field.id}`}
+                disabled={!canEdit(field.id)}
+                checked={(customFieldValues[field.id] as boolean | undefined) ?? false}
+                onCheckedChange={(checked) =>
+                  setValue('customFieldValues', {
+                    ...customFieldValues,
+                    [field.id]: checked === true,
+                  })
+                }
+              />
+            )}
+            {field.type === 'MultiSelect' && (
+              <TagInput
+                id={`custom-field-${field.id}`}
+                disabled={!canEdit(field.id)}
+                value={(customFieldValues[field.id] as string[] | undefined) ?? []}
+                onChange={(next) =>
+                  setValue('customFieldValues', { ...customFieldValues, [field.id]: next })
+                }
+                suggestions={field.options ?? []}
+                placeholder="Pick an option"
+              />
+            )}
+            {field.type === 'UserPicker' && (
+              <UserSelect
+                id={`custom-field-${field.id}`}
+                value={(customFieldValues[field.id] as string | null | undefined) ?? null}
+                onChange={(v) =>
+                  setValue('customFieldValues', { ...customFieldValues, [field.id]: v })
+                }
+                memberIds={memberIds}
+                placeholder={`Select ${field.name.toLowerCase()}`}
+              />
+            )}
+          </FormField>
+        ))}
 
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
