@@ -58,6 +58,7 @@ import { AutomationLogList } from '@/components/projects/AutomationLogList'
 import { NotificationSchemeForm } from '@/components/projects/NotificationSchemeForm'
 import { PermissionSchemeAssignment } from '@/components/projects/PermissionSchemeAssignment'
 import { SecuritySchemeAssignment } from '@/components/projects/SecuritySchemeAssignment'
+import { FieldPermissionSchemeAssignment } from '@/components/projects/FieldPermissionSchemeAssignment'
 import { RoleAssignmentsPanel } from '@/components/projects/RoleAssignmentsPanel'
 import { ImportExportPanel } from '@/components/projects/ImportExportPanel'
 import {
@@ -836,6 +837,11 @@ export function ProjectDetailPage() {
           <SecuritySchemeAssignment
             projectId={id ?? ''}
             securitySchemeId={project.securitySchemeId ?? null}
+            canManage={canManage}
+          />
+          <FieldPermissionSchemeAssignment
+            projectId={id ?? ''}
+            fieldPermissionSchemeId={project.fieldPermissionSchemeId ?? null}
             canManage={canManage}
           />
           {canManage && (

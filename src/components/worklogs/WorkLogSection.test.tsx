@@ -61,6 +61,7 @@ const AUTH_VALUE: AuthContextValue = {
   registerOrganization: async () => {},
   logout: async () => {},
   hasRole: () => false,
+  updateUser: () => {},
 }
 
 function renderSection() {

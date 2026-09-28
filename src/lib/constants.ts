@@ -200,6 +200,9 @@ export const queryKeys = {
     unreadCount: ['notifications', 'unread-count'] as const,
     preferences: ['notifications', 'preferences'] as const,
   },
+  search: {
+    all: (query: unknown) => ['search', query] as const,
+  },
   permissionSchemes: {
     all: ['permission-schemes'] as const,
   },
@@ -211,6 +214,12 @@ export const queryKeys = {
   },
   securitySchemes: {
     all: ['security-schemes'] as const,
+  },
+  fieldPermissionSchemes: {
+    all: ['field-permission-schemes'] as const,
+  },
+  issueTemplates: {
+    all: (query: unknown) => ['issue-templates', query] as const,
   },
   cannedResponses: {
     all: ['canned-responses'] as const,

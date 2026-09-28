@@ -8,13 +8,23 @@ export interface DatePickerProps {
   min?: string
   max?: string
   className?: string
+  disabled?: boolean
 }
 
 /**
  * Wraps the native date input rather than a JS calendar widget — free keyboard support and
  * platform-consistent affordances, at the cost of styling control across browsers.
  */
-export function DatePicker({ value, onChange, id, label, min, max, className }: DatePickerProps) {
+export function DatePicker({
+  value,
+  onChange,
+  id,
+  label,
+  min,
+  max,
+  className,
+  disabled,
+}: DatePickerProps) {
   return (
     <Input
       id={id}
@@ -25,6 +35,7 @@ export function DatePicker({ value, onChange, id, label, min, max, className }: 
       max={max}
       onChange={(e) => onChange(e.target.value || null)}
       className={className}
+      disabled={disabled}
     />
   )
 }

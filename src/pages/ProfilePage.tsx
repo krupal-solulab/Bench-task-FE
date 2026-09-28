@@ -4,17 +4,31 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar } from '@/components/common/Avatar'
 import { Button } from '@/components/common/Button'
 import { FormField } from '@/components/common/FormField'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
-import { useChangePassword } from '@/hooks/mutations/useAuthMutations'
+import { useChangePassword, useUpdateProfile } from '@/hooks/mutations/useAuthMutations'
+import { useUpdateNotificationPreferences } from '@/hooks/mutations/useNotificationMutations'
+import { useNotificationPreferences } from '@/hooks/queries/useNotifications'
 import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
-import { changePasswordSchema, type ChangePasswordFormValues } from '@/schemas/auth.schema'
+import { NOTIFICATION_TYPE_LABELS } from '@/lib/notifications'
+import {
+  changePasswordSchema,
+  updateProfileSchema,
+  type ChangePasswordFormValues,
+  type UpdateProfileFormValues,
+} from '@/schemas/auth.schema'
+import { NOTIFICATION_TYPES, type NotificationType } from '@/types/notification.types'
 
 export function ProfilePage() {
-  const { user } = useAuth()
+  const { user, updateUser } = useAuth()
   const { showToast } = useToast()
   const changePassword = useChangePassword()
+  const updateProfile = useUpdateProfile()
+  const { data: preferences } = useNotificationPreferences()
+  const updatePreferences = useUpdateNotificationPreferences()
+  const mutedTypes = preferences?.mutedTypes ?? []
 
   const {
     register,
@@ -22,6 +36,19 @@ export function ProfilePage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ChangePasswordFormValues>({ resolver: zodResolver(changePasswordSchema) })
+
+  const {
+    register: registerProfile,
+    handleSubmit: handleProfileSubmit,
+    formState: {
+      errors: profileErrors,
+      isSubmitting: isProfileSubmitting,
+      isDirty: isProfileDirty,
+    },
+  } = useForm<UpdateProfileFormValues>({
+    resolver: zodResolver(updateProfileSchema),
+    values: { name: user?.name ?? '', email: user?.email ?? '' },
+  })
 
   async function onSubmit(values: ChangePasswordFormValues) {
     try {
@@ -44,6 +71,35 @@ export function ProfilePage() {
     }
   }
 
+  async function onProfileSubmit(values: UpdateProfileFormValues) {
+    try {
+      const updated = await updateProfile.mutateAsync(values)
+      updateUser(updated)
+      showToast({ title: 'Profile updated', variant: 'success' })
+    } catch (err) {
+      showToast({
+        title: 'Could not update profile',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  async function toggleMuted(type: NotificationType) {
+    const next = mutedTypes.includes(type)
+      ? mutedTypes.filter((t) => t !== type)
+      : [...mutedTypes, type]
+    try {
+      await updatePreferences.mutateAsync({ mutedTypes: next })
+    } catch (err) {
+      showToast({
+        title: 'Could not update notification preferences',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (!user) return null
 
   return (
@@ -56,10 +112,6 @@ export function ProfilePage() {
       <section className="flex items-center gap-4 rounded-xl border bg-card p-5 shadow-soft">
         <Avatar name={user.name} size="lg" className="h-14 w-14 text-lg" />
         <dl className="grid flex-1 grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
-          <dt className="text-muted-foreground">Name</dt>
-          <dd className="font-medium">{user.name}</dd>
-          <dt className="text-muted-foreground">Email</dt>
-          <dd>{user.email}</dd>
           <dt className="text-muted-foreground">Role</dt>
           <dd>
             <span className="inline-flex items-center gap-1.5 rounded-full border bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
@@ -67,6 +119,46 @@ export function ProfilePage() {
             </span>
           </dd>
         </dl>
+      </section>
+
+      <section className="space-y-4 rounded-xl border bg-card p-5 shadow-soft">
+        <div>
+          <h2 className="font-medium">Name &amp; email</h2>
+          <p className="text-sm text-muted-foreground">Update your own display name and email.</p>
+        </div>
+
+        <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="space-y-4" noValidate>
+          <FormField label="Name" htmlFor="name" error={profileErrors.name?.message} required>
+            <Input id="name" {...registerProfile('name')} />
+          </FormField>
+
+          <FormField label="Email" htmlFor="email" error={profileErrors.email?.message} required>
+            <Input id="email" type="email" {...registerProfile('email')} />
+          </FormField>
+
+          <Button type="submit" loading={isProfileSubmitting} disabled={!isProfileDirty}>
+            Save changes
+          </Button>
+        </form>
+      </section>
+
+      <section className="space-y-4 rounded-xl border bg-card p-5 shadow-soft">
+        <div>
+          <h2 className="font-medium">Notification preferences</h2>
+          <p className="text-sm text-muted-foreground">Choose which notifications you receive.</p>
+        </div>
+
+        <div className="space-y-2.5">
+          {NOTIFICATION_TYPES.map((type) => (
+            <label key={type} className="flex items-center gap-2.5 text-sm">
+              <Checkbox
+                checked={!mutedTypes.includes(type)}
+                onCheckedChange={() => void toggleMuted(type)}
+              />
+              {NOTIFICATION_TYPE_LABELS[type]}
+            </label>
+          ))}
+        </div>
       </section>
 
       <section className="space-y-4 rounded-xl border bg-card p-5 shadow-soft">

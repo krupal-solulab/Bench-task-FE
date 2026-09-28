@@ -25,6 +25,7 @@ export interface ListNotificationsQuery {
   page?: number
   limit?: number
   unreadOnly?: boolean
+  type?: NotificationType
 }
 
 export interface NotificationPreference {

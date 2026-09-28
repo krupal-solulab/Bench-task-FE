@@ -24,25 +24,16 @@ import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
 import { formatRelativeTime } from '@/lib/date'
 import { cn } from '@/lib/cn'
+import { NOTIFICATION_TYPE_LABELS } from '@/lib/notifications'
 import {
   NOTIFICATION_TYPES,
   type Notification,
   type NotificationType,
 } from '@/types/notification.types'
 
-const TYPE_LABELS: Record<NotificationType, string> = {
-  TaskAssigned: 'Assigned to me',
-  StatusChanged: 'Status changed',
-  CommentAdded: 'New comments',
-  DueSoon: 'Due soon',
-  Automation: 'Automation rules',
-  Scheme: 'Notification schemes',
-  Mentioned: 'Mentions',
-  WatchedTaskUpdated: 'Watched issue activity',
-}
-
-/** Bell + inbox dropdown embedded in the Topbar - no separate page/route, mirroring how Saved
- * Filters stayed embedded rather than getting a dedicated page (see Phase 7 plan). */
+/** Bell + inbox dropdown embedded in the Topbar. Module 11 added a dedicated `/notifications`
+ * page (with real pagination and filters) for the full history - this dropdown stays a
+ * lightweight 10-item preview with a "View all" link into that page. */
 export function NotificationBell() {
   const navigate = useNavigate()
   const { showToast } = useToast()
@@ -62,6 +53,7 @@ export function NotificationBell() {
   function handleSelect(notification: Notification) {
     if (!notification.read) markRead.mutate(notification.id)
     if (notification.taskId) navigate(`/tasks/${notification.taskId}`)
+    else if (notification.projectId) navigate(`/projects/${notification.projectId}`)
   }
 
   async function handleMarkAllRead() {
@@ -142,6 +134,11 @@ export function NotificationBell() {
         ))}
 
         <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => navigate('/notifications')} className="justify-center">
+          View all
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
         <DropdownMenuLabel>Notify me about</DropdownMenuLabel>
         {NOTIFICATION_TYPES.map((type) => (
           <DropdownMenuCheckboxItem
@@ -150,7 +147,7 @@ export function NotificationBell() {
             onSelect={(e) => e.preventDefault()}
             onCheckedChange={() => void toggleMuted(type)}
           >
-            {TYPE_LABELS[type]}
+            {NOTIFICATION_TYPE_LABELS[type]}
           </DropdownMenuCheckboxItem>
         ))}
       </DropdownMenuContent>

@@ -1,5 +1,8 @@
 import {
+  Bell,
   CreditCard,
+  FileStack,
+  KeyRound,
   LayoutDashboard,
   Link2,
   ListChecks,
@@ -33,6 +36,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/tasks/my-tasks', label: 'My Tasks', icon: ListChecks },
   { to: '/issues', label: 'Issue Navigator', icon: Search },
   { to: '/roadmap', label: 'Roadmap', icon: Milestone },
+  { to: '/notifications', label: 'Notifications', icon: Bell },
   { to: '/canned-responses', label: 'Canned Responses', icon: MessageSquareText },
   { to: '/admin/users', label: 'Admin', icon: ShieldCheck, roles: ['Admin'] },
   {
@@ -47,8 +51,20 @@ export const NAV_ITEMS: NavItem[] = [
     icon: ShieldCheck,
     roles: ['Admin'],
   },
+  {
+    to: '/admin/field-permission-schemes',
+    label: 'Field Permission Schemes',
+    icon: KeyRound,
+    roles: ['Admin'],
+  },
   { to: '/admin/project-roles', label: 'Project Roles', icon: UserCog, roles: ['Admin'] },
   { to: '/admin/teams', label: 'Teams', icon: Users, roles: ['Admin', 'Manager'] },
+  {
+    to: '/admin/issue-templates',
+    label: 'Issue Templates',
+    icon: FileStack,
+    roles: ['Admin', 'Manager'],
+  },
   { to: '/admin/link-types', label: 'Link Types', icon: Link2, roles: ['Admin'] },
   { to: '/admin/billing', label: 'Billing', icon: CreditCard, roles: ['Admin'] },
   { to: '/admin/org-settings', label: 'Org Settings', icon: Settings, roles: ['Admin'] },

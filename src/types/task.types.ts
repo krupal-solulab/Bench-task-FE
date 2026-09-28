@@ -1,6 +1,6 @@
 import type { SortOrder } from './api.types'
 import type { User } from './user.types'
-import type { StatusCategory } from './workflow.types'
+import type { PendingApproval, StatusCategory } from './workflow.types'
 import type { ReleaseSummary } from './release.types'
 import type { SprintBurndownPoint } from './sprint.types'
 
@@ -79,6 +79,9 @@ export interface Task {
   // auto-removed); voting is purely a signal of interest, with no permission effect.
   watcherIds: User[]
   voterIds: User[]
+  // Module 12's Approval Workflows - set instead of applying a `requiresApproval` transition
+  // immediately; null (every existing task) means no transition is currently awaiting a decision.
+  pendingApproval: PendingApproval | null
   createdAt: string
   updatedAt: string
 }

@@ -15,6 +15,10 @@ export interface AuthContextValue {
   registerOrganization: (payload: RegisterOrganizationPayload) => Promise<void>
   logout: () => Promise<void>
   hasRole: (...roles: Role[]) => boolean
+  /** Applies a freshly-updated user object (Module 11's self-service `PATCH auth/me`) without a
+   * full re-login - Topbar/Sidebar read `user` from this same context, so this is what makes an
+   * edited name/email show up immediately. */
+  updateUser: (user: User) => void
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -126,6 +130,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasRole = useCallback((...roles: Role[]) => !!user && roles.includes(user.role), [user])
 
+  const updateUser = useCallback((next: User) => setUser(next), [])
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -135,8 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       registerOrganization,
       logout,
       hasRole,
+      updateUser,
     }),
-    [user, isLoading, login, registerOrganization, logout, hasRole],
+    [user, isLoading, login, registerOrganization, logout, hasRole, updateUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

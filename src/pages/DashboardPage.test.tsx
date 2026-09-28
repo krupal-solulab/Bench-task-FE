@@ -26,6 +26,7 @@ function makeAuthValue(overrides: Partial<AuthContextValue> = {}): AuthContextVa
     registerOrganization: async () => {},
     logout: async () => {},
     hasRole: () => false,
+    updateUser: () => {},
     ...overrides,
   }
 }

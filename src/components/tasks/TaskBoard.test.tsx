@@ -28,6 +28,7 @@ function makeAuthValue(overrides: Partial<AuthContextValue> = {}): AuthContextVa
     registerOrganization: async () => {},
     logout: async () => {},
     hasRole: () => true,
+    updateUser: () => {},
     ...overrides,
   }
 }
@@ -68,6 +69,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     watcherIds: [],
     voterIds: [],
     securityLevel: null,
+    pendingApproval: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
