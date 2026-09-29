@@ -15,7 +15,7 @@ describe('ReleaseForm', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
-  it('submits with a name, description, and target date', async () => {
+  it('submits with a name and description', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn().mockResolvedValue(undefined)
     render(<ReleaseForm onSubmit={onSubmit} onCancel={vi.fn()} />)
@@ -28,6 +28,22 @@ describe('ReleaseForm', () => {
     expect(onSubmit.mock.calls[0]![0]).toEqual(
       expect.objectContaining({ name: 'v2.4.0', description: 'Q3 release' }),
     )
+  })
+
+  // Regression: the target date is documented as optional, but an untouched DatePicker defaults
+  // to '' (not undefined) to stay controlled - that '' must never reach the backend's
+  // `@IsOptional() @IsISO8601()` releaseDate field, which only skips validation for `undefined`
+  // and would reject an empty string as invalid ISO8601.
+  it('never submits an empty-string releaseDate when the target date is left blank', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
+    render(<ReleaseForm onSubmit={onSubmit} onCancel={vi.fn()} />)
+
+    await user.type(screen.getByLabelText('Name', { exact: false }), 'v2.4.0')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(onSubmit.mock.calls[0]![0].releaseDate).toBeUndefined()
   })
 
   it('pre-fills fields from initialValues when editing', () => {

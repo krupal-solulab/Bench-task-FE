@@ -39,8 +39,15 @@ export function ReleaseForm({
 
   const releaseDate = watch('releaseDate')
 
+  // An untouched date field stays '' (DatePicker needs a string, not undefined, to stay
+  // controlled) - but the backend's optional releaseDate is `@IsOptional() @IsISO8601()`, which
+  // only skips validation for `undefined`, so '' must be converted here, right at submission.
+  function submit(values: ReleaseFormValues) {
+    return onSubmit({ ...values, releaseDate: values.releaseDate || undefined })
+  }
+
   return (
-    <form id="release-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <form id="release-form" onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
       <FormField label="Name" htmlFor="name" error={errors.name?.message} required>
         <Input id="name" placeholder="v2.4.0" {...register('name')} />
       </FormField>
