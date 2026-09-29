@@ -48,7 +48,7 @@ export function useReleaseAction(projectId: string) {
       action,
     }: {
       releaseId: string
-      action: 'release' | 'unrelease' | 'archive'
+      action: 'release' | 'unrelease' | 'archive' | 'unarchive'
     }) => releasesService[action](projectId, releaseId),
     onSuccess: () => invalidateAfterReleaseChange(queryClient, projectId),
   })

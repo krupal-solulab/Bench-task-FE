@@ -21,6 +21,7 @@ function makeRelease(overrides: Partial<Release> = {}): Release {
     status: 'Unreleased',
     releaseDate: null,
     releasedAt: null,
+    ownerId: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
@@ -61,11 +62,12 @@ describe('ReleaseLifecycleControls', () => {
     expect(screen.queryByRole('button', { name: 'Release' })).not.toBeInTheDocument()
   })
 
-  it('shows only Delete for an Archived release (terminal)', () => {
+  it('shows Restore and Delete (but not Edit/Release/Archive) for an Archived release', () => {
     renderControls(makeRelease({ status: 'Archived' }), true)
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Release' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
   })
 
@@ -87,6 +89,22 @@ describe('ReleaseLifecycleControls', () => {
     renderControls(makeRelease({ status: 'Unreleased' }), true)
 
     await user.click(screen.getByRole('button', { name: 'Release' }))
+
+    await waitFor(() => expect(called).toBe(true))
+  })
+
+  it('calls the unarchive action endpoint when Restore is clicked', async () => {
+    let called = false
+    server.use(
+      http.post(url('/projects/p-1/releases/r-1/unarchive'), () => {
+        called = true
+        return HttpResponse.json({ success: true, data: makeRelease({ status: 'Unreleased' }) })
+      }),
+    )
+    const user = userEvent.setup()
+    renderControls(makeRelease({ status: 'Archived' }), true)
+
+    await user.click(screen.getByRole('button', { name: 'Restore' }))
 
     await waitFor(() => expect(called).toBe(true))
   })

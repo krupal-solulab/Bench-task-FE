@@ -42,3 +42,17 @@ export function useReleaseNotes(
     enabled: !!projectId && !!releaseId && (options.enabled ?? true),
   })
 }
+
+/** Disabled until both releases to compare are picked - mirrors useReleaseNotes' same
+ * enabled-until-requested shape. */
+export function useReleaseCompare(
+  projectId: string | undefined,
+  releaseIdA: string | undefined,
+  releaseIdB: string | undefined,
+) {
+  return useQuery({
+    queryKey: queryKeys.releases.compare(releaseIdA ?? '', releaseIdB ?? ''),
+    queryFn: () => releasesService.compare(projectId!, releaseIdA!, releaseIdB!),
+    enabled: !!projectId && !!releaseIdA && !!releaseIdB,
+  })
+}

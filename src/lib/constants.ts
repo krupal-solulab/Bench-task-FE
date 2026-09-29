@@ -147,6 +147,7 @@ export const queryKeys = {
     detail: (id: string) => ['releases', 'detail', id] as const,
     progress: (id: string) => ['releases', 'detail', id, 'progress'] as const,
     notes: (id: string) => ['releases', 'detail', id, 'notes'] as const,
+    compare: (a: string, b: string) => ['releases', 'compare', a, b] as const,
   },
   worklogs: {
     all: ['worklogs'] as const,

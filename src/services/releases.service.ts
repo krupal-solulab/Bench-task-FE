@@ -2,6 +2,7 @@ import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost } from './api-cli
 import type {
   CreateReleasePayload,
   Release,
+  ReleaseCompareResult,
   ReleaseListQuery,
   ReleaseNotes,
   ReleaseProgress,
@@ -30,6 +31,9 @@ export const releasesService = {
   archive: (projectId: string, releaseId: string) =>
     apiPost<Release>(`/projects/${projectId}/releases/${releaseId}/archive`, {}),
 
+  unarchive: (projectId: string, releaseId: string) =>
+    apiPost<Release>(`/projects/${projectId}/releases/${releaseId}/unarchive`, {}),
+
   remove: (projectId: string, releaseId: string) =>
     apiDelete<void>(`/projects/${projectId}/releases/${releaseId}`),
 
@@ -38,4 +42,7 @@ export const releasesService = {
 
   releaseNotes: (projectId: string, releaseId: string) =>
     apiGet<ReleaseNotes>(`/projects/${projectId}/releases/${releaseId}/release-notes`),
+
+  compare: (projectId: string, a: string, b: string) =>
+    apiGet<ReleaseCompareResult>(`/projects/${projectId}/releases/compare`, { a, b }),
 }
