@@ -4,11 +4,12 @@ import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { ToastProvider } from '@/context/ToastContext'
 import { ToastViewport } from '@/components/common/Toast'
 import { server } from '@/test/mocks/server'
 import { IssueLinksSection } from '@/components/tasks/IssueLinksSection'
+import { addRecentlyViewed } from '@/hooks/useRecentlyViewed'
 import type { IssueLink, LinkType } from '@/types/issue-link.types'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
@@ -47,6 +48,10 @@ function renderSection(canManage = true) {
 }
 
 describe('IssueLinksSection', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+  })
+
   it('shows an empty state when there are no links', async () => {
     mockLinkTypes()
     mockLinks([])
@@ -150,6 +155,58 @@ describe('IssueLinksSection', () => {
     const option = await screen.findByText('Matched task')
     await user.click(option)
 
+    await user.click(screen.getByRole('button', { name: 'Link' }))
+
+    await waitFor(() => expect(createdBody).not.toBeNull())
+    expect(createdBody).toMatchObject({ targetTaskId: 'task-9', linkTypeId: 'blocks' })
+  })
+
+  it('offers recently-viewed issues to link when the search box is empty', async () => {
+    mockLinkTypes()
+    mockLinks([])
+    addRecentlyViewed({
+      id: 'task-9',
+      type: 'task',
+      label: 'PRJ-9 Matched task',
+      path: '/tasks/task-9',
+    })
+    addRecentlyViewed({ id: 'p-1', type: 'project', label: 'A project', path: '/projects/p-1' })
+    let createdBody: Record<string, unknown> | null = null
+    server.use(
+      http.post(url('/tasks/task-1/links'), async ({ request }) => {
+        createdBody = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json(
+          {
+            success: true,
+            data: {
+              id: 'link-new',
+              linkTypeId: createdBody.linkTypeId,
+              linkTypeName: 'Blocks',
+              direction: 'outgoing',
+              task: {
+                id: 'task-9',
+                issueKey: 'PRJ-9',
+                title: 'Matched task',
+                status: 'Todo',
+                statusCategory: 'To Do',
+                project: { id: 'p-1', name: 'Project A' },
+              },
+            },
+          },
+          { status: 201 },
+        )
+      }),
+    )
+    const user = userEvent.setup()
+    renderSection()
+
+    await screen.findByText('No linked issues yet.')
+    expect(await screen.findByText('Recent issues')).toBeInTheDocument()
+    expect(screen.getByText('PRJ-9 Matched task')).toBeInTheDocument()
+    // A recently-viewed project (not a task) never appears in an issue-link picker.
+    expect(screen.queryByText('A project')).not.toBeInTheDocument()
+
+    await user.click(screen.getByText('PRJ-9 Matched task'))
     await user.click(screen.getByRole('button', { name: 'Link' }))
 
     await waitFor(() => expect(createdBody).not.toBeNull())

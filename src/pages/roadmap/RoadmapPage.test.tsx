@@ -85,16 +85,89 @@ describe('RoadmapPage', () => {
         },
       ],
       capacity: [
-        { projectId: 'p-1', activeSprintId: 'sprint-1', capacityPoints: 20, committedPoints: 8 },
-        { projectId: 'p-2', activeSprintId: null, capacityPoints: null, committedPoints: 0 },
+        {
+          projectId: 'p-1',
+          activeSprintId: 'sprint-1',
+          capacityPoints: 20,
+          committedPoints: 8,
+          isOverCommitted: false,
+        },
+        {
+          projectId: 'p-2',
+          activeSprintId: null,
+          capacityPoints: null,
+          committedPoints: 0,
+          isOverCommitted: false,
+        },
       ],
     })
     renderPage()
 
     expect(await screen.findByText('Epic in A')).toBeInTheDocument()
-    expect(screen.getByText('8 / 20 points committed')).toBeInTheDocument()
+    expect(screen.getByText('8/20')).toBeInTheDocument()
     expect(screen.getByText('No active sprint')).toBeInTheDocument()
     expect(screen.getByText(/Blocked by/)).toBeInTheDocument()
     expect(screen.getByText('PB-1')).toBeInTheDocument()
+  })
+
+  it('visually flags a project whose active sprint is over its capacity', async () => {
+    mockProjectsList()
+    mockRoadmap({
+      projects: [{ id: 'p-1', name: 'Project A' }],
+      epics: [
+        {
+          epicId: 'e-1',
+          issueKey: 'PA-1',
+          title: 'Epic in A',
+          statusCategory: 'To Do',
+          dueDate: '2026-02-01T00:00:00.000Z',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          project: { id: 'p-1', name: 'Project A' },
+          linkedIssueCount: 0,
+          doneCount: 0,
+          progress: 0,
+          blockedByExternal: [],
+        },
+      ],
+      capacity: [
+        {
+          projectId: 'p-1',
+          activeSprintId: 'sprint-1',
+          capacityPoints: 5,
+          committedPoints: 12,
+          isOverCommitted: true,
+        },
+      ],
+    })
+    renderPage()
+
+    expect(await screen.findByText('12/5')).toBeInTheDocument()
+    // The over-committed badge carries its own accent styling and warning icon distinct from a
+    // normal, within-capacity badge - assert on the badge's own class rather than color values.
+    expect(screen.getByText('12/5').parentElement).toHaveClass('border-destructive/40')
+  })
+
+  // Radix Select's dropdown-open gesture has no working precedent anywhere in this test suite
+  // under jsdom (a pre-existing environment limitation, not specific to this filter) - the actual
+  // click-through-to-selection behavior is covered by live-browser verification instead, the same
+  // way every other Select interaction on this page already is. This test covers what a unit test
+  // safely can: the team filter renders once teams have loaded, wired to the real teams endpoint.
+  it('renders a team filter once teams have loaded', async () => {
+    mockProjectsList()
+    mockRoadmap({ projects: [], epics: [], capacity: [] })
+    server.use(
+      http.get(url('/teams'), () =>
+        HttpResponse.json({
+          success: true,
+          data: [
+            { id: 'team-1', name: 'Platform Team', description: '', leadId: null, memberIds: [] },
+          ],
+        }),
+      ),
+    )
+    renderPage()
+
+    await screen.findByText('No epics to show')
+    expect(screen.getByRole('combobox', { name: 'Filter by team' })).toBeInTheDocument()
   })
 })

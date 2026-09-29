@@ -141,6 +141,23 @@ export function useUpdateTaskSprint(id: string) {
 }
 
 /**
+ * Same "id passed per-call" shape as useUpdateAnyTaskStatus/useUpdateAnyTaskRank, needed because
+ * the Roadmap's drag-to-reschedule handler can't call useUpdateTask(id) conditionally once per
+ * Gantt bar - there's one drag handler shared across every epic's bar, not a component per row.
+ */
+export function useUpdateAnyTask() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...payload }: { id: string } & UpdateTaskPayload) =>
+      tasksService.update(id, payload),
+    onSuccess: (task) => {
+      queryClient.setQueryData(queryKeys.tasks.detail(task.id), task)
+      invalidateAfterTaskChange(queryClient, task)
+    },
+  })
+}
+
+/**
  * Same "id passed per-call" shape as useUpdateAnyTaskStatus, needed because the backlog's drag
  * handler can't call a hook conditionally once per row. Uses the same onMutate optimistic-update
  * pattern for instant drag feedback.

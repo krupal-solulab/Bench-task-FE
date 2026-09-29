@@ -13,6 +13,9 @@ export interface EpicRoadmapRow {
 export interface EpicRoadmapData {
   rows: EpicRoadmapRow[]
   totalDays: number
+  // The real calendar date day 0 anchors to - lets a caller turn a relative day-offset tick back
+  // into an actual date label (e.g. for week/month/quarter zoom on the org-wide Roadmap).
+  startDate: string
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -48,5 +51,5 @@ export function buildEpicRoadmapData(epics: EpicProgressReportEntry[]): EpicRoad
     }
   })
 
-  return { rows, totalDays }
+  return { rows, totalDays, startDate: new Date(minTime).toISOString() }
 }

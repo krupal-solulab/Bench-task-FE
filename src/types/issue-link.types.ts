@@ -60,6 +60,7 @@ export interface DependencyGraph {
 export interface RoadmapQuery {
   projectIds?: string[]
   status?: StatusCategory
+  teamId?: string
 }
 
 export interface RoadmapEpic {
@@ -86,6 +87,7 @@ export interface RoadmapProjectCapacity {
   activeSprintId: string | null
   capacityPoints: number | null
   committedPoints: number
+  isOverCommitted: boolean
 }
 
 export interface RoadmapData {
