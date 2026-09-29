@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyJqlSuggestion, suggestJqlTokens } from './jql-autocomplete'
+import { applyJqlSuggestion, suggestJqlTokens, tokenRangeAt } from './jql-autocomplete'
 import type { JqlFieldMetadata } from '@/types/jql.types'
 
 const FIELDS: JqlFieldMetadata[] = [
@@ -114,5 +114,23 @@ describe('applyJqlSuggestion', () => {
 
   it('replaces the trailing partial word, keeping everything before it', () => {
     expect(applyJqlSuggestion('priority = P1 AND stat', 'status')).toBe('priority = P1 AND status ')
+  })
+})
+
+describe('tokenRangeAt', () => {
+  it('selects the whole bareword token starting at position', () => {
+    expect(tokenRangeAt('status = Done AND bogus = 1', 18)).toEqual({ start: 18, end: 23 })
+  })
+
+  it('stops at a delimiter character', () => {
+    expect(tokenRangeAt('priority IN (P1, P2)', 13)).toEqual({ start: 13, end: 15 })
+  })
+
+  it('clamps a position past the end of the string', () => {
+    expect(tokenRangeAt('status = Done', 999)).toEqual({ start: 13, end: 13 })
+  })
+
+  it('selects one character when the error points at a delimiter itself', () => {
+    expect(tokenRangeAt('priority IN ()', 13)).toEqual({ start: 13, end: 14 })
   })
 })

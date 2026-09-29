@@ -94,6 +94,17 @@ describe('AdvancedSearchInput', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Unknown field "bogus"')
   })
 
+  it('selects the exact bad token in the textarea when an error position is given (Module 4 gap-closure)', () => {
+    renderInput({
+      activeQuery: 'status = Done AND bogus = 1',
+      error: 'Unknown field "bogus"',
+      errorPosition: 18,
+    })
+    const textarea = screen.getByLabelText('Advanced search') as HTMLTextAreaElement
+    expect(textarea.selectionStart).toBe(18)
+    expect(textarea.selectionEnd).toBe(23)
+  })
+
   describe('autocomplete (Module 4)', () => {
     it('suggests field names at the start of a query', async () => {
       mockAutocompleteFields()

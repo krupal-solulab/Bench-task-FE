@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost } from './api-client'
+import type { CsvExportResult } from '@/types/import-export.types'
 import type {
   BulkAssignPayload,
   BulkDeletePayload,
@@ -50,6 +51,8 @@ export const tasksService = {
 
   autocompleteValues: (field: string) =>
     apiGet<string[]>('/tasks/search/autocomplete-values', { field }),
+
+  exportSearchCsv: (jql: string) => apiGet<CsvExportResult>('/tasks/search/export', { jql }),
 
   get: (id: string) => apiGet<Task>(`/tasks/${id}`),
 

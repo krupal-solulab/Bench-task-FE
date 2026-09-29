@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import { Button } from '@/components/common/Button'
 import { Textarea } from '@/components/ui/textarea'
@@ -7,6 +7,7 @@ import {
   applyJqlSuggestion,
   detectValuePositionField,
   suggestJqlTokens,
+  tokenRangeAt,
 } from '@/lib/jql-autocomplete'
 
 export interface AdvancedSearchInputProps {
@@ -16,6 +17,10 @@ export interface AdvancedSearchInputProps {
   onClear: () => void
   isLoading?: boolean
   error?: string
+  /** The 0-indexed character offset a JQL syntax error occurred at (from the API's `position`
+   * field - see jql.util.ts's JqlSyntaxError) - selects that exact span in the textarea so the
+   * error is highlighted inline, not just described in the message below it. */
+  errorPosition?: number
 }
 
 const EXAMPLE = 'status != Done AND priority = P1 AND assignee = currentUser() ORDER BY dueDate'
@@ -29,8 +34,22 @@ export function AdvancedSearchInput({
   onClear,
   isLoading,
   error,
+  errorPosition,
 }: AdvancedSearchInputProps) {
   const [draft, setDraft] = useState(activeQuery ?? '')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Selects the exact bad token in the textarea whenever a new positioned error arrives, so the
+  // error is highlighted inline rather than only described in the message below it.
+  useEffect(() => {
+    if (errorPosition === undefined || !textareaRef.current) return
+    const { start, end } = tokenRangeAt(draft, errorPosition)
+    textareaRef.current.focus()
+    textareaRef.current.setSelectionRange(start, end)
+    // Only re-run when the error itself changes, not on every draft keystroke - re-selecting the
+    // range while the user is actively typing over it would fight their own cursor position.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [errorPosition])
 
   // Module 4's JQL autocomplete - see jql-autocomplete.ts's own doc comment for why this is an
   // end-of-string suggester rather than a caret-position-aware one.
@@ -69,11 +88,13 @@ export function AdvancedSearchInput({
       </label>
       <Textarea
         id="advanced-search-jql"
+        ref={textareaRef}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         placeholder={EXAMPLE}
         rows={2}
         className="font-mono text-sm"
+        aria-invalid={!!error}
       />
       {suggestions.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">

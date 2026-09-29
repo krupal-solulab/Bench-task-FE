@@ -184,12 +184,40 @@ export function useUpdateAnyTaskRank() {
   })
 }
 
+/** On-demand only (the Export CSV button) - mirrors useExportTasksCsv/
+ * useExportProjectWorkLogsCsv's identical "no invalidation needed, it's a read" shape. */
+export function useExportSearchCsv() {
+  return useMutation({
+    mutationFn: (jql: string) => tasksService.exportSearchCsv(jql),
+  })
+}
+
 export function useUpdateTaskAssignee(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: UpdateTaskAssigneePayload) => tasksService.updateAssignee(id, payload),
     onSuccess: (task) => {
       queryClient.setQueryData(queryKeys.tasks.detail(id), task)
+      invalidateAfterTaskChange(queryClient, task)
+    },
+  })
+}
+
+/**
+ * Same "id passed per-call" shape as useUpdateAnyTaskStatus/useUpdateAnyTask, needed by the Issue
+ * Navigator's inline-edit assignee cell. Deliberately goes through the dedicated
+ * PATCH tasks/:id/assignee route (tasksService.updateAssignee), NOT useUpdateAnyTask's generic
+ * PATCH tasks/:id - UpdateTaskDto on the backend explicitly omits `assignee` from that generic
+ * route (assignee changes carry their own eligibility check/notification/activity-log side
+ * effects), so sending it there 400s with "Validation failed" (a non-whitelisted property).
+ */
+export function useUpdateAnyTaskAssignee() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...payload }: { id: string } & UpdateTaskAssigneePayload) =>
+      tasksService.updateAssignee(id, payload),
+    onSuccess: (task) => {
+      queryClient.setQueryData(queryKeys.tasks.detail(task.id), task)
       invalidateAfterTaskChange(queryClient, task)
     },
   })
