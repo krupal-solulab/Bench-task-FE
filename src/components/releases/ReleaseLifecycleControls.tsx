@@ -27,7 +27,10 @@ export function ReleaseLifecycleControls({
   const deleteRelease = useDeleteRelease(projectId)
   const { showToast } = useToast()
 
-  async function handleAction(action: 'release' | 'unrelease' | 'archive', successLabel: string) {
+  async function handleAction(
+    action: 'release' | 'unrelease' | 'archive' | 'unarchive',
+    successLabel: string,
+  ) {
     try {
       await releaseAction.mutateAsync({ releaseId: release.id, action })
       showToast({ title: successLabel, variant: 'success' })
@@ -92,6 +95,17 @@ export function ReleaseLifecycleControls({
           loading={releaseAction.isPending}
         >
           Archive
+        </Button>
+      )}
+
+      {canManage && release.status === 'Archived' && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => void handleAction('unarchive', `${release.name} restored`)}
+          loading={releaseAction.isPending}
+        >
+          Restore
         </Button>
       )}
 

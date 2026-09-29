@@ -64,9 +64,13 @@ export function WorkLogSection({ taskId }: WorkLogSectionProps) {
                   style={{ width: `${estimatePercent}%` }}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                 {summary.totalLoggedHours}h logged of {summary.originalEstimateHours}h estimated
-                {summary.varianceHours! > 0 && ` (${summary.varianceHours}h over estimate)`}
+                {summary.varianceHours! > 0 && (
+                  <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 font-medium text-destructive">
+                    {summary.varianceHours}h over estimate
+                  </span>
+                )}
               </p>
             </>
           ) : (

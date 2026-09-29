@@ -68,4 +68,68 @@ export interface WorkLogReport {
   totalHours: number
   billableHours: number
   nonBillableHours: number
+  /** The project-wide estimate-vs-actual rollup - independent of this report's own date-range
+   * filter, since an estimate isn't a dated event the way a logged hour is. */
+  totalEstimateHours: number
+}
+
+export interface WorkLogCorrelationEntry {
+  taskId: string
+  issueKey: string | null
+  title: string
+  storyPoints: number | null
+  loggedHours: number
+}
+
+export interface WorkLogCorrelationReport {
+  entries: WorkLogCorrelationEntry[]
+}
+
+export interface WorkLogSprintTaskEntry {
+  taskId: string
+  issueKey: string | null
+  title: string
+  originalEstimateHours: number | null
+  loggedHours: number
+}
+
+export interface WorkLogSprintReport {
+  sprintId: string
+  sprintName: string
+  totalEstimateHours: number
+  totalLoggedHours: number
+  tasks: WorkLogSprintTaskEntry[]
+}
+
+export interface TimesheetBucketEntry {
+  id: string
+  taskId: string
+  issueKey: string | null
+  taskTitle: string
+  projectId: string
+  projectName: string
+  hours: number
+  workDate: string
+  billable: boolean
+  description: string
+}
+
+export interface TimesheetBucket {
+  bucketStart: string
+  totalHours: number
+  billableHours: number
+  entries: TimesheetBucketEntry[]
+}
+
+export type TimesheetGroupBy = 'week' | 'month'
+
+export interface MyTimesheetQuery {
+  from?: string
+  to?: string
+  groupBy?: TimesheetGroupBy
+}
+
+export interface MyTimesheetReport {
+  groupBy: TimesheetGroupBy
+  buckets: TimesheetBucket[]
 }

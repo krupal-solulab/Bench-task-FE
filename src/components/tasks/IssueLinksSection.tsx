@@ -15,6 +15,7 @@ import { useTaskLinks, useLinkTypes } from '@/hooks/queries/useIssueLinks'
 import { useTaskSearch } from '@/hooks/queries/useTasks'
 import { useCreateTaskLink, useDeleteTaskLink } from '@/hooks/mutations/useIssueLinkMutations'
 import { useDebounce } from '@/hooks/useDebounce'
+import { getRecentlyViewed } from '@/hooks/useRecentlyViewed'
 import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
 
@@ -57,6 +58,14 @@ export function IssueLinksSection({ taskId, canManage }: IssueLinksSectionProps)
   const searchOptions = (searchResult.data?.data ?? []).filter(
     (t) => t.id !== taskId && !linkedTaskIds.has(t.id),
   )
+
+  // Shown instead of the search-results dropdown while the box is empty/too-short - a quick way
+  // to link something you were just looking at without having to type its title from memory.
+  const recentOptions = !picked
+    ? getRecentlyViewed()
+        .filter((r) => r.type === 'task' && r.id !== taskId && !linkedTaskIds.has(r.id))
+        .slice(0, 5)
+    : []
 
   async function handleLink() {
     if (!picked || !activeLinkTypeId) return
@@ -223,6 +232,27 @@ export function IssueLinksSection({ taskId, canManage }: IssueLinksSectionProps)
                   ))}
                 </ul>
               )}
+            </div>
+          )}
+
+          {!picked && !searchQuery && recentOptions.length > 0 && (
+            <div className="rounded-md border">
+              <p className="px-3 pt-2 text-xs font-medium text-muted-foreground">Recent issues</p>
+              <ul>
+                {recentOptions.map((recent) => (
+                  <li key={recent.id}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPicked({ id: recent.id, issueKey: null, title: recent.label })
+                      }
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                    >
+                      <span className="truncate">{recent.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>

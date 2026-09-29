@@ -122,6 +122,65 @@ describe('ReleasesPanel', () => {
     expect(await screen.findByText('Release created')).toBeInTheDocument()
   })
 
+  it("shows the release owner's name when ownerId is set", async () => {
+    mockReleases([{ ...BASE_RELEASE, ownerId: 'u-admin' }])
+    mockProgress('r-1', { releaseId: 'r-1', totalIssues: 0, doneIssues: 0, progress: 0 })
+    renderPanel()
+
+    expect(await screen.findByText('Owner: Ada Admin')).toBeInTheDocument()
+  })
+
+  it('lists not-yet-done issues from progress', async () => {
+    mockReleases([BASE_RELEASE])
+    mockProgress('r-1', {
+      releaseId: 'r-1',
+      totalIssues: 2,
+      doneIssues: 1,
+      progress: 50,
+      unreleasedIssues: [
+        {
+          id: 't-1',
+          issueKey: 'PRJ-1',
+          title: 'Still open',
+          status: 'Todo',
+          statusCategory: 'To Do',
+        },
+      ],
+    })
+    renderPanel()
+
+    expect(await screen.findByText('1 issue(s) not yet done')).toBeInTheDocument()
+    expect(screen.getByText(/PRJ-1/)).toBeInTheDocument()
+    expect(screen.getByText(/Still open/)).toBeInTheDocument()
+  })
+
+  it('switches to the Calendar view', async () => {
+    mockReleases([BASE_RELEASE])
+    mockProgress('r-1', { releaseId: 'r-1', totalIssues: 0, doneIssues: 0, progress: 0 })
+    const user = userEvent.setup()
+    renderPanel()
+
+    await screen.findByText('v1.0.0')
+    await user.click(screen.getByRole('button', { name: 'Calendar' }))
+
+    expect(screen.getByText('No dated releases')).toBeInTheDocument()
+  })
+
+  it('opens the compare modal once at least 2 releases exist', async () => {
+    mockReleases([BASE_RELEASE, { ...BASE_RELEASE, id: 'r-2', name: 'v2.0.0' }])
+    mockProgress('r-1', { releaseId: 'r-1', totalIssues: 0, doneIssues: 0, progress: 0 })
+    mockProgress('r-2', { releaseId: 'r-2', totalIssues: 0, doneIssues: 0, progress: 0 })
+    const user = userEvent.setup()
+    renderPanel()
+
+    await screen.findByText('v1.0.0')
+    await user.click(screen.getByRole('button', { name: 'Compare releases' }))
+
+    expect(await screen.findByRole('heading', { name: 'Compare releases' })).toBeInTheDocument()
+    expect(screen.getByText('Release A')).toBeInTheDocument()
+    expect(screen.getByText('Release B')).toBeInTheDocument()
+  })
+
   it('opens the release notes modal and shows the generated markdown', async () => {
     mockReleases([BASE_RELEASE])
     mockProgress('r-1', { releaseId: 'r-1', totalIssues: 0, doneIssues: 0, progress: 0 })

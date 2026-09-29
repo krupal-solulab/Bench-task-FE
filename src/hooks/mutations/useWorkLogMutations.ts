@@ -1,7 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/constants'
 import { worklogsService } from '@/services/worklogs.service'
-import type { CreateWorkLogPayload, UpdateWorkLogPayload } from '@/types/worklog.types'
+import type {
+  CreateWorkLogPayload,
+  UpdateWorkLogPayload,
+  WorkLogReportQuery,
+} from '@/types/worklog.types'
 
 /** A single invalidation of the whole worklogs.all prefix covers the task list, the task
  * summary, and every project-wide list/report query - mirrors useSprintMutations/
@@ -31,5 +35,13 @@ export function useDeleteWorkLog() {
   return useMutation({
     mutationFn: (id: string) => worklogsService.remove(id),
     onSuccess: () => invalidateAfterWorkLogChange(queryClient),
+  })
+}
+
+/** On-demand only (triggered by the Export CSV button) - mirrors useExportTasksCsv's identical
+ * "no invalidation needed, it's a read" shape. */
+export function useExportProjectWorkLogsCsv(projectId: string) {
+  return useMutation({
+    mutationFn: (query: WorkLogReportQuery) => worklogsService.exportProjectCsv(projectId, query),
   })
 }

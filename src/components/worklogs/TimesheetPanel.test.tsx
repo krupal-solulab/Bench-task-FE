@@ -1,10 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import type { ReactNode } from 'react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { server } from '@/test/mocks/server'
 import { mockProjects } from '@/test/mocks/fixtures'
+import { ToastProvider } from '@/context/ToastContext'
+import { ToastViewport } from '@/components/common/Toast'
 import { TimesheetPanel } from '@/components/worklogs/TimesheetPanel'
 import type { WorkLogReport, WorkLogWithTask } from '@/types/worklog.types'
 
@@ -23,6 +26,14 @@ function mockReport(report: WorkLogReport) {
   server.use(
     http.get(url('/projects/p-1/worklogs/report'), () =>
       HttpResponse.json({ success: true, data: report }),
+    ),
+  )
+}
+
+function mockCorrelation() {
+  server.use(
+    http.get(url('/projects/p-1/worklogs/correlation'), () =>
+      HttpResponse.json({ success: true, data: { entries: [] } }),
     ),
   )
 }
@@ -49,7 +60,14 @@ function mockLogs(logs: WorkLogWithTask[]) {
 function renderPanel() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   function Wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    return (
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          {children}
+          <ToastViewport />
+        </ToastProvider>
+      </QueryClientProvider>
+    )
   }
   return render(<TimesheetPanel projectId="p-1" />, { wrapper: Wrapper })
 }
@@ -57,7 +75,14 @@ function renderPanel() {
 describe('TimesheetPanel', () => {
   it('shows an empty state for both tables when nothing has been logged', async () => {
     mockProject()
-    mockReport({ entries: [], totalHours: 0, billableHours: 0, nonBillableHours: 0 })
+    mockCorrelation()
+    mockReport({
+      entries: [],
+      totalHours: 0,
+      billableHours: 0,
+      nonBillableHours: 0,
+      totalEstimateHours: 0,
+    })
     mockLogs([])
     renderPanel()
 
@@ -66,6 +91,7 @@ describe('TimesheetPanel', () => {
 
   it('renders per-user totals in the report table', async () => {
     mockProject()
+    mockCorrelation()
     mockReport({
       entries: [
         {
@@ -80,6 +106,7 @@ describe('TimesheetPanel', () => {
       totalHours: 6,
       billableHours: 4,
       nonBillableHours: 2,
+      totalEstimateHours: 0,
     })
     mockLogs([])
     renderPanel()
@@ -90,7 +117,14 @@ describe('TimesheetPanel', () => {
 
   it('renders raw log entries with the issue key', async () => {
     mockProject()
-    mockReport({ entries: [], totalHours: 0, billableHours: 0, nonBillableHours: 0 })
+    mockCorrelation()
+    mockReport({
+      entries: [],
+      totalHours: 0,
+      billableHours: 0,
+      nonBillableHours: 0,
+      totalEstimateHours: 0,
+    })
     mockLogs([
       {
         id: 'wl-1',
@@ -117,5 +151,63 @@ describe('TimesheetPanel', () => {
 
     expect(await screen.findByText('PRJ-1')).toBeInTheDocument()
     expect(screen.getByText('Root-caused it')).toBeInTheDocument()
+  })
+
+  it('shows the project-wide estimate-vs-actual rollup', async () => {
+    mockProject()
+    mockCorrelation()
+    mockReport({
+      entries: [],
+      totalHours: 4,
+      billableHours: 4,
+      nonBillableHours: 0,
+      totalEstimateHours: 10,
+    })
+    mockLogs([])
+    renderPanel()
+
+    expect(await screen.findByText(/4h logged of 10h estimated/)).toBeInTheDocument()
+  })
+
+  describe('CSV export', () => {
+    let clickSpy: ReturnType<typeof vi.fn>
+
+    beforeEach(() => {
+      URL.createObjectURL = vi.fn(() => 'blob:mock-url') as unknown as typeof URL.createObjectURL
+      URL.revokeObjectURL = vi.fn() as unknown as typeof URL.revokeObjectURL
+      clickSpy = vi.fn()
+      HTMLAnchorElement.prototype.click = clickSpy
+    })
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('downloads the exported CSV when Export CSV is clicked', async () => {
+      mockProject()
+      mockCorrelation()
+      mockReport({
+        entries: [],
+        totalHours: 0,
+        billableHours: 0,
+        nonBillableHours: 0,
+        totalEstimateHours: 0,
+      })
+      mockLogs([])
+      server.use(
+        http.get(url('/projects/p-1/worklogs/export'), () =>
+          HttpResponse.json({
+            success: true,
+            data: { filename: 'proj-timesheet-2026-03-01.csv', csv: 'User,Task\nDev One,PRJ-1' },
+          }),
+        ),
+      )
+      const user = userEvent.setup()
+      renderPanel()
+
+      await user.click(await screen.findByRole('button', { name: /Export CSV/ }))
+
+      await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(1))
+    })
   })
 })

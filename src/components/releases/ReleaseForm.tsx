@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { Button } from '@/components/common/Button'
 import { FormField } from '@/components/common/FormField'
 import { DatePicker } from '@/components/common/DatePicker'
+import { UserSelect } from '@/components/common/UserSelect'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { releaseSchema, type ReleaseFormValues } from '@/schemas/release.schema'
@@ -34,10 +35,12 @@ export function ReleaseForm({
       name: initialValues?.name ?? '',
       description: initialValues?.description ?? '',
       releaseDate: toDateInputValue(initialValues?.releaseDate ?? undefined),
+      ownerId: initialValues?.ownerId ?? null,
     },
   })
 
   const releaseDate = watch('releaseDate')
+  const ownerId = watch('ownerId')
 
   // An untouched date field stays '' (DatePicker needs a string, not undefined, to stay
   // controlled) - but the backend's optional releaseDate is `@IsOptional() @IsISO8601()`, which
@@ -66,6 +69,20 @@ export function ReleaseForm({
           id="releaseDate"
           value={releaseDate}
           onChange={(v) => setValue('releaseDate', v ?? undefined, { shouldValidate: true })}
+        />
+      </FormField>
+
+      <FormField
+        label="Owner"
+        htmlFor="ownerId"
+        error={errors.ownerId?.message}
+        hint="Optional - the person responsible for shipping this release."
+      >
+        <UserSelect
+          id="ownerId"
+          value={ownerId ?? null}
+          onChange={(v) => setValue('ownerId', v, { shouldValidate: true })}
+          placeholder="Select owner"
         />
       </FormField>
 
