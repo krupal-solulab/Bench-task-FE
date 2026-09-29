@@ -7,6 +7,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { server } from '@/test/mocks/server'
 import { mockTasks } from '@/test/mocks/fixtures'
+import { ToastProvider } from '@/context/ToastContext'
 import { IssueNavigatorPage } from '@/pages/tasks/IssueNavigatorPage'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
@@ -17,7 +18,9 @@ function renderPage() {
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>{children}</MemoryRouter>
+        <MemoryRouter>
+          <ToastProvider>{children}</ToastProvider>
+        </MemoryRouter>
       </QueryClientProvider>
     )
   }

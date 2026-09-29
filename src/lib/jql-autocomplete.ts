@@ -111,3 +111,22 @@ export function applyJqlSuggestion(input: string, suggestion: string): string {
   const prefix = lastSpace === -1 ? '' : input.slice(0, lastSpace + 1)
   return `${prefix}${suggestion} `
 }
+
+/**
+ * The character range of the "token" starting at `position` (a 0-indexed offset the backend's
+ * JqlSyntaxError reports - see jql.util.ts) - used to select that exact span inside the query
+ * textarea so a syntax error is highlighted inline, not just described in a message below it.
+ * Stops at whitespace or a delimiter character; doesn't need to be a perfect re-tokenization
+ * (e.g. it won't skip over a quoted string's interior spaces), just a reasonable visible span.
+ */
+export function tokenRangeAt(query: string, position: number): { start: number; end: number } {
+  const start = Math.max(0, Math.min(position, query.length))
+  let end = start
+  while (end < query.length && !/[\s(),]/.test(query[end]!)) {
+    end++
+  }
+  // An error pointing at end-of-string or right at a delimiter would otherwise select nothing
+  // (a zero-width, invisible selection) - select one character instead so it's always visible.
+  if (end === start) end = Math.min(query.length, start + 1)
+  return { start, end }
+}

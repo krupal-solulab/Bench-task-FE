@@ -106,6 +106,7 @@ export function MyTasksPage() {
           onClear={() => setActiveJql(null)}
           isLoading={searchResult.isLoading}
           error={searchResult.isError ? toApiError(searchResult.error).message : undefined}
+          errorPosition={searchResult.isError ? toApiError(searchResult.error).position : undefined}
         />
       )}
 

@@ -41,6 +41,7 @@ export function toApiError(error: unknown): ApiError {
       statusCode: error.response.status,
       message: body?.message || FRIENDLY_FALLBACK_MESSAGE,
       details: body?.details,
+      position: body?.position,
     }
   }
 

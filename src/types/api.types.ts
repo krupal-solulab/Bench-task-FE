@@ -24,6 +24,9 @@ export interface ApiErrorResponse {
   message: string
   error: string
   details?: string[]
+  /** The 0-indexed character offset a JQL syntax error occurred at - see the backend's
+   * JqlSyntaxError/AllExceptionsFilter. Absent for every other kind of error. */
+  position?: number
   timestamp: string
   path: string
 }
@@ -33,6 +36,7 @@ export interface ApiError {
   statusCode: number
   message: string
   details?: string[]
+  position?: number
 }
 
 export type SortOrder = 'asc' | 'desc'
