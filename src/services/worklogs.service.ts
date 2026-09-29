@@ -1,12 +1,17 @@
 import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost } from './api-client'
+import type { CsvExportResult } from '@/types/import-export.types'
 import type {
   CreateWorkLogPayload,
+  MyTimesheetQuery,
+  MyTimesheetReport,
   ProjectWorkLogListQuery,
   UpdateWorkLogPayload,
   WorkLog,
+  WorkLogCorrelationReport,
   WorkLogListQuery,
   WorkLogReport,
   WorkLogReportQuery,
+  WorkLogSprintReport,
   WorkLogSummary,
   WorkLogWithTask,
 } from '@/types/worklog.types'
@@ -30,4 +35,16 @@ export const worklogsService = {
 
   reportForProject: (projectId: string, query: WorkLogReportQuery) =>
     apiGet<WorkLogReport>(`/projects/${projectId}/worklogs/report`, query),
+
+  correlationForProject: (projectId: string) =>
+    apiGet<WorkLogCorrelationReport>(`/projects/${projectId}/worklogs/correlation`),
+
+  reportForSprint: (projectId: string, sprintId: string) =>
+    apiGet<WorkLogSprintReport>(`/projects/${projectId}/sprints/${sprintId}/worklogs/report`),
+
+  exportProjectCsv: (projectId: string, query: WorkLogReportQuery) =>
+    apiGet<CsvExportResult>(`/projects/${projectId}/worklogs/export`, query),
+
+  myTimesheet: (query: MyTimesheetQuery) =>
+    apiGet<MyTimesheetReport>('/worklogs/my-timesheet', query),
 }

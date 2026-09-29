@@ -92,10 +92,45 @@ describe('LogWorkForm', () => {
       />,
     )
 
-    expect(screen.getByDisplayValue('4')).toBeInTheDocument()
+    // The stored decimal (4) displays as its shorthand form ("4h"), not a raw number.
+    expect(screen.getByDisplayValue('4h')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Existing note')).toBeInTheDocument()
     expect(screen.getByLabelText('Date', { exact: false })).toHaveValue('2026-03-01')
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument()
+  })
+
+  it('accepts "2h 30m" shorthand and submits it as decimal hours', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
+    render(<LogWorkForm onSubmit={onSubmit} onCancel={vi.fn()} />)
+
+    fireEvent.change(screen.getByLabelText('Hours', { exact: false }), {
+      target: { value: '2h 30m' },
+    })
+    fireEvent.change(screen.getByLabelText('Date', { exact: false }), {
+      target: { value: '2026-03-01' },
+    })
+    await user.click(screen.getByRole('button', { name: 'Log work' }))
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(onSubmit.mock.calls[0]![0]).toMatchObject({ hours: 2.5 })
+  })
+
+  it('rejects unparseable hours text', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(<LogWorkForm onSubmit={onSubmit} onCancel={vi.fn()} />)
+
+    fireEvent.change(screen.getByLabelText('Hours', { exact: false }), {
+      target: { value: 'not a duration' },
+    })
+    fireEvent.change(screen.getByLabelText('Date', { exact: false }), {
+      target: { value: '2026-03-01' },
+    })
+    await user.click(screen.getByRole('button', { name: 'Log work' }))
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 
   it('calls onCancel when Cancel is clicked', async () => {

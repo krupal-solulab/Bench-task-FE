@@ -157,6 +157,10 @@ export const queryKeys = {
       ['worklogs', 'project', projectId, filters] as const,
     report: (projectId: string, filters: unknown) =>
       ['worklogs', 'report', projectId, filters] as const,
+    correlation: (projectId: string) => ['worklogs', 'correlation', projectId] as const,
+    sprintReport: (projectId: string, sprintId: string) =>
+      ['worklogs', 'sprint-report', projectId, sprintId] as const,
+    myTimesheet: (filters: unknown) => ['worklogs', 'my-timesheet', filters] as const,
   },
   attachments: {
     list: (taskId: string, filters: unknown) => ['attachments', taskId, 'list', filters] as const,

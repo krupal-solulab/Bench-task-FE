@@ -49,6 +49,7 @@ import { DependencyGraphView } from '@/components/projects/DependencyGraphView'
 import { ReleasesPanel } from '@/components/releases/ReleasesPanel'
 import { TimesheetPanel } from '@/components/worklogs/TimesheetPanel'
 import { EpicProgressTable } from '@/components/projects/EpicProgressTable'
+import { SprintTimeReport } from '@/components/projects/SprintTimeReport'
 import { CfdChart } from '@/components/projects/CfdChart'
 import { CycleTimeChart } from '@/components/projects/CycleTimeChart'
 import { EpicBurndownChart } from '@/components/projects/EpicBurndownChart'
@@ -682,6 +683,7 @@ export function ProjectDetailPage() {
               </FormField>
               <SprintBurndownChart projectId={id} sprintId={effectiveReportsSprintId} />
               <SprintRetrospective projectId={id} sprintId={effectiveReportsSprintId} />
+              <SprintTimeReport projectId={id} sprintId={effectiveReportsSprintId} />
               <SprintVelocityChart projectId={id} />
               <CfdChart projectId={id} />
               <CycleTimeChart projectId={id} />

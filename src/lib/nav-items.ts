@@ -1,5 +1,6 @@
 import {
   Bell,
+  Clock,
   CreditCard,
   FileStack,
   KeyRound,
@@ -34,6 +35,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/projects', label: 'Projects', icon: FolderKanban },
   { to: '/tasks/my-tasks', label: 'My Tasks', icon: ListChecks },
+  { to: '/worklogs/my-timesheet', label: 'My Timesheet', icon: Clock },
   { to: '/issues', label: 'Issue Navigator', icon: Search },
   { to: '/roadmap', label: 'Roadmap', icon: Milestone },
   { to: '/notifications', label: 'Notifications', icon: Bell },

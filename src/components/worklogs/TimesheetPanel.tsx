@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Download } from 'lucide-react'
+import { Button } from '@/components/common/Button'
 import { DataTable, type DataTableColumn } from '@/components/common/DataTable'
 import { DatePicker } from '@/components/common/DatePicker'
 import {
@@ -8,9 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { WorkTimeCorrelationChart } from './WorkTimeCorrelationChart'
 import { useProject } from '@/hooks/queries/useProjects'
 import { useProjectWorkLogs, useWorkLogReport } from '@/hooks/queries/useWorkLogs'
+import { useExportProjectWorkLogsCsv } from '@/hooks/mutations/useWorkLogMutations'
+import { useToast } from '@/hooks/useToast'
 import { formatDate } from '@/lib/date'
+import { downloadTextFile } from '@/lib/download'
+import { toApiError } from '@/lib/error'
 import type { WorkLogReportEntry, WorkLogWithTask } from '@/types/worklog.types'
 
 const ALL_MEMBERS = '__all__'
@@ -49,6 +56,21 @@ export function TimesheetPanel({ projectId }: TimesheetPanelProps) {
     userId: userId === ALL_MEMBERS ? undefined : userId,
     billable: billable === ALL_BILLABLE ? undefined : billable === 'true',
   })
+  const exportCsv = useExportProjectWorkLogsCsv(projectId)
+  const { showToast } = useToast()
+
+  async function handleExport() {
+    try {
+      const result = await exportCsv.mutateAsync({ from: from ?? undefined, to: to ?? undefined })
+      downloadTextFile(result.filename, result.csv, 'text/csv;charset=utf-8')
+    } catch (err) {
+      showToast({
+        title: 'Could not export timesheet',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
 
   const reportColumns: DataTableColumn<WorkLogReportEntry>[] = [
     { key: 'userName', header: 'User', render: (r) => r.userName },
@@ -103,7 +125,23 @@ export function TimesheetPanel({ projectId }: TimesheetPanelProps) {
             <SelectItem value="false">Non-billable only</SelectItem>
           </SelectContent>
         </Select>
+        <Button
+          size="sm"
+          variant="outline"
+          className="ml-auto gap-1"
+          onClick={() => void handleExport()}
+          loading={exportCsv.isPending}
+        >
+          <Download className="h-4 w-4" /> Export CSV
+        </Button>
       </div>
+
+      {report && (
+        <p className="text-sm text-muted-foreground">
+          {report.totalHours}h logged of {report.totalEstimateHours}h estimated across this
+          project&apos;s tasks
+        </p>
+      )}
 
       <div className="space-y-2">
         <h3 className="text-sm font-medium">Totals by user</h3>
@@ -115,6 +153,8 @@ export function TimesheetPanel({ projectId }: TimesheetPanelProps) {
           emptyState={<p className="p-4 text-sm text-muted-foreground">No work logged yet.</p>}
         />
       </div>
+
+      <WorkTimeCorrelationChart projectId={projectId} />
 
       <div className="space-y-2">
         <h3 className="text-sm font-medium">Work log entries</h3>
