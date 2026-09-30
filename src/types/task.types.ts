@@ -150,6 +150,7 @@ export interface UpdateTaskRankPayload {
 export interface BulkOperationResult {
   succeeded: string[]
   failed: Array<{ taskId: string; message: string }>
+  undoToken: string | null
 }
 
 export interface BulkMoveSprintPayload {
@@ -179,6 +180,43 @@ export interface BulkPriorityPayload {
 
 export interface BulkDeletePayload {
   taskIds: string[]
+}
+
+export interface BulkFixVersionPayload {
+  taskIds: string[]
+  fixVersions: string[]
+}
+
+export interface BulkCustomFieldPayload {
+  taskIds: string[]
+  fieldId: string
+  value: unknown
+}
+
+export interface BulkMoveProjectPayload {
+  taskIds: string[]
+  targetProjectId: string
+}
+
+export interface MoveTaskProjectPayload {
+  targetProjectId: string
+}
+
+export interface PreviewBulkStatusPayload {
+  taskIds: string[]
+  status: string
+}
+
+export interface BulkStatusPreviewEntry {
+  taskId: string
+  willSucceed: boolean
+  reason: string | null
+}
+
+export interface BulkStatusPreviewResult {
+  entries: BulkStatusPreviewEntry[]
+  willSucceedCount: number
+  willFailCount: number
 }
 
 export interface EpicProgress {

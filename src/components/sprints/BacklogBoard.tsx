@@ -21,10 +21,14 @@ import { Avatar } from '@/components/common/Avatar'
 import { Button } from '@/components/common/Button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { DatePicker } from '@/components/common/DatePicker'
+import { Modal } from '@/components/common/Modal'
 import { PriorityBadge } from '@/components/common/PriorityBadge'
 import { EmptyState } from '@/components/common/EmptyState'
+import { ReleaseMultiSelect } from '@/components/releases/ReleaseMultiSelect'
 import { TagInput } from '@/components/common/TagInput'
 import { UserSelect } from '@/components/common/UserSelect'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -34,19 +38,31 @@ import {
 } from '@/components/ui/select'
 import {
   useBulkAssign,
+  useBulkCustomField,
   useBulkDeleteTasks,
+  useBulkFixVersion,
+  useBulkMoveProject,
   useBulkMoveSprint,
   useBulkRelabel,
   useBulkUpdatePriority,
   useBulkUpdateStatus,
+  usePreviewBulkStatus,
+  useUndoBulkOperation,
   useUpdateAnyTaskRank,
   useUpdateTaskSprint,
 } from '@/hooks/mutations/useTaskMutations'
+import { useEffectiveCustomFields, useProjects } from '@/hooks/queries/useProjects'
 import { useToast } from '@/hooks/useToast'
 import { computeReorderNeighbors } from '@/lib/backlog-reorder'
 import { toApiError } from '@/lib/error'
 import { cn } from '@/lib/cn'
-import { TASK_PRIORITIES, type TaskPriority } from '@/types/task.types'
+import {
+  TASK_PRIORITIES,
+  type BulkOperationResult,
+  type BulkStatusPreviewResult,
+  type TaskPriority,
+} from '@/types/task.types'
+import type { CustomFieldDefinition } from '@/types/project.types'
 import type { Sprint } from '@/types/sprint.types'
 import type { Task } from '@/types/task.types'
 
@@ -151,39 +167,233 @@ function BacklogRow({
   )
 }
 
+/** Module 5 gap-closure: a compact, per-type value input for the bulk custom-field editor -
+ * mirrors TaskForm's per-type field rendering (Text/Number/Date/Dropdown/Checkbox/MultiSelect/
+ * UserPicker), just driven by a flat value/onChange instead of react-hook-form's setValue. */
+function BulkCustomFieldValueInput({
+  field,
+  value,
+  onChange,
+}: {
+  field: CustomFieldDefinition
+  value: unknown
+  onChange: (value: unknown) => void
+}) {
+  if (field.type === 'Text') {
+    return (
+      <Input
+        className="w-40"
+        value={(value as string | undefined) ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={field.name}
+      />
+    )
+  }
+  if (field.type === 'Number') {
+    return (
+      <Input
+        className="w-40"
+        type="number"
+        value={(value as number | undefined) ?? ''}
+        onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
+        placeholder={field.name}
+      />
+    )
+  }
+  if (field.type === 'Date') {
+    return (
+      <DatePicker
+        value={(value as string | null | undefined) ?? null}
+        onChange={(v) => onChange(v)}
+      />
+    )
+  }
+  if (field.type === 'Dropdown') {
+    return (
+      <Select value={(value as string | undefined) ?? ''} onValueChange={onChange}>
+        <SelectTrigger className="w-40" aria-label={field.name}>
+          <SelectValue placeholder="Select…" />
+        </SelectTrigger>
+        <SelectContent>
+          {(field.options ?? []).map((o) => (
+            <SelectItem key={o} value={o}>
+              {o}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    )
+  }
+  if (field.type === 'Checkbox') {
+    return (
+      <Select
+        value={value === true ? 'true' : value === false ? 'false' : ''}
+        onValueChange={(v) => onChange(v === 'true')}
+      >
+        <SelectTrigger className="w-28" aria-label={field.name}>
+          <SelectValue placeholder="Select…" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="true">Yes</SelectItem>
+          <SelectItem value="false">No</SelectItem>
+        </SelectContent>
+      </Select>
+    )
+  }
+  if (field.type === 'MultiSelect') {
+    return (
+      <div className="w-40">
+        <TagInput
+          value={(value as string[] | undefined) ?? []}
+          onChange={onChange}
+          suggestions={field.options ?? []}
+          placeholder="Pick an option"
+        />
+      </div>
+    )
+  }
+  // UserPicker
+  return (
+    <div className="w-40">
+      <UserSelect
+        value={(value as string | null | undefined) ?? null}
+        onChange={onChange}
+        placeholder={field.name}
+      />
+    </div>
+  )
+}
+
+/** The confirmation step for Module 5's bulk status-transition preview (BRD gap-closure: "no way
+ * to know before committing which tasks would fail"). Shown between picking a status and actually
+ * committing it - Confirm re-runs the real bulk-status call, Cancel discards the draft entirely. */
+function BulkStatusPreviewModal({
+  status,
+  result,
+  isSubmitting,
+  onCancel,
+  onConfirm,
+}: {
+  status: string
+  result: BulkStatusPreviewResult
+  isSubmitting: boolean
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <Modal
+      open
+      onOpenChange={(open) => !open && onCancel()}
+      title={`Transition to "${status}"`}
+      description={`${result.willSucceedCount} would succeed, ${result.willFailCount} would fail.`}
+      footer={
+        <>
+          <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button
+            loading={isSubmitting}
+            disabled={result.willSucceedCount === 0}
+            onClick={onConfirm}
+          >
+            Confirm
+          </Button>
+        </>
+      }
+    >
+      <ul className="max-h-64 space-y-1 overflow-y-auto text-sm">
+        {result.entries.map((entry) => (
+          <li
+            key={entry.taskId}
+            className={cn(
+              'rounded px-2 py-1',
+              entry.willSucceed ? 'text-muted-foreground' : 'bg-destructive/10 text-destructive',
+            )}
+          >
+            {entry.willSucceed ? 'Will succeed' : (entry.reason ?? 'Will fail')}
+          </li>
+        ))}
+      </ul>
+    </Modal>
+  )
+}
+
 /** The bulk action bar shown once at least one row is selected (BRD 6.2: "move multiple issues
  * into a sprint, bulk-assign, bulk-relabel"). Each action clears the selection on success. */
 function BulkActionBar({
   selectedIds,
+  projectId,
   assignableSprints,
   statusOptions,
   onDone,
 }: {
   selectedIds: string[]
+  projectId: string
   assignableSprints: Sprint[]
   statusOptions: string[]
   onDone: () => void
 }) {
   const [labelDraft, setLabelDraft] = useState<string[]>([])
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [fixVersionDraft, setFixVersionDraft] = useState<string[]>([])
+  const [customFieldId, setCustomFieldId] = useState('')
+  const [customFieldValue, setCustomFieldValue] = useState<unknown>(undefined)
+  const [statusPreview, setStatusPreview] = useState<{
+    status: string
+    result: BulkStatusPreviewResult
+  } | null>(null)
   const bulkMoveSprint = useBulkMoveSprint()
   const bulkAssign = useBulkAssign()
   const bulkRelabel = useBulkRelabel()
   const bulkStatus = useBulkUpdateStatus()
   const bulkPriority = useBulkUpdatePriority()
   const bulkDelete = useBulkDeleteTasks()
+  const bulkFixVersion = useBulkFixVersion()
+  const bulkCustomField = useBulkCustomField()
+  const bulkMoveProject = useBulkMoveProject()
+  const previewBulkStatus = usePreviewBulkStatus()
+  const undoBulkOperation = useUndoBulkOperation()
+  const { data: customFields } = useEffectiveCustomFields(projectId)
+  const { data: projectsData } = useProjects({ limit: 100, sortBy: 'name', sortOrder: 'asc' })
   const { showToast } = useToast()
 
-  function reportResult(action: string, result: { succeeded: string[]; failed: unknown[] }) {
+  const otherProjects = (projectsData?.data ?? []).filter((p) => p.id !== projectId)
+  const selectedCustomField = (customFields ?? []).find((f) => f.id === customFieldId)
+
+  async function handleUndo(logId: string) {
+    try {
+      const result = await undoBulkOperation.mutateAsync(logId)
+      showToast({
+        title:
+          result.failed.length > 0
+            ? `Undo: ${result.succeeded.length} reverted, ${result.failed.length} failed`
+            : `Undo: ${result.succeeded.length} task(s) reverted`,
+        variant: result.failed.length > 0 ? 'destructive' : 'success',
+      })
+    } catch (err) {
+      showToast({
+        title: 'Could not undo',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  function reportResult(action: string, result: BulkOperationResult) {
+    const undoAction = result.undoToken
+      ? { label: 'Undo', onClick: () => void handleUndo(result.undoToken!) }
+      : undefined
     if (result.failed.length > 0) {
       showToast({
         title: `${action}: ${result.succeeded.length} succeeded, ${result.failed.length} failed`,
         variant: 'destructive',
+        action: undoAction,
       })
     } else {
       showToast({
         title: `${action}: ${result.succeeded.length} task(s) updated`,
         variant: 'success',
+        action: undoAction,
       })
     }
     onDone()
@@ -230,13 +440,88 @@ function BulkActionBar({
     }
   }
 
-  async function handleSetStatus(status: string) {
+  /** Module 5 gap-closure: dry-runs the transition first (opens BulkStatusPreviewModal) rather
+   * than committing directly - handleConfirmStatus below fires the real bulk-status call. */
+  async function handlePreviewStatus(status: string) {
     try {
-      const result = await bulkStatus.mutateAsync({ taskIds: selectedIds, status })
+      const result = await previewBulkStatus.mutateAsync({ taskIds: selectedIds, status })
+      setStatusPreview({ status, result })
+    } catch (err) {
+      showToast({
+        title: 'Could not preview status change',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  async function handleConfirmStatus() {
+    if (!statusPreview) return
+    try {
+      const result = await bulkStatus.mutateAsync({
+        taskIds: selectedIds,
+        status: statusPreview.status,
+      })
       reportResult('Set status', result)
     } catch (err) {
       showToast({
         title: 'Could not update status',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    } finally {
+      setStatusPreview(null)
+    }
+  }
+
+  async function handleApplyFixVersion() {
+    if (fixVersionDraft.length === 0) return
+    try {
+      const result = await bulkFixVersion.mutateAsync({
+        taskIds: selectedIds,
+        fixVersions: fixVersionDraft,
+      })
+      setFixVersionDraft([])
+      reportResult('Fix version', result)
+    } catch (err) {
+      showToast({
+        title: 'Could not set fix version',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  async function handleApplyCustomField() {
+    if (!customFieldId) return
+    try {
+      const result = await bulkCustomField.mutateAsync({
+        taskIds: selectedIds,
+        fieldId: customFieldId,
+        value: customFieldValue,
+      })
+      setCustomFieldId('')
+      setCustomFieldValue(undefined)
+      reportResult('Custom field', result)
+    } catch (err) {
+      showToast({
+        title: 'Could not set custom field',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  async function handleMoveToProject(targetProjectId: string) {
+    try {
+      const result = await bulkMoveProject.mutateAsync({
+        taskIds: selectedIds,
+        targetProjectId,
+      })
+      reportResult('Move to project', result)
+    } catch (err) {
+      showToast({
+        title: 'Could not move tasks',
         description: toApiError(err).message,
         variant: 'destructive',
       })
@@ -300,6 +585,7 @@ function BulkActionBar({
           type="button"
           size="sm"
           variant="outline"
+          aria-label="Apply labels"
           onClick={() => void handleAddLabels()}
           disabled={labelDraft.length === 0}
         >
@@ -308,7 +594,7 @@ function BulkActionBar({
       </div>
 
       {statusOptions.length > 0 && (
-        <Select value="" onValueChange={(v) => void handleSetStatus(v)}>
+        <Select value="" onValueChange={(v) => void handlePreviewStatus(v)}>
           <SelectTrigger className="w-40" aria-label="Bulk set status">
             <SelectValue placeholder="Set status" />
           </SelectTrigger>
@@ -335,6 +621,82 @@ function BulkActionBar({
         </SelectContent>
       </Select>
 
+      <div className="flex items-center gap-1">
+        <div className="w-40">
+          <ReleaseMultiSelect
+            projectId={projectId}
+            value={fixVersionDraft}
+            onChange={setFixVersionDraft}
+            placeholder="Fix version…"
+          />
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          aria-label="Apply fix version"
+          onClick={() => void handleApplyFixVersion()}
+          disabled={fixVersionDraft.length === 0}
+        >
+          Apply
+        </Button>
+      </div>
+
+      {(customFields ?? []).length > 0 && (
+        <div className="flex items-center gap-1">
+          <Select
+            value={customFieldId}
+            onValueChange={(v) => {
+              setCustomFieldId(v)
+              setCustomFieldValue(undefined)
+            }}
+          >
+            <SelectTrigger className="w-40" aria-label="Bulk set custom field">
+              <SelectValue placeholder="Custom field…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(customFields ?? []).map((field) => (
+                <SelectItem key={field.id} value={field.id}>
+                  {field.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedCustomField && (
+            <BulkCustomFieldValueInput
+              field={selectedCustomField}
+              value={customFieldValue}
+              onChange={setCustomFieldValue}
+            />
+          )}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            aria-label="Apply custom field"
+            onClick={() => void handleApplyCustomField()}
+            disabled={!customFieldId}
+          >
+            Apply
+          </Button>
+        </div>
+      )}
+
+      {otherProjects.length > 0 && (
+        <Select value="" onValueChange={(v) => void handleMoveToProject(v)}>
+          <SelectTrigger className="w-40" aria-label="Bulk move to project">
+            <SelectValue placeholder="Move to project" />
+          </SelectTrigger>
+          <SelectContent>
+            {otherProjects.map((project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
       <Button type="button" size="sm" variant="destructive" onClick={() => setDeleteOpen(true)}>
         Delete
       </Button>
@@ -352,6 +714,16 @@ function BulkActionBar({
         confirmLabel="Delete"
         onConfirm={handleDelete}
       />
+
+      {statusPreview && (
+        <BulkStatusPreviewModal
+          status={statusPreview.status}
+          result={statusPreview.result}
+          isSubmitting={bulkStatus.isPending}
+          onCancel={() => setStatusPreview(null)}
+          onConfirm={() => void handleConfirmStatus()}
+        />
+      )}
     </div>
   )
 }
@@ -360,6 +732,7 @@ export interface BacklogBoardProps {
   tasks: Task[]
   canManage: boolean
   assignableSprints: Sprint[]
+  projectId: string
 }
 
 /** The bulk "Set status" picker's options - this board doesn't have the project's configured
@@ -384,7 +757,12 @@ function groupByEpic(tasks: Task[]): Array<{ key: string; label: string; tasks: 
   return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label))
 }
 
-export function BacklogBoard({ tasks, canManage, assignableSprints }: BacklogBoardProps) {
+export function BacklogBoard({
+  tasks,
+  canManage,
+  assignableSprints,
+  projectId,
+}: BacklogBoardProps) {
   const [orderedIds, setOrderedIds] = useState(() => tasks.map((t) => t.id))
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [grouped, setGrouped] = useState(false)
@@ -484,6 +862,7 @@ export function BacklogBoard({ tasks, canManage, assignableSprints }: BacklogBoa
       {canManage && selectedIds.size > 0 && (
         <BulkActionBar
           selectedIds={[...selectedIds]}
+          projectId={projectId}
           assignableSprints={assignableSprints}
           statusOptions={distinctStatuses(tasks)}
           onDone={() => setSelectedIds(new Set())}
