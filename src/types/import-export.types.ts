@@ -32,3 +32,10 @@ export interface ProjectBackupResult {
   filename: string
   backup: Record<string, unknown>
 }
+
+/** Module 5 gap-closure: one entry in a project's backup history - metadata only, matching the
+ * backend's `{backup: 0}` list projection. */
+export interface ProjectBackupSnapshotSummary {
+  id: string
+  createdAt: string
+}
