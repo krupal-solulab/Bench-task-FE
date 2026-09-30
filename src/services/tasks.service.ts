@@ -2,15 +2,21 @@ import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost } from './api-cli
 import type { CsvExportResult } from '@/types/import-export.types'
 import type {
   BulkAssignPayload,
+  BulkCustomFieldPayload,
   BulkDeletePayload,
+  BulkFixVersionPayload,
+  BulkMoveProjectPayload,
   BulkMoveSprintPayload,
   BulkOperationResult,
   BulkPriorityPayload,
   BulkRelabelPayload,
   BulkStatusPayload,
+  BulkStatusPreviewResult,
   CreateTaskPayload,
   EpicBurndownResult,
   EpicProgress,
+  MoveTaskProjectPayload,
+  PreviewBulkStatusPayload,
   Task,
   TaskActivityEntry,
   TaskListQuery,
@@ -89,6 +95,24 @@ export const tasksService = {
 
   bulkDelete: (payload: BulkDeletePayload) =>
     apiPatch<BulkOperationResult>('/tasks/bulk-delete', payload),
+
+  bulkFixVersion: (payload: BulkFixVersionPayload) =>
+    apiPatch<BulkOperationResult>('/tasks/bulk-fix-version', payload),
+
+  bulkCustomField: (payload: BulkCustomFieldPayload) =>
+    apiPatch<BulkOperationResult>('/tasks/bulk-custom-field', payload),
+
+  bulkMoveProject: (payload: BulkMoveProjectPayload) =>
+    apiPatch<BulkOperationResult>('/tasks/bulk-move-project', payload),
+
+  moveProject: (id: string, payload: MoveTaskProjectPayload) =>
+    apiPatch<Task>(`/tasks/${id}/move-project`, payload),
+
+  previewBulkStatus: (payload: PreviewBulkStatusPayload) =>
+    apiPost<BulkStatusPreviewResult>('/tasks/bulk-status/preview', payload),
+
+  undoBulkOperation: (logId: string) =>
+    apiPost<BulkOperationResult>(`/tasks/bulk-operations/${logId}/undo`),
 
   approveTransition: (id: string) => apiPost<Task>(`/tasks/${id}/approval/approve`),
 

@@ -71,9 +71,10 @@ function renderBoard(tasks: Task[], canManage = true) {
       </QueryClientProvider>
     )
   }
-  return render(<BacklogBoard tasks={tasks} canManage={canManage} assignableSprints={[]} />, {
-    wrapper: Wrapper,
-  })
+  return render(
+    <BacklogBoard tasks={tasks} canManage={canManage} assignableSprints={[]} projectId="p-1" />,
+    { wrapper: Wrapper },
+  )
 }
 
 describe('BacklogBoard', () => {
@@ -157,7 +158,7 @@ describe('BacklogBoard', () => {
       await user.click(screen.getByLabelText('Select First'))
       await user.click(screen.getByLabelText('Select Second'))
       await user.type(screen.getByPlaceholderText('Add label(s)…'), 'urgent{Enter}')
-      await user.click(screen.getByRole('button', { name: 'Apply' }))
+      await user.click(screen.getByRole('button', { name: 'Apply labels' }))
 
       await waitFor(() => expect(sentBody).not.toBeNull())
       expect(sentBody!.taskIds.sort()).toEqual(['t-1', 't-2'])
@@ -228,6 +229,59 @@ describe('BacklogBoard', () => {
       await user.click(confirmButtons[confirmButtons.length - 1]!)
 
       expect(await screen.findByText('Delete: 1 succeeded, 1 failed')).toBeInTheDocument()
+    })
+  })
+
+  describe('Module 5 gap-closure: fix-version/move-project pickers, undo', () => {
+    // The fix-version picker (ReleaseMultiSelect, a Radix Popover) and the move-to-project picker
+    // (the same Radix Select as "Set status"/"Set priority" above) hit the same documented jsdom
+    // layout-measurement limitation once actually opened - see ReleaseMultiSelect.test.tsx's own
+    // note. These two checks only confirm the trigger renders, without opening it; the real
+    // open-and-pick path is covered by live-browser verification instead.
+    it('renders the bulk fix-version picker once a row is selected', async () => {
+      renderBoard([makeTask({ id: 't-1', title: 'First' })])
+      await userEvent.setup().click(screen.getByLabelText('Select First'))
+      expect(await screen.findByText('Fix version…')).toBeInTheDocument()
+    })
+
+    it('renders the bulk move-to-project picker once a row is selected', async () => {
+      renderBoard([makeTask({ id: 't-1', title: 'First' })])
+      await userEvent.setup().click(screen.getByLabelText('Select First'))
+      expect(await screen.findByLabelText('Bulk move to project')).toBeInTheDocument()
+    })
+
+    // Bulk-delete is a plain Button + ConfirmDialog (no Radix Select/Popover to open), so it's the
+    // safe vehicle for exercising the Undo toast action end-to-end.
+    it('shows an Undo action on the toast when the result carries an undoToken, and clicking it calls the undo endpoint', async () => {
+      let undoneLogId: string | null = null
+      server.use(
+        http.patch(url('/tasks/bulk-delete'), () =>
+          HttpResponse.json({
+            success: true,
+            data: { succeeded: ['t-1'], failed: [], undoToken: 'log-1' },
+          }),
+        ),
+        http.post(url('/tasks/bulk-operations/:logId/undo'), ({ params }) => {
+          undoneLogId = params.logId as string
+          return HttpResponse.json({
+            success: true,
+            data: { succeeded: ['t-1'], failed: [], undoToken: null },
+          })
+        }),
+      )
+      const user = userEvent.setup()
+      renderBoard([makeTask({ id: 't-1', title: 'First' })])
+
+      await user.click(screen.getByLabelText('Select First'))
+      await user.click(screen.getByRole('button', { name: 'Delete' }))
+      const confirmButtons = screen.getAllByRole('button', { name: 'Delete' })
+      await user.click(confirmButtons[confirmButtons.length - 1]!)
+
+      const undoButton = await screen.findByRole('button', { name: 'Undo' })
+      await user.click(undoButton)
+
+      await waitFor(() => expect(undoneLogId).toBe('log-1'))
+      expect(await screen.findByText('Undo: 1 task(s) reverted')).toBeInTheDocument()
     })
   })
 })

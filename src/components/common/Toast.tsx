@@ -49,6 +49,18 @@ export function ToastViewport() {
             <div className="flex-1 space-y-1">
               <p className="text-sm font-medium">{toast.title}</p>
               {toast.description && <p className="text-sm opacity-90">{toast.description}</p>}
+              {toast.action && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    toast.action?.onClick()
+                    dismissToast(toast.id)
+                  }}
+                  className="text-sm font-semibold underline underline-offset-2 hover:opacity-80"
+                >
+                  {toast.action.label}
+                </button>
+              )}
             </div>
             <button
               type="button"

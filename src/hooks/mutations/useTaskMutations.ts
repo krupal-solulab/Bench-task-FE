@@ -3,12 +3,17 @@ import { queryKeys } from '@/lib/constants'
 import { tasksService } from '@/services/tasks.service'
 import type {
   BulkAssignPayload,
+  BulkCustomFieldPayload,
   BulkDeletePayload,
+  BulkFixVersionPayload,
+  BulkMoveProjectPayload,
   BulkMoveSprintPayload,
   BulkPriorityPayload,
   BulkRelabelPayload,
   BulkStatusPayload,
   CreateTaskPayload,
+  MoveTaskProjectPayload,
+  PreviewBulkStatusPayload,
   Task,
   UpdateTaskAssigneePayload,
   UpdateTaskPayload,
@@ -270,6 +275,70 @@ export function useBulkDeleteTasks() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: BulkDeletePayload) => tasksService.bulkDelete(payload),
+    onSuccess: () => invalidateAfterTaskChange(queryClient),
+  })
+}
+
+/** Module 5 gap-closure: bulk fix-version/custom-field/move-project edits, same broad
+ * invalidation shape as the bulk hooks above - a bulk call can touch tasks across multiple
+ * projects at once, so there's no single task/project to target precisely. */
+export function useBulkFixVersion() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: BulkFixVersionPayload) => tasksService.bulkFixVersion(payload),
+    onSuccess: () => invalidateAfterTaskChange(queryClient),
+  })
+}
+
+export function useBulkCustomField() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: BulkCustomFieldPayload) => tasksService.bulkCustomField(payload),
+    onSuccess: () => invalidateAfterTaskChange(queryClient),
+  })
+}
+
+export function useBulkMoveProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: BulkMoveProjectPayload) => tasksService.bulkMoveProject(payload),
+    onSuccess: () => invalidateAfterTaskChange(queryClient),
+  })
+}
+
+/** Same "id passed per-call" shape as useUpdateAnyTask/useUpdateAnyTaskAssignee - moving a task
+ * changes its project, so both the source and destination project's cached data need
+ * invalidating, not just the task's own detail cache. */
+export function useMoveTaskProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...payload }: { id: string } & MoveTaskProjectPayload) =>
+      tasksService.moveProject(id, payload),
+    onSuccess: (task, variables) => {
+      queryClient.setQueryData(queryKeys.tasks.detail(task.id), task)
+      invalidateAfterTaskChange(queryClient, task)
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.projects.detail(variables.targetProjectId),
+      })
+    },
+  })
+}
+
+/** Read-only dry-run - deliberately has no onSuccess invalidation, since previewBulkStatus never
+ * mutates anything server-side. */
+export function usePreviewBulkStatus() {
+  return useMutation({
+    mutationFn: (payload: PreviewBulkStatusPayload) => tasksService.previewBulkStatus(payload),
+  })
+}
+
+/** Module 5 gap-closure: replays a bulk-* action's captured changes within its short undo
+ * window - same broad invalidation as the bulk hooks above, since an undo can touch the same
+ * wide task/project surface the original bulk action did. */
+export function useUndoBulkOperation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (logId: string) => tasksService.undoBulkOperation(logId),
     onSuccess: () => invalidateAfterTaskChange(queryClient),
   })
 }

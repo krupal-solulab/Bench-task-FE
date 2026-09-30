@@ -494,6 +494,7 @@ export function ProjectDetailPage() {
             assignableSprints={(sprintsData?.data ?? []).filter(
               (s) => s.status === 'Planned' || s.status === 'Active',
             )}
+            projectId={id ?? ''}
           />
         </TabsContent>
 
