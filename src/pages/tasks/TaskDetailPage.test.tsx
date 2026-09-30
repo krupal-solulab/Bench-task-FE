@@ -122,6 +122,24 @@ describe('TaskDetailPage', () => {
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
   })
 
+  it('shows Move to project for an Admin (Module 5 gap-closure)', async () => {
+    renderTaskDetail(makeAuthValue({ user: ADMIN, hasRole: (...roles) => roles.includes('Admin') }))
+
+    await waitFor(() => expect(screen.getByText('Design homepage hero')).toBeInTheDocument())
+    expect(
+      await pageHeaderActions().findByRole('button', { name: 'Move to project' }),
+    ).toBeInTheDocument()
+  })
+
+  it('hides Move to project for a Developer, even the assignee (Module 5 gap-closure)', async () => {
+    renderTaskDetail(makeAuthValue({ user: ASSIGNEE, hasRole: () => false }))
+
+    await waitFor(() => expect(screen.getByText('Design homepage hero')).toBeInTheDocument())
+    expect(
+      pageHeaderActions().queryByRole('button', { name: 'Move to project' }),
+    ).not.toBeInTheDocument()
+  })
+
   it("shows the assignee's name for a Developer viewing their own assigned task", async () => {
     renderTaskDetail(makeAuthValue({ user: ASSIGNEE, hasRole: () => false }))
 
