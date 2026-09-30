@@ -91,6 +91,7 @@ describe('RoadmapPage', () => {
           capacityPoints: 20,
           committedPoints: 8,
           isOverCommitted: false,
+          teamCapacityPoints: null,
         },
         {
           projectId: 'p-2',
@@ -98,6 +99,7 @@ describe('RoadmapPage', () => {
           capacityPoints: null,
           committedPoints: 0,
           isOverCommitted: false,
+          teamCapacityPoints: null,
         },
       ],
     })
@@ -136,6 +138,7 @@ describe('RoadmapPage', () => {
           capacityPoints: 5,
           committedPoints: 12,
           isOverCommitted: true,
+          teamCapacityPoints: null,
         },
       ],
     })

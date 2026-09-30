@@ -43,9 +43,40 @@ describe('TeamForm', () => {
     )
   })
 
+  it('submits capacityPoints as a number when entered (Module 6 gap-closure)', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
+    renderForm({ onSubmit })
+
+    await user.type(screen.getByLabelText('Name', { exact: false }), 'Platform Squad')
+    await user.type(screen.getByLabelText('Capacity (story points)', { exact: false }), '20')
+    await user.click(screen.getByRole('button', { name: 'Create team' }))
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ capacityPoints: 20 }))
+  })
+
+  it('omits capacityPoints entirely when left blank (Module 6 gap-closure)', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
+    renderForm({ onSubmit })
+
+    await user.type(screen.getByLabelText('Name', { exact: false }), 'Platform Squad')
+    await user.click(screen.getByRole('button', { name: 'Create team' }))
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.not.objectContaining({ capacityPoints: expect.anything() }),
+    )
+  })
+
   it('pre-fills name and description from initialValues when editing', () => {
     renderForm({
-      initialValues: { name: 'QA Guild', description: 'Owns QA', leadId: null, memberIds: [] },
+      initialValues: {
+        name: 'QA Guild',
+        description: 'Owns QA',
+        leadId: null,
+        memberIds: [],
+        capacityPoints: null,
+      },
       submitLabel: 'Save changes',
     })
 

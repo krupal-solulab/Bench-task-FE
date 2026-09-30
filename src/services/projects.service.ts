@@ -7,6 +7,7 @@ import type {
   CustomFieldDefinition,
   CustomFieldOverrideByType,
   CycleTimeReport,
+  DefaultApproversPayload,
   MemberPermissions,
   Project,
   ProjectActivityEntry,
@@ -76,6 +77,12 @@ export const projectsService = {
 
   updateComponents: (id: string, names: string[]) =>
     apiPut<Project>(`/projects/${id}/components`, { names }),
+
+  updateComponentLead: (id: string, name: string, leadUserId: string | null) =>
+    apiPatch<Project>(`/projects/${id}/components/lead`, { name, leadUserId }),
+
+  updateDefaultApprovers: (id: string, grant: DefaultApproversPayload) =>
+    apiPatch<Project>(`/projects/${id}/default-approvers`, grant),
 
   updateCustomFields: (id: string, fields: Array<Partial<CustomFieldDefinition>>) =>
     apiPut<Project>(`/projects/${id}/custom-fields`, { fields }),

@@ -6,6 +6,7 @@ import type {
   CreateProjectPayload,
   CustomFieldDefinition,
   CustomFieldOverrideByType,
+  DefaultApproversPayload,
   MemberPermissions,
   ProjectStatus,
   SlaPolicyEntry,
@@ -134,6 +135,34 @@ export function useUpdateComponents(id: string) {
     onSuccess: (project) => {
       queryClient.setQueryData(queryKeys.projects.detail(id), project)
       invalidateAfterFieldsChange(queryClient, id)
+    },
+  })
+}
+
+/** Module 6 gap-closure: assigns/clears one component's lead - kept separate from
+ * useUpdateComponents above, matching the backend's own separate PATCH route. */
+export function useUpdateComponentLead(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, leadUserId }: { name: string; leadUserId: string | null }) =>
+      projectsService.updateComponentLead(id, name, leadUserId),
+    onSuccess: (project) => {
+      queryClient.setQueryData(queryKeys.projects.detail(id), project)
+      invalidateAfterFieldsChange(queryClient, id)
+    },
+  })
+}
+
+/** Module 6 gap-closure: sets/replaces the project's default-approver grant for Approval
+ * Workflows. */
+export function useUpdateDefaultApprovers(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (grant: DefaultApproversPayload) =>
+      projectsService.updateDefaultApprovers(id, grant),
+    onSuccess: (project) => {
+      queryClient.setQueryData(queryKeys.projects.detail(id), project)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all })
     },
   })
 }

@@ -88,6 +88,10 @@ export interface RoadmapProjectCapacity {
   capacityPoints: number | null
   committedPoints: number
   isOverCommitted: boolean
+  // Module 6 gap-closure: sum of capacityPoints across this project's assigned team(s) - a
+  // separate, additive cross-check shown alongside the sprint-level figures above, null when the
+  // project has no assigned team (or none has set a capacityPoints).
+  teamCapacityPoints: number | null
 }
 
 export interface RoadmapData {

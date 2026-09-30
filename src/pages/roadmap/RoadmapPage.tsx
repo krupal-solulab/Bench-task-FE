@@ -315,6 +315,14 @@ export function RoadmapPage() {
                         <span className="text-muted-foreground">No active sprint</span>
                       )}
                       {c.isOverCommitted && <AlertTriangle className="h-3 w-3 shrink-0" />}
+                      {c.teamCapacityPoints != null && (
+                        <span
+                          className="text-muted-foreground"
+                          title="Sum of capacityPoints across this project's assigned team(s)"
+                        >
+                          · team: {c.teamCapacityPoints}
+                        </span>
+                      )}
                     </span>
                   ))}
                 </div>

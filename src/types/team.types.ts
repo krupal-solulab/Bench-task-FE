@@ -9,6 +9,9 @@ export interface Team {
   // a full User once populated, not a bare id string.
   leadId: User | null
   memberIds: User[]
+  // Module 6 gap-closure: the team's typical per-sprint story-point capacity - connects to the
+  // cross-project Roadmap's capacity indicator (see RoadmapProjectCapacity.teamCapacityPoints).
+  capacityPoints: number | null
   createdAt: string
   updatedAt: string
 }
@@ -18,6 +21,7 @@ export interface CreateTeamPayload {
   description?: string
   leadId?: string | null
   memberIds?: string[]
+  capacityPoints?: number
 }
 
 export type UpdateTeamPayload = Partial<CreateTeamPayload>

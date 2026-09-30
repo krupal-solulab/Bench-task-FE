@@ -11,7 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useUpdateComponents, useUpdateCustomFields } from '@/hooks/mutations/useProjectMutations'
+import { UserSelect } from '@/components/common/UserSelect'
+import {
+  useUpdateComponentLead,
+  useUpdateComponents,
+  useUpdateCustomFields,
+} from '@/hooks/mutations/useProjectMutations'
 import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
 import { CUSTOM_FIELD_TYPES } from '@/types/project.types'
@@ -49,8 +54,11 @@ export function FieldsSettingsForm({ projectId, project, canManage }: FieldsSett
   const [fields, setFields] = useState<EditableCustomField[]>(project.customFields)
 
   const updateComponents = useUpdateComponents(projectId)
+  const updateComponentLead = useUpdateComponentLead(projectId)
   const updateCustomFields = useUpdateCustomFields(projectId)
   const { showToast } = useToast()
+  const memberIds = project.members.map((m) => m.user.id)
+  const leadByComponent = new Map((project.componentLeads ?? []).map((c) => [c.name, c.leadUserId]))
 
   const validComponentNames = components.map((c) => c.trim()).filter(Boolean)
   const componentsHaveDuplicates = new Set(validComponentNames).size !== validComponentNames.length
@@ -92,6 +100,22 @@ export function FieldsSettingsForm({ projectId, project, canManage }: FieldsSett
     }
   }
 
+  /** Module 6 gap-closure: assigns/clears one SAVED component's lead - independent of the
+   * components draft/Save-button flow above, since a lead only makes sense for a name that's
+   * actually persisted (see updateComponentLead's own separate-endpoint doc comment). */
+  async function handleSetComponentLead(name: string, leadUserId: string | null) {
+    try {
+      await updateComponentLead.mutateAsync({ name, leadUserId })
+      showToast({ title: 'Component lead updated', variant: 'success' })
+    } catch (err) {
+      showToast({
+        title: 'Could not update component lead',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
   function updateField(index: number, patch: Partial<EditableCustomField>) {
     setFields(fields.map((f, i) => (i === index ? { ...f, ...patch } : f)))
   }
@@ -119,6 +143,7 @@ export function FieldsSettingsForm({ projectId, project, canManage }: FieldsSett
   }
 
   if (!canManage) {
+    const nameByUserId = new Map(project.members.map((m) => [m.user.id, m.user.name]))
     return (
       <div className="space-y-6">
         <div className="space-y-2">
@@ -127,9 +152,20 @@ export function FieldsSettingsForm({ projectId, project, canManage }: FieldsSett
             <p className="text-sm text-muted-foreground">No components defined.</p>
           ) : (
             <ul className="space-y-1 text-sm text-muted-foreground">
-              {components.map((c) => (
-                <li key={c}>{c}</li>
-              ))}
+              {components.map((c) => {
+                const leadUserId = leadByComponent.get(c)
+                return (
+                  <li key={c}>
+                    {c}
+                    {leadUserId && (
+                      <span className="text-xs">
+                        {' '}
+                        (Lead: {nameByUserId.get(leadUserId) ?? '—'})
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>
@@ -208,6 +244,31 @@ export function FieldsSettingsForm({ projectId, project, canManage }: FieldsSett
           </Button>
         </div>
       </div>
+
+      {project.components.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="font-medium">Component leads</h3>
+          <p className="text-sm text-muted-foreground">
+            Who owns each saved component - independent of the draft above.
+          </p>
+          <div className="space-y-2">
+            {project.components.map((name) => (
+              <div key={name} className="flex items-center gap-2">
+                <span className="w-48 truncate text-sm">{name}</span>
+                <div className="w-56">
+                  <UserSelect
+                    value={leadByComponent.get(name) ?? null}
+                    onChange={(userId) => void handleSetComponentLead(name, userId)}
+                    memberIds={memberIds}
+                    allowUnassigned
+                    placeholder="No lead"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">

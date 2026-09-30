@@ -29,13 +29,22 @@ import {
   useEffectiveCustomFields,
   useProject,
   useProjectWorkflow,
+  useProjects,
 } from '@/hooks/queries/useProjects'
 import type { CustomFieldDefinition } from '@/types/project.types'
 import {
   useDeleteTask,
+  useMoveTaskProject,
   useUpdateTask,
   useUpdateTaskAssignee,
 } from '@/hooks/mutations/useTaskMutations'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useSocket } from '@/hooks/useSocket'
@@ -66,12 +75,14 @@ export function TaskDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { showToast } = useToast()
-  const { user } = useAuth()
+  const { user, hasRole } = useAuth()
   const { can, canEditTaskField, canCreateTaskInProject } = usePermissions()
   const { joinProject, leaveProject } = useSocket()
 
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [moveProjectOpen, setMoveProjectOpen] = useState(false)
+  const [moveTargetProjectId, setMoveTargetProjectId] = useState('')
 
   const { data: task, isLoading, isError, error, refetch } = useTask(id)
 
@@ -96,6 +107,8 @@ export function TaskDetailPage() {
   const updateTask = useUpdateTask(id ?? '')
   const updateAssignee = useUpdateTaskAssignee(id ?? '')
   const deleteTask = useDeleteTask()
+  const moveProject = useMoveTaskProject()
+  const { data: projectsData } = useProjects({ limit: 100, sortBy: 'name', sortOrder: 'asc' })
 
   const taskProjectId = task?.project.id
   useEffect(() => {
@@ -124,6 +137,12 @@ export function TaskDetailPage() {
   const canEditStatus = canEditTaskField('status', isAssignee, myGrant)
   const canReassign = can('task:editAny')
   const canCreateSubtask = canCreateTaskInProject(myGrant)
+  // Module 5 gap-closure: moving a task between projects needs the stricter assertUserCanManage
+  // (Admin-in-org, or the Manager who owns the project) - the same check ProjectDetailPage's own
+  // canManage uses, deliberately NOT the grant-extensible check canEditOther/canDeleteTask use.
+  const canManageProject =
+    !!project && (hasRole('Admin') || (hasRole('Manager') && project.owner.id === user?.id))
+  const otherProjects = (projectsData?.data ?? []).filter((p) => p.id !== task.project.id)
 
   async function handleUpdate(values: TaskFormValues) {
     if (!id) return
@@ -181,6 +200,22 @@ export function TaskDetailPage() {
     }
   }
 
+  async function handleMoveProject() {
+    if (!id || !moveTargetProjectId) return
+    try {
+      await moveProject.mutateAsync({ id, targetProjectId: moveTargetProjectId })
+      showToast({ title: 'Task moved to the new project', variant: 'success' })
+      setMoveProjectOpen(false)
+      setMoveTargetProjectId('')
+    } catch (err) {
+      showToast({
+        title: 'Could not move task',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -194,6 +229,11 @@ export function TaskDetailPage() {
             {canEditOther && (
               <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
                 Edit
+              </Button>
+            )}
+            {canManageProject && otherProjects.length > 0 && (
+              <Button variant="outline" size="sm" onClick={() => setMoveProjectOpen(true)}>
+                Move to project
               </Button>
             )}
             {canDeleteTask && (
@@ -454,6 +494,45 @@ export function TaskDetailPage() {
         confirmLabel="Delete"
         onConfirm={handleDelete}
       />
+
+      <Modal
+        open={moveProjectOpen}
+        onOpenChange={setMoveProjectOpen}
+        title="Move to project"
+        description="The task's sprint, components, fix/affects versions, custom fields, and security level will be cleared, and its status reset to the destination workflow's initial status - none of those have guaranteed meaning in the destination project."
+        size="sm"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setMoveProjectOpen(false)}
+              disabled={moveProject.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              loading={moveProject.isPending}
+              disabled={!moveTargetProjectId}
+              onClick={() => void handleMoveProject()}
+            >
+              Move
+            </Button>
+          </>
+        }
+      >
+        <Select value={moveTargetProjectId} onValueChange={setMoveTargetProjectId}>
+          <SelectTrigger aria-label="Target project">
+            <SelectValue placeholder="Select a project…" />
+          </SelectTrigger>
+          <SelectContent>
+            {otherProjects.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Modal>
     </div>
   )
 }

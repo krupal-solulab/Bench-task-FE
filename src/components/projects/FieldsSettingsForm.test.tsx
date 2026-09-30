@@ -41,6 +41,38 @@ describe('FieldsSettingsForm', () => {
     expect(screen.getByText('Frontend')).toBeInTheDocument()
   })
 
+  describe('Module 6 gap-closure: component leads', () => {
+    // UserSelect wraps a Radix Select - opening it hangs jsdom (documented codebase-wide
+    // limitation, see BacklogBoard.test.tsx's own note), so these only check the trigger renders,
+    // never click into it.
+    it('renders a lead picker for each saved component when canManage is true', async () => {
+      renderForm({ ...BASE_PROJECT, components: ['Frontend', 'API'] })
+
+      expect(screen.getByText('Component leads')).toBeInTheDocument()
+      expect(await screen.findAllByRole('combobox')).toHaveLength(2)
+    })
+
+    it('does not render the Component leads section when there are no components', () => {
+      renderForm({ ...BASE_PROJECT, components: [] })
+      expect(screen.queryByText('Component leads')).not.toBeInTheDocument()
+    })
+
+    it("shows the lead's name next to the component in the read-only view", () => {
+      renderForm(
+        {
+          ...BASE_PROJECT,
+          components: ['Frontend'],
+          componentLeads: [
+            { name: 'Frontend', leadUserId: BASE_PROJECT.members[0]?.user.id ?? '' },
+          ],
+        },
+        false,
+      )
+
+      expect(screen.getByText(/Lead:/)).toBeInTheDocument()
+    })
+  })
+
   it('adds a component row via "Add component" and saves it', async () => {
     let sentBody: Record<string, unknown> | null = null
     server.use(
