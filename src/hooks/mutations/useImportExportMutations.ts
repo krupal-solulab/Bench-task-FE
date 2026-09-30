@@ -26,7 +26,21 @@ export function useImportTasksCsv(projectId: string) {
 }
 
 export function useBackupProject(projectId: string) {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => importExportService.backupProject(projectId),
+    // Module 5 gap-closure: a manual backup also persists a snapshot server-side, so the listed
+    // history should reflect it immediately rather than waiting for the list's own staleness.
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.backups(projectId) })
+    },
+  })
+}
+
+/** Module 5 gap-closure: fetches one previously-listed backup's full content on demand, so it can
+ * be handed to the same client-side download helper the manual "Download backup" button uses. */
+export function useDownloadBackupSnapshot(projectId: string) {
+  return useMutation({
+    mutationFn: (backupId: string) => importExportService.getBackup(projectId, backupId),
   })
 }

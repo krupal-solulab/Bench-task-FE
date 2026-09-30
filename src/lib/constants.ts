@@ -105,6 +105,7 @@ export const queryKeys = {
       ['projects', 'detail', id, 'reports', 'cycle-time', days] as const,
     suggestedTaskFields: (id: string, issueType: string | undefined) =>
       ['projects', 'detail', id, 'suggested-fields', issueType ?? null] as const,
+    backups: (id: string) => ['projects', 'detail', id, 'backups'] as const,
   },
   workflowTemplates: {
     all: ['workflow-templates'] as const,

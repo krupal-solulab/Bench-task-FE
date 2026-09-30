@@ -111,4 +111,43 @@ describe('ImportExportPanel (Module 5 - Bulk Operations & Import/Export)', () =>
 
     await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(1))
   })
+
+  describe('Module 5 gap-closure: scheduled backups', () => {
+    it('does not fetch or show the backups list when canManage is false', () => {
+      renderPanel(false)
+      expect(screen.queryByText('Scheduled backups')).not.toBeInTheDocument()
+    })
+
+    it('shows an empty state when no backups have been taken yet', async () => {
+      renderPanel()
+      expect(await screen.findByText('Scheduled backups')).toBeInTheDocument()
+      expect(await screen.findByText('No backups yet.')).toBeInTheDocument()
+    })
+
+    it('lists backups and downloads a selected one as JSON', async () => {
+      server.use(
+        http.get(url(`/projects/${PROJECT_ID}/backups`), () =>
+          HttpResponse.json({
+            success: true,
+            data: [{ id: 'snap-1', createdAt: '2026-01-05T00:00:00.000Z' }],
+          }),
+        ),
+        http.get(url(`/projects/${PROJECT_ID}/backups/snap-1`), () =>
+          HttpResponse.json({
+            success: true,
+            data: {
+              filename: 'proj-backup-2026-01-05.json',
+              backup: { project: { name: 'Proj' }, tasks: [] },
+            },
+          }),
+        ),
+      )
+      const user = userEvent.setup()
+      renderPanel()
+
+      await user.click(await screen.findByRole('button', { name: 'Download' }))
+
+      await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(1))
+    })
+  })
 })

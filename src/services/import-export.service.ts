@@ -4,6 +4,7 @@ import type {
   ImportTasksPayload,
   ImportTasksResult,
   ProjectBackupResult,
+  ProjectBackupSnapshotSummary,
 } from '@/types/import-export.types'
 
 export const importExportService = {
@@ -15,4 +16,10 @@ export const importExportService = {
 
   backupProject: (projectId: string) =>
     apiGet<ProjectBackupResult>(`/projects/${projectId}/backup`),
+
+  listBackups: (projectId: string) =>
+    apiGet<ProjectBackupSnapshotSummary[]>(`/projects/${projectId}/backups`),
+
+  getBackup: (projectId: string, backupId: string) =>
+    apiGet<ProjectBackupResult>(`/projects/${projectId}/backups/${backupId}`),
 }
