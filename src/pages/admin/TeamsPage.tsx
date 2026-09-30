@@ -124,6 +124,7 @@ export function TeamsPage() {
             )}
             <p className="text-xs text-muted-foreground">
               {team.memberIds.length} member{team.memberIds.length === 1 ? '' : 's'}
+              {team.capacityPoints != null && ` · Capacity: ${team.capacityPoints} pts`}
             </p>
           </div>
         ))}
@@ -150,6 +151,7 @@ export function TeamsPage() {
               description: editing.description,
               leadId: editing.leadId?.id ?? null,
               memberIds: editing.memberIds.map((u) => u.id),
+              capacityPoints: editing.capacityPoints,
             }}
             onSubmit={handleUpdate}
             onCancel={() => setEditing(null)}

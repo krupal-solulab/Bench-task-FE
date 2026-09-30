@@ -10,7 +10,13 @@ import { useAssignableUsers } from '@/hooks/queries/useUsers'
 import type { CreateTeamPayload } from '@/types/team.types'
 
 export interface TeamFormProps {
-  initialValues?: { name: string; description: string; leadId: string | null; memberIds: string[] }
+  initialValues?: {
+    name: string
+    description: string
+    leadId: string | null
+    memberIds: string[]
+    capacityPoints: number | null
+  }
   onSubmit: (values: CreateTeamPayload) => Promise<void>
   onCancel: () => void
   submitLabel: string
@@ -21,6 +27,9 @@ export function TeamForm({ initialValues, onSubmit, onCancel, submitLabel }: Tea
   const [description, setDescription] = useState(initialValues?.description ?? '')
   const [leadId, setLeadId] = useState<string | null>(initialValues?.leadId ?? null)
   const [memberIds, setMemberIds] = useState<string[]>(initialValues?.memberIds ?? [])
+  const [capacityPoints, setCapacityPoints] = useState(
+    initialValues?.capacityPoints != null ? String(initialValues.capacityPoints) : '',
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { data: users } = useAssignableUsers()
 
@@ -39,7 +48,13 @@ export function TeamForm({ initialValues, onSubmit, onCancel, submitLabel }: Tea
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      await onSubmit({ name: name.trim(), description: description.trim(), leadId, memberIds })
+      await onSubmit({
+        name: name.trim(),
+        description: description.trim(),
+        leadId,
+        memberIds,
+        ...(capacityPoints.trim() !== '' ? { capacityPoints: Number(capacityPoints) } : {}),
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -72,6 +87,20 @@ export function TeamForm({ initialValues, onSubmit, onCancel, submitLabel }: Tea
           onChange={setLeadId}
           allowUnassigned
           placeholder="No lead"
+        />
+      </FormField>
+
+      <FormField
+        label="Capacity (story points)"
+        htmlFor="team-capacity"
+        hint="Optional - this team's typical per-sprint capacity, shown on the cross-project Roadmap."
+      >
+        <Input
+          id="team-capacity"
+          type="number"
+          min={0}
+          value={capacityPoints}
+          onChange={(e) => setCapacityPoints(e.target.value)}
         />
       </FormField>
 

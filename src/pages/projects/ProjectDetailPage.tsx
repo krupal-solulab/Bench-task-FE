@@ -41,6 +41,7 @@ import { SprintPlanningSuggestion } from '@/components/sprints/SprintPlanningSug
 import { EpicsList } from '@/components/tasks/EpicsList'
 import { EpicRoadmapTimeline } from '@/components/projects/EpicRoadmapTimeline'
 import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm'
+import { DefaultApproversForm } from '@/components/projects/DefaultApproversForm'
 import { WorkflowCanvas } from '@/components/projects/WorkflowCanvas'
 import { FieldsSettingsForm } from '@/components/projects/FieldsSettingsForm'
 import { CustomFieldOverridesForm } from '@/components/projects/CustomFieldOverridesForm'
@@ -762,6 +763,14 @@ export function ProjectDetailPage() {
                   </Button>
                 </div>
               </div>
+
+              {id && (
+                <DefaultApproversForm
+                  projectId={id}
+                  defaultApprovers={project?.defaultApprovers ?? null}
+                  canManage={canManage}
+                />
+              )}
 
               {workflowView === 'list' ? (
                 <WorkflowSettingsForm

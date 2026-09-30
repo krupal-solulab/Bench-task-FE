@@ -1,5 +1,5 @@
 import type { SortOrder } from './api.types'
-import type { User } from './user.types'
+import type { OrgRole, User } from './user.types'
 import type { IssueTypeDefinition } from './issue-type.types'
 import type { NotificationSchemeRule } from './notification-scheme.types'
 import type { TaskPriority } from './task.types'
@@ -142,6 +142,9 @@ export interface Project {
   taskCount: number
   // Project-defined pick-list (e.g. "Frontend", "API") - names are the identity.
   components: string[]
+  // Module 6 gap-closure - optional for the same "existing fixtures predate this field" reason as
+  // roleAssignments/securitySchemeId below; absent/empty means no component has an assigned lead.
+  componentLeads?: ComponentLead[]
   customFields: CustomFieldDefinition[]
   automationRules: AutomationRule[]
   issueTypes: IssueTypeDefinition[]
@@ -155,6 +158,10 @@ export interface Project {
   // field don't all need updating; absent means "no Project Roles assigned yet" / "no security
   // scheme assigned", matching the backend's own defaults.
   roleAssignments?: ProjectRoleAssignment[]
+  // Module 6 gap-closure - a project-wide fallback approver pool for Approval Workflows,
+  // additive on top of (never instead of) each transition's own approver fields. Optional/null
+  // for the same "existing fixtures predate this field" reason as the rest of this block.
+  defaultApprovers?: DefaultApproversPayload | null
   securitySchemeId?: string | null
   // Module 12 - optional for the same reason as securitySchemeId above; absent/null means no
   // field is view/edit-restricted beyond what Security/Permission Schemes already cover.
@@ -167,6 +174,22 @@ export interface ProjectRoleAssignment {
   projectRoleId: string
   userIds: string[]
   teamIds: string[]
+}
+
+// Module 6 gap-closure: which member (if any) leads a component, keyed by the component's own
+// name (the same identity `Project.components` already uses).
+export interface ComponentLead {
+  name: string
+  leadUserId: string | null
+}
+
+// Same 4-grantee-kind shape as WorkflowTransition's approver* fields (see workflow.types.ts) -
+// reused here for the project-wide default-approver grant.
+export interface DefaultApproversPayload {
+  allowedRoles: OrgRole[]
+  allowedUserIds: string[]
+  allowedTeamIds: string[]
+  allowedProjectRoleIds: string[]
 }
 
 export interface ProjectListQuery {
