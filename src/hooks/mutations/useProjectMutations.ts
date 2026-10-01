@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/constants'
 import { projectsService } from '@/services/projects.service'
+import { customFieldLibraryService } from '@/services/custom-field-library.service'
 import type {
   AutomationRule,
   CreateProjectPayload,
@@ -309,6 +310,34 @@ export function useSetMemberPermissions(id: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(id) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.projects.members(id) })
+    },
+  })
+}
+
+/** Module 8 gap-closure - add an org library field to this project's custom fields. */
+export function useAdoptLibraryField(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ entryId, required }: { entryId: string; required: boolean }) =>
+      customFieldLibraryService.adopt(id, entryId, required),
+    onSuccess: (project) => {
+      queryClient.setQueryData(queryKeys.projects.detail(id), project)
+      invalidateAfterFieldsChange(queryClient, id)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.customFieldLibrary.all })
+    },
+  })
+}
+
+/** Module 8 gap-closure - archive (hide + read-only) / restore a project. */
+export function useSetProjectArchived(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (archived: boolean) =>
+      archived ? projectsService.archive(id) : projectsService.unarchive(id),
+    onSuccess: (project) => {
+      queryClient.setQueryData(queryKeys.projects.detail(id), project)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all })
     },
   })
 }

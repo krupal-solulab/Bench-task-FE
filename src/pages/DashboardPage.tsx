@@ -16,6 +16,10 @@ import { ActiveSprintsHealthList } from '@/components/dashboard/ActiveSprintsHea
 import { MyOpenIssuesList } from '@/components/dashboard/MyOpenIssuesList'
 import { ResolutionTimeTrendChart } from '@/components/dashboard/ResolutionTimeTrendChart'
 import { DashboardCustomizeForm } from '@/components/dashboard/DashboardCustomizeForm'
+import { ProjectReportGadget } from '@/components/dashboard/ProjectReportGadget'
+import { ReleaseForecastCard } from '@/components/dashboard/ReleaseForecastCard'
+import { CfdChart } from '@/components/projects/CfdChart'
+import { CycleTimeChart } from '@/components/projects/CycleTimeChart'
 import { StaggerContainer, StaggerItem } from '@/components/common/Stagger'
 import {
   Select,
@@ -28,7 +32,11 @@ import { useDashboardPreferences, useDashboardSummary } from '@/hooks/queries/us
 import { useProjects } from '@/hooks/queries/useProjects'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
-import { DASHBOARD_WIDGET_IDS, type DashboardWidgetId } from '@/types/dashboard.types'
+import {
+  DASHBOARD_WIDGET_IDS,
+  OPT_IN_WIDGET_IDS,
+  type DashboardWidgetId,
+} from '@/types/dashboard.types'
 
 const ALL_PROJECTS = '__all__'
 
@@ -50,6 +58,9 @@ const WIDGET_LABELS: Record<DashboardWidgetId, string> = {
   activeSprintsHealth: 'Active Sprints Health',
   myOpenIssues: 'My Open Issues',
   resolutionTimeTrend: 'Resolution Time Trend',
+  cumulativeFlow: 'Cumulative Flow Diagram',
+  controlChart: 'Control Chart',
+  releaseForecast: 'Release Forecast',
 }
 
 function widgetRegistry(scope: { projectId?: string }): Record<DashboardWidgetId, ReactNode> {
@@ -65,6 +76,21 @@ function widgetRegistry(scope: { projectId?: string }): Record<DashboardWidgetId
     activeSprintsHealth: <ActiveSprintsHealthList scope={scope} />,
     myOpenIssues: <MyOpenIssuesList scope={scope} />,
     resolutionTimeTrend: <ResolutionTimeTrendChart scope={scope} />,
+    cumulativeFlow: (
+      <ProjectReportGadget title="Cumulative Flow Diagram" projectId={scope.projectId}>
+        {(id) => <CfdChart projectId={id} />}
+      </ProjectReportGadget>
+    ),
+    controlChart: (
+      <ProjectReportGadget title="Control Chart" projectId={scope.projectId}>
+        {(id) => <CycleTimeChart projectId={id} />}
+      </ProjectReportGadget>
+    ),
+    releaseForecast: (
+      <ProjectReportGadget title="Release Forecast" projectId={scope.projectId}>
+        {(id) => <ReleaseForecastCard projectId={id} />}
+      </ProjectReportGadget>
+    ),
   }
 }
 
@@ -93,7 +119,11 @@ export function DashboardPage() {
     ...storedOrder,
     ...availableWidgetIds.filter((id) => !storedOrder.includes(id)),
   ]
-  const hiddenSet = new Set(preferences?.hiddenWidgets ?? [])
+  // Opt-in gadgets (Module 9) count as hidden until the user has explicitly turned them on.
+  const hiddenSet = new Set<string>([
+    ...(preferences?.hiddenWidgets ?? []),
+    ...OPT_IN_WIDGET_IDS.filter((id) => !storedOrder.includes(id)),
+  ])
   const visibleOrder = effectiveOrder.filter((id) => !hiddenSet.has(id))
   const registry = widgetRegistry(scope)
 

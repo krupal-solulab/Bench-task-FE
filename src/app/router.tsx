@@ -26,6 +26,9 @@ import { LinkTypesPage } from '@/pages/admin/LinkTypesPage'
 import { BillingPage } from '@/pages/admin/BillingPage'
 import { OrganizationSettingsPage } from '@/pages/admin/OrganizationSettingsPage'
 import { AuditLogPage } from '@/pages/admin/AuditLogPage'
+import { ProjectCategoriesPage } from '@/pages/admin/ProjectCategoriesPage'
+import { SystemOverviewPage } from '@/pages/admin/SystemOverviewPage'
+import { CustomFieldLibraryPage } from '@/pages/admin/CustomFieldLibraryPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { NotificationsPage } from '@/pages/NotificationsPage'
 import { SearchResultsPage } from '@/pages/SearchResultsPage'
@@ -76,6 +79,9 @@ export function AppRouter() {
               <Route path="/admin/billing" element={<BillingPage />} />
               <Route path="/admin/org-settings" element={<OrganizationSettingsPage />} />
               <Route path="/admin/audit-log" element={<AuditLogPage />} />
+              <Route path="/admin/project-categories" element={<ProjectCategoriesPage />} />
+              <Route path="/admin/system" element={<SystemOverviewPage />} />
+              <Route path="/admin/field-library" element={<CustomFieldLibraryPage />} />
             </Route>
 
             <Route element={<RoleRoute roles={['Admin', 'Manager']} />}>

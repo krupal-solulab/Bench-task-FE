@@ -15,7 +15,19 @@ export function ProjectCard({ project }: { project: Project }) {
         <h3 className="font-medium leading-tight transition-colors group-hover:text-primary">
           {project.name}
         </h3>
-        <StatusBadge status={project.status} kind="project" />
+        <div className="flex shrink-0 items-center gap-1.5">
+          {project.archivedAt && (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              Archived
+            </span>
+          )}
+          {project.isTemplate && (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              Template
+            </span>
+          )}
+          <StatusBadge status={project.status} kind="project" />
+        </div>
       </div>
 
       {project.description && (

@@ -42,6 +42,26 @@ export interface CreateReleasePayload {
 
 export type UpdateReleasePayload = Partial<CreateReleasePayload>
 
+/** Module 9 gap-closure - a linear projection from recent throughput (see release-eta.util.ts). */
+export interface ReleaseEta {
+  remainingIssues: number
+  throughputPerWeek: number | null
+  basis: 'release' | 'project' | null
+  projectedDate: string | null
+  onTrack: boolean | null
+  daysLate: number | null
+}
+
+export interface ReleaseForecastRow {
+  releaseId: string
+  name: string
+  releaseDate: string | null
+  totalIssues: number
+  doneIssues: number
+  progress: number
+  eta: ReleaseEta
+}
+
 export interface ReleaseProgress {
   releaseId: string
   totalIssues: number
@@ -54,6 +74,8 @@ export interface ReleaseProgress {
     status: string
     statusCategory: string
   }>
+  /** Module 9 gap-closure - optional so fixtures predating it stay valid. */
+  eta?: ReleaseEta
 }
 
 export interface ReleaseCompareIssue {

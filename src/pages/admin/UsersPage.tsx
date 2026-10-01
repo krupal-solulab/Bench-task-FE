@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/common/Button'
@@ -14,19 +14,30 @@ import {
 } from '@/components/ui/select'
 import { UserForm } from '@/components/admin/UserForm'
 import { UserTable } from '@/components/admin/UserTable'
+import { UserBulkActionBar } from '@/components/admin/UserBulkActionBar'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { AuthContext } from '@/context/AuthContext'
 import { useUsers } from '@/hooks/queries/useUsers'
 import { useCreateUser } from '@/hooks/mutations/useUserMutations'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { useToast } from '@/hooks/useToast'
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
 import { isConflictError, toApiError } from '@/lib/error'
-import { ORG_ROLES, type Role } from '@/types/user.types'
+import { ORG_ROLES, type Role, type User } from '@/types/user.types'
 import type { CreateUserFormValues } from '@/schemas/user.schema'
 
 const ALL = '__all__'
 
 export function UsersPage() {
   const [createOpen, setCreateOpen] = useState(false)
+  // Module 8 gap-closure - bulk-action selection. Cleared whenever the visible page/filters change
+  // so a bulk action never silently applies to rows the Admin can no longer see.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  // Read optionally (not useAuth()) - only used to disable the Admin's own checkbox, and the page
+  // must still render where no AuthProvider is mounted.
+  const auth = useContext(AuthContext)
+  const currentUser = auth?.user
+  const [viewAsTarget, setViewAsTarget] = useState<User | null>(null)
   // Pagination and filters share a single useQueryParams call - see ProjectsListPage for why two
   // separate useQueryParams-backed hooks (e.g. usePagination() + a filters one) would silently
   // discard whichever one's URL update loses the race when their setters fire back-to-back.
@@ -47,14 +58,17 @@ export function UsersPage() {
   const hasActiveFilters = !!filters.search || !!filters.role
 
   function setPage(nextPage: number) {
+    setSelectedIds(new Set())
     setState({ page: nextPage })
   }
 
   function setLimit(nextLimit: number) {
+    setSelectedIds(new Set())
     setState({ limit: nextLimit, page: 1 })
   }
 
   function handleClear() {
+    setSelectedIds(new Set())
     setState({ search: '', role: undefined, page: 1 })
   }
 
@@ -90,13 +104,19 @@ export function UsersPage() {
       <div className="flex flex-wrap items-center gap-3">
         <SearchInput
           value={filters.search}
-          onChange={(search) => setState({ search, page: 1 })}
+          onChange={(search) => {
+            setSelectedIds(new Set())
+            setState({ search, page: 1 })
+          }}
           placeholder="Search by name or email…"
           className="w-64"
         />
         <Select
           value={filters.role ?? ALL}
-          onValueChange={(v) => setState({ role: v === ALL ? undefined : (v as Role), page: 1 })}
+          onValueChange={(v) => {
+            setSelectedIds(new Set())
+            setState({ role: v === ALL ? undefined : (v as Role), page: 1 })
+          }}
         >
           <SelectTrigger className="w-40" aria-label="Filter by role">
             <SelectValue placeholder="All roles" />
@@ -112,8 +132,16 @@ export function UsersPage() {
         </Select>
       </div>
 
+      {selectedIds.size > 0 && (
+        <UserBulkActionBar selectedIds={selectedIds} onDone={() => setSelectedIds(new Set())} />
+      )}
+
       <UserTable
         users={data?.data ?? []}
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
+        currentUserId={currentUser?.id}
+        onViewAs={auth?.startImpersonation ? setViewAsTarget : undefined}
         isLoading={isLoading}
         isError={isError}
         errorMessage={isError ? toApiError(error).message : undefined}
@@ -137,6 +165,26 @@ export function UsersPage() {
           onLimitChange={setLimit}
         />
       )}
+
+      <ConfirmDialog
+        open={!!viewAsTarget}
+        onOpenChange={(open) => !open && setViewAsTarget(null)}
+        title={`View as ${viewAsTarget?.name ?? ''}`}
+        description="You'll see the app exactly as this user does, read-only, for up to 15 minutes. Nothing can be changed while viewing as them. This is recorded in the audit log."
+        confirmLabel="View as"
+        onConfirm={async () => {
+          if (!viewAsTarget) return
+          try {
+            await auth?.startImpersonation?.(viewAsTarget.id)
+          } catch (err) {
+            showToast({
+              title: 'Could not view as this user',
+              description: toApiError(err).message,
+              variant: 'destructive',
+            })
+          }
+        }}
+      />
 
       <Modal open={createOpen} onOpenChange={setCreateOpen} title="New user">
         <UserForm onSubmit={handleCreate} onCancel={() => setCreateOpen(false)} />

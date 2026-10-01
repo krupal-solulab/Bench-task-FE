@@ -8,6 +8,9 @@ export const projectSchema = z
     dueDate: z.string().nullable().optional(),
     memberIds: z.array(z.string()).optional(),
     boardType: z.enum(['Kanban', 'Scrum']).optional(),
+    categoryId: z.string().nullable().optional(),
+    isTemplate: z.boolean().optional(),
+    templateProjectId: z.string().optional(),
   })
   .refine((data) => !data.startDate || !data.dueDate || data.dueDate >= data.startDate, {
     message: 'Due date must be on or after the start date',

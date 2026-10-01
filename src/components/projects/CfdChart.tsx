@@ -3,6 +3,7 @@ import {
   AreaChart,
   CartesianGrid,
   Legend,
+  ReferenceArea,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -12,6 +13,7 @@ import { ChartCard } from '@/components/dashboard/ChartCard'
 import { useCfdReport } from '@/hooks/queries/useProjects'
 import { CHART_COLORS } from '@/lib/constants'
 import { toApiError } from '@/lib/error'
+import { detectCfdBottleneck } from '@/lib/cfd-bottleneck'
 
 export interface CfdChartProps {
   projectId: string
@@ -22,11 +24,17 @@ export interface CfdChartProps {
 export function CfdChart({ projectId }: CfdChartProps) {
   const { data, isLoading, isError, error, refetch } = useCfdReport(projectId, 30)
   const isEmpty = !data || data.every((point) => point.toDo + point.inProgress + point.done === 0)
+  // Module 9 gap-closure: highlight where work is piling up (the In Progress band widening).
+  const bottleneck = data && !isEmpty ? detectCfdBottleneck(data) : null
 
   return (
     <ChartCard
       title="Cumulative Flow Diagram"
-      description="Task counts by status category, per day"
+      description={
+        bottleneck
+          ? `Bottleneck: work in progress grew from ${bottleneck.wipBefore} to ${bottleneck.wipNow} while only ${bottleneck.completedRecently} finished in the last 7 days`
+          : 'Task counts by status category, per day'
+      }
       isLoading={isLoading}
       isError={isError}
       errorMessage={isError ? toApiError(error).message : undefined}
@@ -48,6 +56,18 @@ export function CfdChart({ projectId }: CfdChartProps) {
           <YAxis allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
           <Tooltip />
           <Legend />
+          {bottleneck && (
+            <ReferenceArea
+              x1={bottleneck.startDate}
+              x2={bottleneck.endDate}
+              fill={CHART_COLORS.cfd.bottleneck}
+              fillOpacity={0.12}
+              stroke={CHART_COLORS.cfd.bottleneck}
+              strokeDasharray="4 4"
+              ifOverflow="extendDomain"
+              label={{ value: 'Bottleneck', position: 'insideTop', fontSize: 11 }}
+            />
+          )}
           <Area
             type="monotone"
             dataKey="toDo"

@@ -16,6 +16,7 @@ import { StaggerContainer, StaggerItem } from '@/components/common/Stagger'
 import { ProjectFilters, type ProjectFiltersValue } from '@/components/projects/ProjectFilters'
 import { ProjectForm } from '@/components/projects/ProjectForm'
 import { useProjects } from '@/hooks/queries/useProjects'
+import { useProjectCategories } from '@/hooks/queries/useProjectCategories'
 import { useCreateProject } from '@/hooks/mutations/useProjectMutations'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -42,6 +43,8 @@ export function ProjectsListPage() {
     status: undefined as ProjectStatus | undefined,
     owner: undefined as string | undefined,
     member: undefined as string | undefined,
+    category: undefined as string | undefined,
+    archived: undefined as 'false' | 'true' | 'all' | undefined,
     sortBy: 'createdAt' as 'name' | 'dueDate' | 'createdAt' | 'status',
     sortOrder: 'desc' as 'asc' | 'desc',
   })
@@ -52,6 +55,17 @@ export function ProjectsListPage() {
   const createProject = useCreateProject()
 
   const { data, isLoading, isError, error, refetch } = useProjects(state)
+  const { data: categories = [] } = useProjectCategories()
+  // Module 8 gap-closure - template projects offered by the New Project form.
+  const { data: templateData } = useProjects({
+    page: 1,
+    limit: 100,
+    isTemplate: 'true',
+    sortBy: 'name',
+    sortOrder: 'asc',
+  })
+  const templates = (templateData?.data ?? []).map((p) => ({ id: p.id, name: p.name }))
+  const categoryNames = new Map(categories.map((c) => [c.id, c.name]))
 
   // No user-directory endpoint is available to every role, so the owner filter's option list is
   // derived from the projects the caller can already see (role-scoped by the API) rather than a
@@ -67,14 +81,27 @@ export function ProjectsListPage() {
   ).map((owner) => ({ id: owner.id, name: owner.name }))
 
   const hasActiveFilters =
-    !!filters.search || !!filters.status || !!filters.owner || !!filters.member
+    !!filters.search ||
+    !!filters.status ||
+    !!filters.owner ||
+    !!filters.member ||
+    !!filters.category ||
+    !!filters.archived
 
   function handleFilterChange(update: Partial<ProjectFiltersValue>) {
     setState({ ...update, page: 1 })
   }
 
   function handleClearFilters() {
-    setState({ search: '', status: undefined, owner: undefined, member: undefined, page: 1 })
+    setState({
+      search: '',
+      status: undefined,
+      owner: undefined,
+      member: undefined,
+      category: undefined,
+      archived: undefined,
+      page: 1,
+    })
   }
 
   function setPage(nextPage: number) {
@@ -116,6 +143,16 @@ export function ProjectsListPage() {
     },
     { key: 'dueDate', header: 'Due date', sortable: true, render: (p) => formatDate(p.dueDate) },
     { key: 'taskCount', header: 'Tasks', render: (p) => p.taskCount },
+    // Module 8 gap-closure - only once the org actually uses categories.
+    ...(categories.length > 0
+      ? [
+          {
+            key: 'category',
+            header: 'Category',
+            render: (p: Project) => (p.categoryId ? (categoryNames.get(p.categoryId) ?? '—') : '—'),
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -223,6 +260,8 @@ export function ProjectsListPage() {
           onSubmit={handleCreate}
           onCancel={() => setCreateOpen(false)}
           submitLabel="Create"
+          categories={categories}
+          templates={templates}
         />
       </Modal>
     </div>

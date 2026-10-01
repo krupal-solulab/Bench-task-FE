@@ -5,6 +5,7 @@ import type {
   ReleaseCompareResult,
   ReleaseListQuery,
   ReleaseNotes,
+  ReleaseForecastRow,
   ReleaseProgress,
   UpdateReleasePayload,
 } from '@/types/release.types'
@@ -39,6 +40,9 @@ export const releasesService = {
 
   progress: (projectId: string, releaseId: string) =>
     apiGet<ReleaseProgress>(`/projects/${projectId}/releases/${releaseId}/progress`),
+
+  forecast: (projectId: string) =>
+    apiGet<ReleaseForecastRow[]>(`/projects/${projectId}/releases/forecast`),
 
   releaseNotes: (projectId: string, releaseId: string) =>
     apiGet<ReleaseNotes>(`/projects/${projectId}/releases/${releaseId}/release-notes`),

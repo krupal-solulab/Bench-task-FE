@@ -41,6 +41,10 @@ export const projectsService = {
 
   remove: (id: string) => apiDelete<void>(`/projects/${id}`),
 
+  archive: (id: string) => apiPost<Project>(`/projects/${id}/archive`),
+
+  unarchive: (id: string) => apiPost<Project>(`/projects/${id}/unarchive`),
+
   members: (id: string, query: PageQuery = {}) =>
     apiGetPaginated<ProjectMember>(`/projects/${id}/members`, query),
 

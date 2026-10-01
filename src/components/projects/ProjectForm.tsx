@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/select'
 import { projectSchema, type ProjectFormValues } from '@/schemas/project.schema'
 import { toDateInputValue } from '@/lib/date'
+import type { ProjectCategory } from '@/types/project-category.types'
+import { Checkbox } from '@/components/ui/checkbox'
 import type { Project } from '@/types/project.types'
 
 export interface ProjectFormProps {
@@ -21,14 +23,24 @@ export interface ProjectFormProps {
   onSubmit: (values: ProjectFormValues) => Promise<void>
   onCancel: () => void
   submitLabel?: string
+  /** Module 8 gap-closure - the org's category catalog; the picker is hidden when empty. */
+  categories?: ProjectCategory[]
+  /** Module 8 gap-closure - template projects offered on CREATE only (ignored when editing). */
+  templates?: Pick<Project, 'id' | 'name'>[]
 }
+
+const NO_CATEGORY = '__none__'
+const NO_TEMPLATE = '__none__'
 
 export function ProjectForm({
   initialValues,
   onSubmit,
   onCancel,
   submitLabel = 'Save',
+  categories = [],
+  templates = [],
 }: ProjectFormProps) {
+  const isCreate = !initialValues
   const {
     register,
     handleSubmit,
@@ -45,15 +57,48 @@ export function ProjectForm({
       startDate: initialValues?.startDate ? toDateInputValue(initialValues.startDate) : null,
       dueDate: initialValues?.dueDate ? toDateInputValue(initialValues.dueDate) : null,
       boardType: initialValues?.boardType ?? 'Scrum',
+      categoryId: initialValues?.categoryId ?? null,
+      isTemplate: initialValues?.isTemplate ?? false,
+      // Left undefined (never null) so it's simply absent from the payload unless chosen - the
+      // update endpoint rejects the key outright.
+      templateProjectId: undefined,
     },
   })
 
   const startDate = watch('startDate')
   const dueDate = watch('dueDate')
   const boardType = watch('boardType')
+  const categoryId = watch('categoryId')
+  const isTemplate = watch('isTemplate')
+  const templateProjectId = watch('templateProjectId')
 
   return (
     <form id="project-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      {isCreate && templates.length > 0 && (
+        <FormField
+          label="Start from template"
+          htmlFor="templateProjectId"
+          hint="Copies the template's workflow, issue types, fields, components, automations and schemes - not its tasks or members."
+        >
+          <Select
+            value={templateProjectId ?? NO_TEMPLATE}
+            onValueChange={(v) => setValue('templateProjectId', v === NO_TEMPLATE ? undefined : v)}
+          >
+            <SelectTrigger id="templateProjectId">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_TEMPLATE}>Blank project</SelectItem>
+              {templates.map((template) => (
+                <SelectItem key={template.id} value={template.id}>
+                  {template.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+      )}
+
       <FormField label="Name" htmlFor="name" error={errors.name?.message} required>
         <Input id="name" {...register('name')} />
       </FormField>
@@ -99,6 +144,38 @@ export function ProjectForm({
           </SelectContent>
         </Select>
       </FormField>
+
+      {/* Module 8 gap-closure - hidden until an Admin has defined at least one category, so orgs
+          that never use categories see the form exactly as before. */}
+      {(categories.length > 0 || categoryId) && (
+        <FormField label="Category" htmlFor="categoryId">
+          <Select
+            value={categoryId ?? NO_CATEGORY}
+            onValueChange={(v) => setValue('categoryId', v === NO_CATEGORY ? null : v)}
+          >
+            <SelectTrigger id="categoryId">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_CATEGORY}>No category</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+      )}
+
+      <label className="flex items-center gap-2 text-sm">
+        <Checkbox
+          checked={isTemplate ?? false}
+          onCheckedChange={(c) => setValue('isTemplate', c === true)}
+          aria-label="Offer as a template for new projects"
+        />
+        Offer as a template for new projects
+      </label>
 
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Archive } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/common/Button'
@@ -44,6 +45,7 @@ import { WorkflowSettingsForm } from '@/components/projects/WorkflowSettingsForm
 import { DefaultApproversForm } from '@/components/projects/DefaultApproversForm'
 import { WorkflowCanvas } from '@/components/projects/WorkflowCanvas'
 import { FieldsSettingsForm } from '@/components/projects/FieldsSettingsForm'
+import { AddLibraryFieldControl } from '@/components/projects/AddLibraryFieldControl'
 import { CustomFieldOverridesForm } from '@/components/projects/CustomFieldOverridesForm'
 import { SlaPolicySettingsForm } from '@/components/projects/SlaPolicySettingsForm'
 import { DependencyGraphView } from '@/components/projects/DependencyGraphView'
@@ -71,8 +73,13 @@ import {
   useProjectWorkflow,
 } from '@/hooks/queries/useProjects'
 import { useWorkflowTemplates } from '@/hooks/queries/useWorkflowTemplates'
+import { useProjectCategories } from '@/hooks/queries/useProjectCategories'
 import { useActiveSprint, useSprints } from '@/hooks/queries/useSprints'
-import { useDeleteProject, useUpdateProject } from '@/hooks/mutations/useProjectMutations'
+import {
+  useDeleteProject,
+  useSetProjectArchived,
+  useUpdateProject,
+} from '@/hooks/mutations/useProjectMutations'
 import { useCreateTask } from '@/hooks/mutations/useTaskMutations'
 import { useCreateSprint, useUpdateSprint } from '@/hooks/mutations/useSprintMutations'
 import { useQueryParams } from '@/hooks/useQueryParams'
@@ -103,6 +110,7 @@ export function ProjectDetailPage() {
 
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [archiveOpen, setArchiveOpen] = useState(false)
   const [createTaskOpen, setCreateTaskOpen] = useState(false)
   const [sprintModalOpen, setSprintModalOpen] = useState(false)
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null)
@@ -205,6 +213,7 @@ export function ProjectDetailPage() {
     workflowIssueType === DEFAULT_WORKFLOW_OPTION ? undefined : workflowIssueType
   const { data: tabWorkflow } = useProjectWorkflow(id, effectiveWorkflowIssueType)
   const { data: workflowTemplates } = useWorkflowTemplates()
+  const { data: projectCategories = [] } = useProjectCategories()
 
   function handleWorkflowIssueTypeChange(value: string) {
     setWorkflowIssueType(value)
@@ -233,6 +242,7 @@ export function ProjectDetailPage() {
 
   const updateProject = useUpdateProject(id ?? '')
   const deleteProject = useDeleteProject()
+  const setArchived = useSetProjectArchived(id ?? '')
   const createTask = useCreateTask()
   const createSprint = useCreateSprint(id ?? '')
   const updateSprint = useUpdateSprint(id ?? '', editingSprint?.id ?? '')
@@ -259,8 +269,12 @@ export function ProjectDetailPage() {
   // Per-project grants (see Phase 3's permission schemes) can only ever ADD capability beyond
   // canManage, never replace it - canManage still gates every project-administration action.
   const myGrant = project.members.find((m) => m.user.id === user?.id)?.permissions ?? null
-  const canCreateTaskHere = canManage || !!myGrant?.canCreateTask
-  const canManageSprintsHere = canManage || !!myGrant?.canManageSprints
+  // Module 8 gap-closure: an archived project is read-only - `canManage` still drives the header's
+  // Archive/Restore/Delete, while every editing surface below goes through `canEdit`.
+  const isArchived = !!project.archivedAt
+  const canEdit = canManage && !isArchived
+  const canCreateTaskHere = !isArchived && (canManage || !!myGrant?.canCreateTask)
+  const canManageSprintsHere = !isArchived && (canManage || !!myGrant?.canManageSprints)
 
   async function handleUpdate(values: ProjectFormValues) {
     try {
@@ -270,6 +284,22 @@ export function ProjectDetailPage() {
     } catch (err) {
       showToast({
         title: 'Could not update project',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  async function handleSetArchived(archived: boolean) {
+    try {
+      await setArchived.mutateAsync(archived)
+      showToast({
+        title: archived ? 'Project archived' : 'Project restored',
+        variant: 'success',
+      })
+    } catch (err) {
+      showToast({
+        title: archived ? 'Could not archive project' : 'Could not restore project',
         description: toApiError(err).message,
         variant: 'destructive',
       })
@@ -341,12 +371,28 @@ export function ProjectDetailPage() {
         description={project.description}
         actions={
           <div className="flex items-center gap-2">
-            <ProjectStatusControl project={project} disabled={!canManage} />
+            <ProjectStatusControl project={project} disabled={!canEdit} />
             {canManage && (
               <>
-                <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-                  Edit
-                </Button>
+                {!isArchived && (
+                  <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+                    Edit
+                  </Button>
+                )}
+                {isArchived ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleSetArchived(false)}
+                    loading={setArchived.isPending}
+                  >
+                    Restore
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={() => setArchiveOpen(true)}>
+                    Archive
+                  </Button>
+                )}
                 <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
                   Delete
                 </Button>
@@ -355,6 +401,17 @@ export function ProjectDetailPage() {
           </div>
         }
       />
+
+      {isArchived && (
+        <div
+          role="status"
+          className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm"
+        >
+          <Archive className="h-4 w-4 shrink-0" aria-hidden="true" />
+          This project is archived and read-only.
+          {canManage ? ' Restore it to make changes.' : ''}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-4 rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground shadow-soft">
         <span className="flex items-center gap-2">
@@ -641,7 +698,7 @@ export function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="members">
-          <MemberManager project={project} canManage={canManage} />
+          <MemberManager project={project} canManage={canEdit} />
         </TabsContent>
 
         <TabsContent value="stats" className="space-y-4">
@@ -702,7 +759,7 @@ export function ProjectDetailPage() {
         <TabsContent value="activity">{id && <ProjectActivityFeed projectId={id} />}</TabsContent>
 
         <TabsContent value="import-export">
-          <ImportExportPanel projectId={id ?? ''} canManage={canManage} />
+          <ImportExportPanel projectId={id ?? ''} canManage={canEdit} />
         </TabsContent>
 
         <TabsContent value="workflow">
@@ -727,7 +784,7 @@ export function ProjectDetailPage() {
                       </SelectContent>
                     </Select>
                   </FormField>
-                  {canManage && workflowTemplates && workflowTemplates.length > 0 && (
+                  {canEdit && workflowTemplates && workflowTemplates.length > 0 && (
                     <FormField label="Use a template" htmlFor="workflow-template-select">
                       <Select value="" onValueChange={applyWorkflowTemplate}>
                         <SelectTrigger id="workflow-template-select" className="w-48">
@@ -768,7 +825,7 @@ export function ProjectDetailPage() {
                 <DefaultApproversForm
                   projectId={id}
                   defaultApprovers={project?.defaultApprovers ?? null}
-                  canManage={canManage}
+                  canManage={canEdit}
                 />
               )}
 
@@ -777,7 +834,7 @@ export function ProjectDetailPage() {
                   key={`${workflowIssueType}-${templateDraft ? 'template' : 'live'}-list`}
                   projectId={id}
                   workflow={templateDraft ?? tabWorkflow}
-                  canManage={canManage}
+                  canManage={canEdit}
                   issueType={effectiveWorkflowIssueType}
                   customFields={project?.customFields}
                 />
@@ -786,7 +843,7 @@ export function ProjectDetailPage() {
                   key={`${workflowIssueType}-${templateDraft ? 'template' : 'live'}-visual`}
                   projectId={id}
                   workflow={templateDraft ?? tabWorkflow}
-                  canManage={canManage}
+                  canManage={canEdit}
                   issueType={effectiveWorkflowIssueType}
                   automationRules={project?.automationRules}
                 />
@@ -798,16 +855,17 @@ export function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="fields">
-          <FieldsSettingsForm projectId={id ?? ''} project={project} canManage={canManage} />
-          <CustomFieldOverridesForm projectId={id ?? ''} project={project} canManage={canManage} />
+          <AddLibraryFieldControl projectId={id ?? ''} project={project} canManage={canEdit} />
+          <FieldsSettingsForm projectId={id ?? ''} project={project} canManage={canEdit} />
+          <CustomFieldOverridesForm projectId={id ?? ''} project={project} canManage={canEdit} />
         </TabsContent>
 
         <TabsContent value="issue-types">
-          <IssueTypesSettingsForm projectId={id ?? ''} project={project} canManage={canManage} />
+          <IssueTypesSettingsForm projectId={id ?? ''} project={project} canManage={canEdit} />
         </TabsContent>
 
         <TabsContent value="automation" className="space-y-6">
-          <AutomationRulesForm projectId={id ?? ''} project={project} canManage={canManage} />
+          <AutomationRulesForm projectId={id ?? ''} project={project} canManage={canEdit} />
           {(hasRole('Admin') || hasRole('Manager')) && (
             <div className="space-y-2">
               <h3 className="font-medium">Automation activity log</h3>
@@ -820,7 +878,7 @@ export function ProjectDetailPage() {
           <NotificationSchemeForm
             projectId={id ?? ''}
             notificationScheme={project.notificationScheme}
-            canManage={canManage}
+            canManage={canEdit}
           />
         </TabsContent>
 
@@ -829,7 +887,7 @@ export function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="releases">
-          <ReleasesPanel projectId={id ?? ''} canManage={canManage} />
+          <ReleasesPanel projectId={id ?? ''} canManage={canEdit} />
         </TabsContent>
 
         <TabsContent value="timesheet">
@@ -837,26 +895,26 @@ export function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="sla">
-          <SlaPolicySettingsForm projectId={id ?? ''} canManage={canManage} />
+          <SlaPolicySettingsForm projectId={id ?? ''} canManage={canEdit} />
         </TabsContent>
 
         <TabsContent value="permissions" className="space-y-6">
           <PermissionSchemeAssignment
             projectId={id ?? ''}
             permissionSchemeId={project.permissionSchemeId}
-            canManage={canManage}
+            canManage={canEdit}
           />
           <SecuritySchemeAssignment
             projectId={id ?? ''}
             securitySchemeId={project.securitySchemeId ?? null}
-            canManage={canManage}
+            canManage={canEdit}
           />
           <FieldPermissionSchemeAssignment
             projectId={id ?? ''}
             fieldPermissionSchemeId={project.fieldPermissionSchemeId ?? null}
-            canManage={canManage}
+            canManage={canEdit}
           />
-          {canManage && (
+          {canEdit && (
             <RoleAssignmentsPanel
               projectId={id ?? ''}
               roleAssignments={project.roleAssignments ?? []}
@@ -870,8 +928,18 @@ export function ProjectDetailPage() {
           initialValues={project}
           onSubmit={handleUpdate}
           onCancel={() => setEditOpen(false)}
+          categories={projectCategories}
         />
       </Modal>
+
+      <ConfirmDialog
+        open={archiveOpen}
+        onOpenChange={setArchiveOpen}
+        title="Archive project"
+        description="The project will be hidden from the Projects list and dashboards, and become read-only until restored. Nothing is deleted."
+        confirmLabel="Archive"
+        onConfirm={() => handleSetArchived(true)}
+      />
 
       <ConfirmDialog
         open={deleteOpen}

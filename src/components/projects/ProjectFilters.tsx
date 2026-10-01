@@ -9,12 +9,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { PROJECT_STATUSES, type ProjectStatus } from '@/types/project.types'
+import { useProjectCategories } from '@/hooks/queries/useProjectCategories'
 
 export interface ProjectFiltersValue {
   search: string
   status?: ProjectStatus
   owner?: string
   member?: string
+  category?: string
+  archived?: 'false' | 'true' | 'all'
 }
 
 export interface ProjectOwnerOption {
@@ -32,9 +35,17 @@ export interface ProjectFiltersProps {
 
 const ALL_STATUSES = '__all__'
 const ALL_OWNERS = '__all__'
+const ALL_CATEGORIES = '__all__'
 
 export function ProjectFilters({ value, onChange, onClear, owners }: ProjectFiltersProps) {
-  const hasActiveFilters = !!value.search || !!value.status || !!value.owner || !!value.member
+  const { data: categories = [] } = useProjectCategories()
+  const hasActiveFilters =
+    !!value.search ||
+    !!value.status ||
+    !!value.owner ||
+    !!value.member ||
+    !!value.category ||
+    !!value.archived
 
   return (
     <FilterBar onClear={onClear} hasActiveFilters={hasActiveFilters}>
@@ -78,6 +89,41 @@ export function ProjectFilters({ value, onChange, onClear, owners }: ProjectFilt
               {owner.name}
             </SelectItem>
           ))}
+        </SelectContent>
+      </Select>
+
+      {categories.length > 0 && (
+        <Select
+          value={value.category ?? ALL_CATEGORIES}
+          onValueChange={(v) => onChange({ category: v === ALL_CATEGORIES ? undefined : v })}
+        >
+          <SelectTrigger className="w-44" aria-label="Filter by category">
+            <SelectValue placeholder="All categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_CATEGORIES}>All categories</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      <Select
+        value={value.archived ?? 'false'}
+        onValueChange={(v) =>
+          onChange({ archived: v === 'false' ? undefined : (v as 'true' | 'all') })
+        }
+      >
+        <SelectTrigger className="w-40" aria-label="Filter by archived state">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="false">Active projects</SelectItem>
+          <SelectItem value="true">Archived only</SelectItem>
+          <SelectItem value="all">Active + archived</SelectItem>
         </SelectContent>
       </Select>
 
