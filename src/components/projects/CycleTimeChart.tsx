@@ -1,9 +1,11 @@
 import {
+  Area,
   CartesianGrid,
+  ComposedChart,
+  Line,
   ReferenceLine,
   ResponsiveContainer,
   Scatter,
-  ScatterChart,
   Tooltip,
   XAxis,
   YAxis,
@@ -13,7 +15,14 @@ import { useCycleTimeReport } from '@/hooks/queries/useProjects'
 import { CHART_COLORS } from '@/lib/constants'
 import { formatDate } from '@/lib/date'
 import { toApiError } from '@/lib/error'
+import { rollingStats, rollingWindowFor } from '@/lib/rolling-stats'
 import type { CycleTimePoint } from '@/types/project.types'
+
+interface RollingFields {
+  rollingMean: number
+  /** [low, high] - a recharts range area renders this as the band. */
+  rollingBand: [number, number]
+}
 
 export interface CycleTimeChartProps {
   projectId: string
@@ -24,7 +33,7 @@ function CycleTimeTooltip({
   payload,
 }: {
   active?: boolean
-  payload?: Array<{ payload: CycleTimePoint }>
+  payload?: Array<{ payload: CycleTimePoint & Partial<RollingFields> }>
 }) {
   const point = payload?.[0]?.payload
   if (!active || !point) return null
@@ -34,6 +43,9 @@ function CycleTimeTooltip({
       <p className="text-muted-foreground">Completed {formatDate(point.completedAt)}</p>
       <p>Cycle time: {point.cycleTimeHours}h</p>
       <p>Lead time: {point.leadTimeHours}h</p>
+      {point.rollingMean != null && (
+        <p className="text-muted-foreground">Rolling average: {point.rollingMean}h</p>
+      )}
     </div>
   )
 }
@@ -43,11 +55,25 @@ function CycleTimeTooltip({
  * days. */
 export function CycleTimeChart({ projectId }: CycleTimeChartProps) {
   const { data, isLoading, isError, error, refetch } = useCycleTimeReport(projectId, 90)
+  // Module 9 gap-closure: a rolling average (+/-1 standard deviation band) over the points in
+  // completion order - "typical cycle time right now" and its normal spread.
+  const sorted = [...(data?.points ?? [])].sort((a, b) =>
+    a.completedAt.localeCompare(b.completedAt),
+  )
+  const rolling = rollingStats(
+    sorted.map((p) => p.cycleTimeHours),
+    rollingWindowFor(sorted.length),
+  )
+  const chartData = sorted.map((point, i) => ({
+    ...point,
+    rollingMean: rolling[i]!.mean,
+    rollingBand: [rolling[i]!.low, rolling[i]!.high] as [number, number],
+  }))
 
   return (
     <ChartCard
       title="Control Chart"
-      description="Cycle time per completed issue, last 90 days"
+      description="Cycle time per completed issue, last 90 days, with a rolling average band"
       isLoading={isLoading}
       isError={isError}
       errorMessage={isError ? toApiError(error).message : undefined}
@@ -56,7 +82,7 @@ export function CycleTimeChart({ projectId }: CycleTimeChartProps) {
       emptyMessage="No issues completed in this period."
     >
       <ResponsiveContainer width="100%" height="100%">
-        <ScatterChart margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+        <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
           <XAxis
             dataKey="completedAt"
@@ -84,8 +110,25 @@ export function CycleTimeChart({ projectId }: CycleTimeChartProps) {
               label={{ value: 'Average', position: 'insideTopRight', fontSize: 11 }}
             />
           )}
-          <Scatter data={data?.points} fill={CHART_COLORS.cycleTime.point} />
-        </ScatterChart>
+          <Area
+            dataKey="rollingBand"
+            name="Rolling range"
+            stroke="none"
+            fill={CHART_COLORS.cycleTime.rolling}
+            fillOpacity={0.15}
+            isAnimationActive={false}
+            activeDot={false}
+          />
+          <Line
+            dataKey="rollingMean"
+            name="Rolling average"
+            stroke={CHART_COLORS.cycleTime.rolling}
+            strokeWidth={2}
+            dot={false}
+            isAnimationActive={false}
+          />
+          <Scatter dataKey="cycleTimeHours" fill={CHART_COLORS.cycleTime.point} />
+        </ComposedChart>
       </ResponsiveContainer>
     </ChartCard>
   )

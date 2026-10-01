@@ -145,6 +145,8 @@ export const handlers = [
   http.get(url('/project-categories'), () => HttpResponse.json(ok([]))),
   // Module 8 gap-closure - the Fields tab's "Add from library" picker (managers only).
   http.get(url('/custom-field-library'), () => HttpResponse.json(ok([]))),
+  // Module 9 gap-closure - the Release Forecast dashboard gadget.
+  http.get(url('/projects/:id/releases/forecast'), () => HttpResponse.json(ok([]))),
   http.get(url('/project-roles'), () => HttpResponse.json(ok([]))),
   http.get(url('/security-schemes'), () => HttpResponse.json(ok([]))),
   // Module 12 - TaskForm calls both of these unconditionally (field-permission gating, the

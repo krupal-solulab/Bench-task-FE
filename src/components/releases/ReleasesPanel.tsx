@@ -10,6 +10,7 @@ import { ReleaseNotesModal } from './ReleaseNotesModal'
 import { ReleaseCompareModal } from './ReleaseCompareModal'
 import { ReleaseCalendarView } from './ReleaseCalendarView'
 import { useReleases, useReleaseProgress } from '@/hooks/queries/useReleases'
+import { ReleaseEtaText } from '@/components/releases/ReleaseEtaText'
 import { useCreateRelease, useUpdateRelease } from '@/hooks/mutations/useReleaseMutations'
 import { useAssignableUsers } from '@/hooks/queries/useUsers'
 import { useToast } from '@/hooks/useToast'
@@ -89,6 +90,8 @@ function ReleaseRow({
           </button>
         </div>
       </div>
+
+      {!release.releasedAt && <ReleaseEtaText eta={progress?.eta} />}
 
       {unreleasedIssues.length > 0 && (
         <details className="text-xs text-muted-foreground">

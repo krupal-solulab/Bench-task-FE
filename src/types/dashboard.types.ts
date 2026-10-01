@@ -122,8 +122,20 @@ export const DASHBOARD_WIDGET_IDS = [
   'activeSprintsHealth',
   'myOpenIssues',
   'resolutionTimeTrend',
+  'cumulativeFlow',
+  'controlChart',
+  'releaseForecast',
 ] as const
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number]
+
+/** Module 9 gap-closure - report gadgets that are OFF until a user turns them on in Customize,
+ * so nobody's existing dashboard changes. "On" means: listed in the saved widgetOrder and not
+ * hidden (saving Customize always writes the full order, so an unticked one lands in hidden). */
+export const OPT_IN_WIDGET_IDS: readonly DashboardWidgetId[] = [
+  'cumulativeFlow',
+  'controlChart',
+  'releaseForecast',
+]
 
 export interface DashboardPreference {
   hiddenWidgets: DashboardWidgetId[]

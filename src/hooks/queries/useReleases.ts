@@ -56,3 +56,12 @@ export function useReleaseCompare(
     enabled: !!projectId && !!releaseIdA && !!releaseIdB,
   })
 }
+
+/** Module 9 gap-closure - every unreleased release's projected completion (dashboard gadget). */
+export function useReleaseForecast(projectId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.releases.forecast(projectId ?? ''),
+    queryFn: () => releasesService.forecast(projectId!),
+    enabled: !!projectId,
+  })
+}

@@ -57,8 +57,8 @@ export const CHART_COLORS = {
   single: '#3b82f6',
   // Module 9 - mirrors taskStatus's Todo/In Progress/Done hex values for visual continuity (the
   // CFD buckets by the 3-value StatusCategory, not the 4-value per-project status name).
-  cfd: { toDo: '#64748b', inProgress: '#3b82f6', done: '#10b981' },
-  cycleTime: { point: '#3b82f6', average: '#ef4444' },
+  cfd: { toDo: '#64748b', inProgress: '#3b82f6', done: '#10b981', bottleneck: '#ef4444' },
+  cycleTime: { point: '#3b82f6', average: '#ef4444', rolling: '#f59e0b' },
 } as const
 
 export const DEFAULT_PAGE_SIZE = 20
@@ -149,6 +149,7 @@ export const queryKeys = {
     progress: (id: string) => ['releases', 'detail', id, 'progress'] as const,
     notes: (id: string) => ['releases', 'detail', id, 'notes'] as const,
     compare: (a: string, b: string) => ['releases', 'compare', a, b] as const,
+    forecast: (projectId: string) => ['releases', 'forecast', projectId] as const,
   },
   worklogs: {
     all: ['worklogs'] as const,
