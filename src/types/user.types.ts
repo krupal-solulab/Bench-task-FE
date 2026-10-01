@@ -16,6 +16,12 @@ export interface User {
   updatedAt: string
 }
 
+/** Module 8 gap-closure - per-user outcome of `POST /users/bulk/role|status`. */
+export interface BulkUserResult {
+  succeeded: string[]
+  failed: { userId: string; message: string }[]
+}
+
 export interface UserListQuery {
   page?: number
   limit?: number

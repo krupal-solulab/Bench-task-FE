@@ -34,3 +34,22 @@ export function useUpdateUserStatus(id: string) {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
   })
 }
+
+/** Module 8 gap-closure - bulk actions on the Admin Users page. */
+export function useBulkUpdateUserRole() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userIds, role }: { userIds: string[]; role: Role }) =>
+      usersService.bulkUpdateRole(userIds, role),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
+  })
+}
+
+export function useBulkUpdateUserStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userIds, isActive }: { userIds: string[]; isActive: boolean }) =>
+      usersService.bulkUpdateStatus(userIds, isActive),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
+  })
+}

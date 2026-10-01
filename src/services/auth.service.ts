@@ -3,6 +3,7 @@ import type {
   AuthResponse,
   AuthTokens,
   ChangePasswordPayload,
+  ImpersonationSession,
   LoginPayload,
   RegisterOrganizationPayload,
 } from '@/types/auth.types'
@@ -23,4 +24,8 @@ export const authService = {
   updateMe: (payload: UpdateUserPayload) => apiPatch<User>('/auth/me', payload),
 
   changePassword: (payload: ChangePasswordPayload) => apiPatch<void>('/auth/me/password', payload),
+
+  impersonate: (userId: string) => apiPost<ImpersonationSession>(`/auth/impersonate/${userId}`),
+
+  endImpersonation: () => apiPost<void>('/auth/impersonation/end'),
 }

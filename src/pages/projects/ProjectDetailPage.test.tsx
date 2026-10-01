@@ -458,4 +458,54 @@ describe('ProjectDetailPage', () => {
       expect(screen.getByText('Select an epic.')).toBeInTheDocument()
     })
   })
+  describe('archiving (Module 8 gap-closure)', () => {
+    function withArchived(archivedAt: string | null) {
+      server.use(
+        http.get(url('/projects/p-1'), () =>
+          HttpResponse.json({
+            success: true,
+            data: { ...mockProjects.find((p) => p.id === 'p-1')!, archivedAt },
+          }),
+        ),
+      )
+    }
+    const adminAuth = () =>
+      makeAuthValue({ user: ADMIN, hasRole: (...roles) => roles.includes('Admin') })
+
+    it('offers Archive (with confirmation) on an active project and posts to /archive', async () => {
+      withArchived(null)
+      let archiveCalled = false
+      server.use(
+        http.post(url('/projects/p-1/archive'), () => {
+          archiveCalled = true
+          return HttpResponse.json({
+            success: true,
+            data: {
+              ...mockProjects.find((p) => p.id === 'p-1')!,
+              archivedAt: new Date().toISOString(),
+            },
+          })
+        }),
+      )
+      const user = userEvent.setup()
+      renderProjectDetail(adminAuth())
+
+      await user.click(await screen.findByRole('button', { name: 'Archive' }))
+      const dialogButtons = await screen.findAllByRole('button', { name: 'Archive' })
+      await user.click(dialogButtons[dialogButtons.length - 1]!)
+      await waitFor(() => expect(archiveCalled).toBe(true))
+    })
+
+    it('shows a read-only banner and Restore (not Edit/New Task) on an archived project', async () => {
+      withArchived('2026-09-30T00:00:00.000Z')
+      renderProjectDetail(adminAuth())
+
+      expect(await screen.findByText(/This project is archived and read-only/)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /New Task/ })).not.toBeInTheDocument()
+      // Delete stays available - archiving never blocks deleting.
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+    })
+  })
 })

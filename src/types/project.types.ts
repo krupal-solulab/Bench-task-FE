@@ -162,6 +162,13 @@ export interface Project {
   // additive on top of (never instead of) each transition's own approver fields. Optional/null
   // for the same "existing fixtures predate this field" reason as the rest of this block.
   defaultApprovers?: DefaultApproversPayload | null
+  // Module 8 gap-closure - optional for the same "fixtures predate this field" reason; null/absent
+  // means uncategorized.
+  categoryId?: string | null
+  // Module 8 gap-closure - offered as a starting point for new projects; absent means false.
+  isTemplate?: boolean
+  // Module 8 gap-closure - set while archived (hidden by default, read-only); absent means active.
+  archivedAt?: string | null
   securitySchemeId?: string | null
   // Module 12 - optional for the same reason as securitySchemeId above; absent/null means no
   // field is view/edit-restricted beyond what Security/Permission Schemes already cover.
@@ -199,6 +206,10 @@ export interface ProjectListQuery {
   status?: ProjectStatus
   owner?: string
   member?: string
+  category?: string
+  isTemplate?: 'true' | 'false'
+  /** Module 8 - archived projects are hidden unless 'true' (only archived) or 'all'. */
+  archived?: 'false' | 'true' | 'all'
   sortBy?: 'name' | 'dueDate' | 'createdAt' | 'status'
   sortOrder?: SortOrder
 }
@@ -210,9 +221,13 @@ export interface CreateProjectPayload {
   dueDate?: string | null
   memberIds?: string[]
   boardType?: BoardType
+  categoryId?: string | null
+  isTemplate?: boolean
+  /** Create only - copy this project's configuration (Module 8 project templates). */
+  templateProjectId?: string
 }
 
-export type UpdateProjectPayload = Partial<CreateProjectPayload>
+export type UpdateProjectPayload = Partial<Omit<CreateProjectPayload, 'templateProjectId'>>
 
 export interface ProjectStats {
   totalTasks: number

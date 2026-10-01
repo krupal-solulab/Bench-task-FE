@@ -5,6 +5,19 @@ import type { LoginPayload, RegisterOrganizationPayload } from '@/types/auth.typ
 import type { Role, User } from '@/types/user.types'
 
 const REFRESH_TOKEN_STORAGE_KEY = 'ptm.refreshToken'
+/** Module 8 gap-closure - the active read-only "view as" session, per browser tab. The Admin's own
+ * refresh token (above) is never touched while it exists, so exiting simply resumes it. */
+const IMPERSONATION_STORAGE_KEY = 'ptm.impersonation'
+/** Where an Admin lands after starting / ending a "view as" session. */
+const IMPERSONATION_START_PATH = '/dashboard'
+const IMPERSONATION_EXIT_PATH = '/admin/users'
+
+export interface ImpersonationState {
+  accessToken: string
+  expiresAt: string
+  /** The Admin who started this session - shown in the banner. */
+  impersonator: Pick<User, 'id' | 'name' | 'email'>
+}
 
 export interface AuthContextValue {
   user: User | null
@@ -19,6 +32,13 @@ export interface AuthContextValue {
    * full re-login - Topbar/Sidebar read `user` from this same context, so this is what makes an
    * edited name/email show up immediately. */
   updateUser: (user: User) => void
+  /** Module 8 gap-closure - set while an Admin is viewing as `user` (read-only). Optional so the
+   * many test doubles of this context predating the feature stay valid. */
+  impersonation?: ImpersonationState | null
+  /** Admin only: start a read-only "view as" session for another user (reloads the app). */
+  startImpersonation?: (userId: string) => Promise<void>
+  /** Ends the "view as" session and returns to the Admin's own session (reloads the app). */
+  stopImpersonation?: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -41,9 +61,35 @@ function storeRefreshToken(token: string | null): void {
   }
 }
 
+function getStoredImpersonation(): ImpersonationState | null {
+  try {
+    const raw = sessionStorage.getItem(IMPERSONATION_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as ImpersonationState
+    return new Date(parsed.expiresAt).getTime() > Date.now() ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function sessionStorageHasImpersonation(): boolean {
+  return getStoredImpersonation() !== null
+}
+
+function storeImpersonation(state: ImpersonationState | null): void {
+  try {
+    if (state) sessionStorage.setItem(IMPERSONATION_STORAGE_KEY, JSON.stringify(state))
+    else sessionStorage.removeItem(IMPERSONATION_STORAGE_KEY)
+  } catch {
+    // Without storage the session can't survive the reload that starts it - startImpersonation
+    // surfaces that as a failure rather than silently viewing as nobody.
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [impersonation, setImpersonation] = useState<ImpersonationState | null>(null)
 
   const clearSession = useCallback(() => {
     setAccessToken(null)
@@ -60,7 +106,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  /** Drops the "view as" session and reloads into the Admin's own (still-stored) session. A full
+   * reload is deliberate: it clears every cached query and reconnects the socket as the Admin. */
+  const exitImpersonationAndReload = useCallback(() => {
+    storeImpersonation(null)
+    window.location.assign(IMPERSONATION_EXIT_PATH)
+  }, [])
+
   const refresh = useCallback(async () => {
+    // A "view as" token is access-only by design - when it expires the session simply ends.
+    if (getStoredImpersonation()) throw new Error('View-as sessions cannot be refreshed')
     const refreshToken = getStoredRefreshToken()
     if (!refreshToken) throw new Error('No refresh token available')
     const tokens = await authService.refresh(refreshToken)
@@ -71,6 +126,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setRefreshHandler(refresh)
     setUnauthorizedHandler(() => {
+      if (sessionStorageHasImpersonation()) {
+        exitImpersonationAndReload()
+        return
+      }
       clearSession()
       const returnTo = encodeURIComponent(window.location.pathname + window.location.search)
       window.location.assign(`/login?returnTo=${returnTo}`)
@@ -79,10 +138,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRefreshHandler(null)
       setUnauthorizedHandler(null)
     }
-  }, [refresh, clearSession])
+  }, [refresh, clearSession, exitImpersonationAndReload])
 
   useEffect(() => {
     async function bootstrap() {
+      const viewAs = getStoredImpersonation()
+      if (viewAs) {
+        try {
+          setAccessToken(viewAs.accessToken)
+          setUser(await authService.me())
+          setImpersonation(viewAs)
+          setIsLoading(false)
+          return
+        } catch {
+          // Expired/revoked mid-session - fall back to the Admin's own session below.
+          storeImpersonation(null)
+          setAccessToken(null)
+        }
+      }
+      // Also clears a stale (expired) entry, so it never outlives its token.
+      storeImpersonation(null)
       const refreshToken = getStoredRefreshToken()
       if (!refreshToken) {
         setIsLoading(false)
@@ -120,13 +195,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   )
 
+  const startImpersonation = useCallback(
+    async (userId: string) => {
+      const session = await authService.impersonate(userId)
+      if (!user) return
+      storeImpersonation({
+        accessToken: session.accessToken,
+        expiresAt: new Date(Date.now() + session.expiresInSeconds * 1000).toISOString(),
+        impersonator: { id: user.id, name: user.name, email: user.email },
+      })
+      if (!getStoredImpersonation()) {
+        throw new Error('This browser blocked session storage, which "view as" needs')
+      }
+      window.location.assign(IMPERSONATION_START_PATH)
+    },
+    [user],
+  )
+
+  const stopImpersonation = useCallback(async () => {
+    try {
+      await authService.endImpersonation()
+    } catch {
+      // Best-effort audit only - ending the session client-side must always succeed.
+    }
+    exitImpersonationAndReload()
+  }, [exitImpersonationAndReload])
+
+  // The token can't be refreshed, so end the session exactly when it expires.
+  useEffect(() => {
+    if (!impersonation) return
+    const remaining = new Date(impersonation.expiresAt).getTime() - Date.now()
+    const timer = window.setTimeout(exitImpersonationAndReload, Math.max(0, remaining))
+    return () => window.clearTimeout(timer)
+  }, [impersonation, exitImpersonationAndReload])
+
   const logout = useCallback(async () => {
+    // Logging out while viewing as someone must never revoke THEIR sessions (the server refuses
+    // it anyway) - it simply ends the "view as" session instead.
+    if (impersonation) {
+      await stopImpersonation()
+      return
+    }
     try {
       await authService.logout()
     } finally {
       clearSession()
     }
-  }, [clearSession])
+  }, [clearSession, impersonation, stopImpersonation])
 
   const hasRole = useCallback((...roles: Role[]) => !!user && roles.includes(user.role), [user])
 
@@ -142,8 +257,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       hasRole,
       updateUser,
+      impersonation,
+      startImpersonation,
+      stopImpersonation,
     }),
-    [user, isLoading, login, registerOrganization, logout, hasRole, updateUser],
+    [
+      user,
+      isLoading,
+      login,
+      registerOrganization,
+      logout,
+      hasRole,
+      updateUser,
+      impersonation,
+      startImpersonation,
+      stopImpersonation,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

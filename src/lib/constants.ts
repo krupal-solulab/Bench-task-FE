@@ -215,6 +215,15 @@ export const queryKeys = {
   teams: {
     all: ['teams'] as const,
   },
+  projectCategories: {
+    all: ['project-categories'] as const,
+  },
+  customFieldLibrary: {
+    all: ['custom-field-library'] as const,
+  },
+  adminConsole: {
+    stats: ['admin-console', 'stats'] as const,
+  },
   projectRoles: {
     all: ['project-roles'] as const,
   },

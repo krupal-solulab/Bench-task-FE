@@ -7,7 +7,7 @@ import type { SortOrder } from '@/types/api.types'
 
 export interface DataTableColumn<T> {
   key: string
-  header: string
+  header: ReactNode
   render: (row: T) => ReactNode
   sortable?: boolean
   className?: string

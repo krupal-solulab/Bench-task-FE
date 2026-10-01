@@ -3,6 +3,7 @@ import { useLocation, useOutlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { CommandPalette } from './CommandPalette'
+import { ImpersonationBanner } from './ImpersonationBanner'
 
 export function AppLayout() {
   const location = useLocation()
@@ -10,6 +11,7 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <ImpersonationBanner />
       <Topbar />
       <div className="flex flex-1">
         <Sidebar />

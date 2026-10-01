@@ -16,6 +16,20 @@ export const AUDIT_ACTIONS = [
   'ProjectRoleCreated',
   'ProjectRoleUpdated',
   'ProjectRoleDeleted',
+  'IssueTemplateCreated',
+  'IssueTemplateUpdated',
+  'IssueTemplateDeleted',
+  'FieldPermissionSchemeCreated',
+  'FieldPermissionSchemeUpdated',
+  'FieldPermissionSchemeDeleted',
+  'ProjectCategoryCreated',
+  'ProjectCategoryUpdated',
+  'ProjectCategoryDeleted',
+  'LibraryFieldCreated',
+  'LibraryFieldUpdated',
+  'LibraryFieldDeleted',
+  'ImpersonationStarted',
+  'ImpersonationEnded',
 ] as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
 

@@ -1,5 +1,6 @@
 import { apiGetPaginated, apiPatch, apiPost } from './api-client'
 import type {
+  BulkUserResult,
   CreateUserPayload,
   Role,
   UpdateUserPayload,
@@ -20,4 +21,10 @@ export const usersService = {
 
   updateStatus: (id: string, isActive: boolean) =>
     apiPatch<User>(`/users/${id}/status`, { isActive }),
+
+  bulkUpdateRole: (userIds: string[], role: Role) =>
+    apiPost<BulkUserResult>('/users/bulk/role', { userIds, role }),
+
+  bulkUpdateStatus: (userIds: string[], isActive: boolean) =>
+    apiPost<BulkUserResult>('/users/bulk/status', { userIds, isActive }),
 }

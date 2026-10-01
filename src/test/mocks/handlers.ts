@@ -140,6 +140,11 @@ export const handlers = [
   // RoleAssignmentsPanel) call these unconditionally, so every test rendering them needs a
   // default even when teams/project-roles aren't the thing under test.
   http.get(url('/teams'), () => HttpResponse.json(ok([]))),
+  // Module 8 gap-closure - ProjectForm and ProjectFilters fetch the category catalog
+  // unconditionally.
+  http.get(url('/project-categories'), () => HttpResponse.json(ok([]))),
+  // Module 8 gap-closure - the Fields tab's "Add from library" picker (managers only).
+  http.get(url('/custom-field-library'), () => HttpResponse.json(ok([]))),
   http.get(url('/project-roles'), () => HttpResponse.json(ok([]))),
   http.get(url('/security-schemes'), () => HttpResponse.json(ok([]))),
   // Module 12 - TaskForm calls both of these unconditionally (field-permission gating, the
