@@ -56,6 +56,30 @@ describe('CommentForm (Role-surface polish additions)', () => {
     )
   })
 
+  describe('Module 7 gap-closure: formatting toolbar', () => {
+    it('inserts markdown bold syntax around a placeholder when nothing is selected', async () => {
+      mockCannedResponses([])
+      const user = userEvent.setup()
+      renderForm()
+
+      await user.click(screen.getByRole('button', { name: 'Bold' }))
+
+      const textarea = screen.getByLabelText('Add a comment') as HTMLTextAreaElement
+      await waitFor(() => expect(textarea.value).toBe('**bold text**'))
+    })
+
+    it('inserts markdown link syntax with a "url" placeholder', async () => {
+      mockCannedResponses([])
+      const user = userEvent.setup()
+      renderForm()
+
+      await user.click(screen.getByRole('button', { name: 'Link' }))
+
+      const textarea = screen.getByLabelText('Add a comment') as HTMLTextAreaElement
+      await waitFor(() => expect(textarea.value).toBe('[link text](url)'))
+    })
+  })
+
   describe('Module 7: @mention picker', () => {
     it('shows matching users once "@" plus a partial name is typed', async () => {
       mockCannedResponses([])

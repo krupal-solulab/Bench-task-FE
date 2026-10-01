@@ -20,6 +20,7 @@ import { TaskActivityFeed } from '@/components/tasks/TaskActivityFeed'
 import { AttachmentList } from '@/components/tasks/AttachmentList'
 import { SubtaskChecklist } from '@/components/tasks/SubtaskChecklist'
 import { IssueLinksSection } from '@/components/tasks/IssueLinksSection'
+import { ExternalReferencesSection } from '@/components/tasks/ExternalReferencesSection'
 import { TaskSummaryPanel } from '@/components/tasks/TaskSummaryPanel'
 import { WorkLogSection } from '@/components/worklogs/WorkLogSection'
 import { resolveIssueTypes, standardIssueTypeNames } from '@/types/issue-type.types'
@@ -461,6 +462,7 @@ export function TaskDetailPage() {
           )}
 
           <IssueLinksSection taskId={task.id} canManage={canEditOther} />
+          <ExternalReferencesSection task={task} />
           <TaskSummaryPanel taskId={task.id} />
 
           <WorkLogSection taskId={task.id} />

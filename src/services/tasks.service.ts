@@ -1,6 +1,7 @@
 import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost } from './api-client'
 import type { CsvExportResult } from '@/types/import-export.types'
 import type {
+  AddExternalReferencePayload,
   BulkAssignPayload,
   BulkCustomFieldPayload,
   BulkDeletePayload,
@@ -125,6 +126,12 @@ export const tasksService = {
   vote: (id: string) => apiPost<Task>(`/tasks/${id}/vote`),
 
   unvote: (id: string) => apiDelete<Task>(`/tasks/${id}/vote`),
+
+  addExternalReference: (id: string, payload: AddExternalReferencePayload) =>
+    apiPost<Task>(`/tasks/${id}/external-references`, payload),
+
+  removeExternalReference: (id: string, referenceId: string) =>
+    apiDelete<Task>(`/tasks/${id}/external-references/${referenceId}`),
 
   remove: (id: string) => apiDelete<void>(`/tasks/${id}`),
 

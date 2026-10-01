@@ -19,6 +19,7 @@ function makeComment(overrides: Partial<Comment> = {}): Comment {
     body: 'Original body',
     author: AUTHOR,
     mentionedUserIds: [],
+    editHistory: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     ...overrides,
@@ -86,6 +87,37 @@ describe('CommentItem', () => {
     renderComment(makeComment({ body: 'hello there' }), makeAuthValue({ user: AUTHOR }))
     expect(screen.getByText('hello there')).toBeInTheDocument()
     expect(screen.getByText(AUTHOR.name)).toBeInTheDocument()
+  })
+
+  it('renders markdown formatting (bold/italic/link/code) instead of raw syntax (Module 7 gap-closure)', () => {
+    renderComment(
+      makeComment({
+        body: 'A **bold** word, an _italic_ one, `code`, and a [link](https://example.com).',
+      }),
+      makeAuthValue({ user: AUTHOR }),
+    )
+    expect(screen.getByText('bold').tagName).toBe('STRONG')
+    expect(screen.getByText('italic').tagName).toBe('EM')
+    expect(screen.getByText('code').tagName).toBe('CODE')
+    const link = screen.getByRole('link', { name: 'link' })
+    expect(link).toHaveAttribute('href', 'https://example.com')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(screen.queryByText(/\*\*bold\*\*/)).not.toBeInTheDocument()
+  })
+
+  it('shows an "(edited)" indicator only once the comment has edit history (Module 7 gap-closure)', () => {
+    const { rerender } = renderComment(makeComment(), makeAuthValue({ user: AUTHOR }))
+    expect(screen.queryByText('(edited)')).not.toBeInTheDocument()
+
+    rerender(
+      <CommentItem
+        comment={makeComment({
+          editHistory: [{ body: 'Original body', editedAt: new Date().toISOString() }],
+        })}
+        taskId="t-1"
+      />,
+    )
+    expect(screen.getByText('(edited)')).toBeInTheDocument()
   })
 
   it('renders @[Name](userId) mention markup as a highlighted chip, not raw text (Module 7)', () => {
