@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/constants'
 import { tasksService } from '@/services/tasks.service'
 import type {
+  AddExternalReferencePayload,
   BulkAssignPayload,
   BulkCustomFieldPayload,
   BulkDeletePayload,
@@ -373,6 +374,24 @@ export function useUnvoteTask(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => tasksService.unvote(id),
+    onSuccess: (task) => queryClient.setQueryData(queryKeys.tasks.detail(id), task),
+  })
+}
+
+/** Module 7 gap-closure - same "replace the cached task detail" shape as watch/vote above. */
+export function useAddExternalReference(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: AddExternalReferencePayload) =>
+      tasksService.addExternalReference(id, payload),
+    onSuccess: (task) => queryClient.setQueryData(queryKeys.tasks.detail(id), task),
+  })
+}
+
+export function useRemoveExternalReference(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (referenceId: string) => tasksService.removeExternalReference(id, referenceId),
     onSuccess: (task) => queryClient.setQueryData(queryKeys.tasks.detail(id), task),
   })
 }

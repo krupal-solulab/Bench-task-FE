@@ -42,6 +42,21 @@ export interface TaskParentSummary {
   issueKey: string | null
 }
 
+// Module 7 gap-closure: a manually-pasted external link (e.g. a GitHub/GitLab PR/commit URL) -
+// deliberately not a real connector, see the backend's ExternalReference doc comment.
+export interface ExternalReference {
+  id: string
+  label: string
+  url: string
+  addedBy: User
+  addedAt: string
+}
+
+export interface AddExternalReferencePayload {
+  label: string
+  url: string
+}
+
 export interface Task {
   id: string
   title: string
@@ -79,6 +94,7 @@ export interface Task {
   // auto-removed); voting is purely a signal of interest, with no permission effect.
   watcherIds: User[]
   voterIds: User[]
+  externalReferences: ExternalReference[]
   // Module 12's Approval Workflows - set instead of applying a `requiresApproval` transition
   // immediately; null (every existing task) means no transition is currently awaiting a decision.
   pendingApproval: PendingApproval | null

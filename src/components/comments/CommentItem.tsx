@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import Markdown, { type Components } from 'react-markdown'
 import { Avatar } from '@/components/common/Avatar'
 import { Button } from '@/components/common/Button'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Textarea } from '@/components/ui/textarea'
 import { useUpdateComment, useDeleteComment } from '@/hooks/mutations/useCommentMutations'
 import { useAuth } from '@/hooks/useAuth'
@@ -10,9 +12,39 @@ import { cn } from '@/lib/cn'
 import { formatRelativeTime } from '@/lib/date'
 import { toApiError } from '@/lib/error'
 import { parseCommentBody } from '@/lib/mentions'
+import { applyMarkdownFormat, type MarkdownFormatKind } from '@/lib/markdown-format'
+import { FormattingToolbar } from '@/components/comments/FormattingToolbar'
 import type { Comment } from '@/types/comment.types'
 
-/** Renders `@[Name](userId)` markup as a highlighted mention chip instead of raw text. */
+/** Module 7 gap-closure: a text segment's markdown is rendered inline - `p` flattens to a
+ * Fragment so a multi-block body doesn't force paragraph spacing inside the single-line comment
+ * bubble, and `img` degrades to a plain link rather than silently loading external images (a
+ * pasted image URL would otherwise leak the viewer's IP to that URL on render). */
+const MARKDOWN_COMPONENTS: Components = {
+  p: ({ children }) => <>{children}</>,
+  a: ({ href, children }) => (
+    <a href={href} target="_blank" rel="noreferrer" className="text-primary underline">
+      {children}
+    </a>
+  ),
+  img: ({ src, alt }) => (
+    <a
+      href={typeof src === 'string' ? src : undefined}
+      target="_blank"
+      rel="noreferrer"
+      className="text-primary underline"
+    >
+      {alt || src}
+    </a>
+  ),
+  code: ({ children }) => (
+    <code className="rounded bg-background px-1 py-0.5 font-mono text-xs">{children}</code>
+  ),
+}
+
+/** Renders `@[Name](userId)` markup as a highlighted mention chip, and every other segment as
+ * markdown (bold/italic/link/code - see FormattingToolbar) - split first so a mention's own
+ * `[Name](userId)` shape never collides with real markdown link syntax. */
 function CommentBody({ body }: { body: string }) {
   return (
     <>
@@ -22,7 +54,9 @@ function CommentBody({ body }: { body: string }) {
             @{segment.name}
           </span>
         ) : (
-          <span key={index}>{segment.value}</span>
+          <Markdown key={index} components={MARKDOWN_COMPONENTS}>
+            {segment.value}
+          </Markdown>
         ),
       )}
     </>
@@ -35,6 +69,7 @@ export function CommentItem({ comment, taskId }: { comment: Comment; taskId: str
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(comment.body)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const editTextareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   const updateComment = useUpdateComment(taskId, comment.id)
   const deleteComment = useDeleteComment(taskId)
@@ -68,6 +103,18 @@ export function CommentItem({ comment, taskId }: { comment: Comment; taskId: str
     }
   }
 
+  function handleFormat(kind: MarkdownFormatKind) {
+    const textarea = editTextareaRef.current
+    const selectionStart = textarea?.selectionStart ?? draft.length
+    const selectionEnd = textarea?.selectionEnd ?? draft.length
+    const result = applyMarkdownFormat(draft, selectionStart, selectionEnd, kind)
+    setDraft(result.text)
+    requestAnimationFrame(() => {
+      textarea?.focus()
+      textarea?.setSelectionRange(result.selectionStart, result.selectionEnd)
+    })
+  }
+
   return (
     <div className={cn('flex gap-3 transition-opacity', isOptimistic && 'opacity-60')}>
       <Avatar name={comment.author.name} size="sm" />
@@ -75,12 +122,36 @@ export function CommentItem({ comment, taskId }: { comment: Comment; taskId: str
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="font-medium text-foreground">{comment.author.name}</span>
           <span>{formatRelativeTime(comment.createdAt)}</span>
+          {comment.editHistory.length > 0 && (
+            <Popover>
+              <PopoverTrigger className="underline decoration-dotted hover:text-foreground">
+                (edited)
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <p className="mb-2 text-xs font-medium text-foreground">Edit history</p>
+                <ul className="space-y-2">
+                  {comment.editHistory.map((entry, index) => (
+                    <li key={index} className="text-xs">
+                      <p className="text-muted-foreground">{formatRelativeTime(entry.editedAt)}</p>
+                      <p className="mt-0.5 whitespace-pre-wrap text-foreground">{entry.body}</p>
+                    </li>
+                  ))}
+                </ul>
+              </PopoverContent>
+            </Popover>
+          )}
           {isOptimistic && <span>Sending…</span>}
         </div>
 
         {editing ? (
           <div className="space-y-2">
-            <Textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={2} />
+            <FormattingToolbar onFormat={handleFormat} />
+            <Textarea
+              ref={editTextareaRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              rows={2}
+            />
             <div className="flex gap-2">
               <Button size="sm" onClick={handleSave} loading={updateComment.isPending}>
                 Save

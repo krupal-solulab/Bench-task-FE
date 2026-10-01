@@ -15,6 +15,8 @@ import { useCannedResponses } from '@/hooks/queries/useCannedResponses'
 import { useAssignableUsers } from '@/hooks/queries/useUsers'
 import { commentSchema, type CommentFormValues } from '@/schemas/comment.schema'
 import { findMentionQuery, insertMention } from '@/lib/mentions'
+import { applyMarkdownFormat, type MarkdownFormatKind } from '@/lib/markdown-format'
+import { FormattingToolbar } from '@/components/comments/FormattingToolbar'
 
 // Placeholder-only "AI draft assist" - no LLM call, just a few canned suggestions to insert.
 const AI_SUGGESTIONS = [
@@ -99,6 +101,19 @@ export function CommentForm({
     reset()
   }
 
+  function handleFormat(kind: MarkdownFormatKind) {
+    const textarea = textareaRef.current
+    const currentBody = body ?? ''
+    const selectionStart = textarea?.selectionStart ?? currentBody.length
+    const selectionEnd = textarea?.selectionEnd ?? currentBody.length
+    const result = applyMarkdownFormat(currentBody, selectionStart, selectionEnd, kind)
+    setValue('body', result.text, { shouldValidate: true })
+    requestAnimationFrame(() => {
+      textarea?.focus()
+      textarea?.setSelectionRange(result.selectionStart, result.selectionEnd)
+    })
+  }
+
   return (
     <form
       onSubmit={handleSubmit(submit)}
@@ -111,6 +126,7 @@ export function CommentForm({
       className="space-y-2"
       noValidate
     >
+      <FormattingToolbar onFormat={handleFormat} />
       <div className="relative">
         <Textarea
           {...bodyRegisterRest}
@@ -123,7 +139,7 @@ export function CommentForm({
             handleBodyChange(e)
           }}
           rows={3}
-          placeholder="Add a comment… (type @ to mention someone, Ctrl/Cmd+Enter to submit)"
+          placeholder="Add a comment… (markdown supported, type @ to mention someone, Ctrl/Cmd+Enter to submit)"
           aria-label="Add a comment"
           aria-invalid={!!errors.body}
         />

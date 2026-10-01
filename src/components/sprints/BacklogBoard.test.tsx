@@ -50,6 +50,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     securityLevel: null,
     watcherIds: [],
     voterIds: [],
+    externalReferences: [],
     pendingApproval: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
