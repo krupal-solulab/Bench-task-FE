@@ -1,6 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { setAccessToken, setRefreshHandler, setUnauthorizedHandler } from '@/services/api-client'
 import { authService } from '@/services/auth.service'
+import { setDisplayTimeZone } from '@/lib/date'
 import type { LoginPayload, RegisterOrganizationPayload } from '@/types/auth.types'
 import type { Role, User } from '@/types/user.types'
 
@@ -90,6 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [impersonation, setImpersonation] = useState<ImpersonationState | null>(null)
+
+  // Module 11 gap-closure: dates/times render in the signed-in user's chosen time zone.
+  setDisplayTimeZone(user?.timezone)
 
   const clearSession = useCallback(() => {
     setAccessToken(null)

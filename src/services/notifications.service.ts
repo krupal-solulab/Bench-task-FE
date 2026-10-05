@@ -1,8 +1,10 @@
-import { apiGetPaginated, apiPatch, apiPost, apiGet, apiPut } from './api-client'
+import { apiDelete, apiGetPaginated, apiPatch, apiPost, apiGet, apiPut } from './api-client'
 import type {
   ListNotificationsQuery,
   Notification,
   NotificationPreference,
+  NotificationSnooze,
+  NotificationDigest,
 } from '@/types/notification.types'
 
 export const notificationsService = {
@@ -19,4 +21,14 @@ export const notificationsService = {
 
   updatePreferences: (payload: NotificationPreference) =>
     apiPut<NotificationPreference>('/notifications/preferences', payload),
+
+  listSnoozes: () => apiGet<NotificationSnooze[]>('/notifications/snoozes'),
+
+  digest: (period: 'daily' | 'weekly') =>
+    apiGet<NotificationDigest>('/notifications/digest', { period }),
+
+  snooze: (taskId: string, until: string) =>
+    apiPut<NotificationSnooze>(`/notifications/snoozes/${taskId}`, { until }),
+
+  unsnooze: (taskId: string) => apiDelete<void>(`/notifications/snoozes/${taskId}`),
 }

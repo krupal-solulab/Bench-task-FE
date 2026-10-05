@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { QUERY_STALE_TIME, queryKeys } from '@/lib/constants'
 import { tasksService } from '@/services/tasks.service'
 import type { TaskListQuery, TaskSearchQuery } from '@/types/task.types'
@@ -120,5 +120,16 @@ export function useTaskRisk(id: string | undefined) {
     queryKey: queryKeys.tasks.risk(id ?? ''),
     queryFn: () => tasksService.risk(id!),
     enabled: !!id,
+  })
+}
+
+/** Module 11 gap-closure - the activity feed, paged by the server's `nextBefore` cursor. */
+export function useActivityFeed(scope: 'all' | 'involved') {
+  return useInfiniteQuery({
+    queryKey: queryKeys.tasks.activityFeed(scope),
+    queryFn: ({ pageParam }) =>
+      tasksService.activityFeed({ scope, limit: 30, ...(pageParam ? { before: pageParam } : {}) }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextBefore,
   })
 }

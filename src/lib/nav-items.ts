@@ -4,7 +4,9 @@ import {
   Clock,
   CreditCard,
   FileStack,
+  History,
   KeyRound,
+  KeySquare,
   Library,
   LayoutDashboard,
   Link2,
@@ -42,6 +44,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/issues', label: 'Issue Navigator', icon: Search },
   { to: '/roadmap', label: 'Roadmap', icon: Milestone },
   { to: '/notifications', label: 'Notifications', icon: Bell },
+  { to: '/activity', label: 'Activity', icon: History },
   { to: '/canned-responses', label: 'Canned Responses', icon: MessageSquareText },
   { to: '/admin/users', label: 'Admin', icon: ShieldCheck, roles: ['Admin'] },
   { to: '/admin/system', label: 'System Overview', icon: Activity, roles: ['Admin'] },
@@ -82,4 +85,5 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/admin/billing', label: 'Billing', icon: CreditCard, roles: ['Admin'] },
   { to: '/admin/org-settings', label: 'Org Settings', icon: Settings, roles: ['Admin'] },
   { to: '/admin/audit-log', label: 'Audit Log', icon: ScrollText, roles: ['Admin'] },
+  { to: '/admin/api-tokens', label: 'API Tokens', icon: KeySquare, roles: ['Admin'] },
 ]

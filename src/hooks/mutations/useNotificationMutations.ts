@@ -33,3 +33,22 @@ export function useUpdateNotificationPreferences() {
     },
   })
 }
+
+/** Module 11 gap-closure - snoozing refreshes the list, unread count and snooze list together
+ * (they all live under notifications.all). */
+export function useSnoozeTask() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ taskId, until }: { taskId: string; until: string }) =>
+      notificationsService.snooze(taskId, until),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
+  })
+}
+
+export function useUnsnoozeTask() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (taskId: string) => notificationsService.unsnooze(taskId),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
+  })
+}

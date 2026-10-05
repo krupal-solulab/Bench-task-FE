@@ -52,7 +52,9 @@ export function GlobalSearchBar() {
     }
   }
 
-  const hasResults = !!data && data.tasks.length + data.projects.length + data.users.length > 0
+  const hasResults =
+    !!data &&
+    data.tasks.length + (data.comments?.length ?? 0) + data.projects.length + data.users.length > 0
   const showDropdown = open && !!searchQuery
 
   return (
@@ -105,6 +107,31 @@ export function GlobalSearchBar() {
                       {task.issueKey}
                     </span>
                   )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {data && (data.comments?.length ?? 0) > 0 && (
+            <div className="mb-1">
+              <p className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Comments
+              </p>
+              {data.comments!.map((comment) => (
+                <button
+                  key={comment.id}
+                  type="button"
+                  onClick={() => {
+                    setOpen(false)
+                    navigate(`/tasks/${comment.task.id}`)
+                  }}
+                  className="flex w-full flex-col items-start gap-0.5 rounded-sm px-3 py-2 text-left text-sm hover:bg-accent"
+                >
+                  <span className="line-clamp-1 text-xs text-muted-foreground">
+                    {comment.task.issueKey ?? comment.task.title}
+                    {comment.author ? ` · ${comment.author.name}` : ''}
+                  </span>
+                  <span className="line-clamp-2">{comment.snippet}</span>
                 </button>
               ))}
             </div>

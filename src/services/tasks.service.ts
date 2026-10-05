@@ -31,6 +31,7 @@ import type {
   SimilarIssue,
   AtRiskIssue,
   TaskRisk,
+  ActivityFeedPage,
 } from '@/types/task.types'
 import type { JqlAutocompleteFields } from '@/types/jql.types'
 
@@ -153,4 +154,7 @@ export const tasksService = {
   atRisk: (projectId: string) => apiGet<AtRiskIssue[]>('/tasks/at-risk', { project: projectId }),
 
   risk: (id: string) => apiGet<TaskRisk>(`/tasks/${id}/risk`),
+
+  activityFeed: (query: { scope: 'all' | 'involved'; before?: string; limit?: number }) =>
+    apiGet<ActivityFeedPage>('/tasks/activity-feed', query),
 }

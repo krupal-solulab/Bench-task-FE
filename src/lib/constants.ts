@@ -123,6 +123,7 @@ export const queryKeys = {
     risk: (id: string) => ['tasks', 'detail', id, 'risk'] as const,
     similar: (query: unknown) => ['tasks', 'similar', query] as const,
     atRisk: (projectId: string) => ['tasks', 'at-risk', projectId] as const,
+    activityFeed: (scope: string) => ['tasks', 'activity-feed', scope] as const,
     search: (filters: unknown) => ['tasks', 'search', filters] as const,
     autocompleteFields: ['tasks', 'search', 'autocomplete-fields'] as const,
     autocompleteValues: (field: string) =>
@@ -209,6 +210,8 @@ export const queryKeys = {
     list: (query: unknown) => ['notifications', 'list', query] as const,
     unreadCount: ['notifications', 'unread-count'] as const,
     preferences: ['notifications', 'preferences'] as const,
+    snoozes: ['notifications', 'snoozes'] as const,
+    digest: (period: string) => ['notifications', 'digest', period] as const,
   },
   search: {
     all: (query: unknown) => ['search', query] as const,
@@ -221,6 +224,11 @@ export const queryKeys = {
   },
   projectCategories: {
     all: ['project-categories'] as const,
+  },
+  apiTokens: {
+    all: ['api-tokens'] as const,
+    mine: ['api-tokens', 'mine'] as const,
+    org: ['api-tokens', 'org'] as const,
   },
   customFieldLibrary: {
     all: ['custom-field-library'] as const,

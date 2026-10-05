@@ -23,3 +23,19 @@ export function useNotificationPreferences() {
     queryFn: () => notificationsService.getPreferences(),
   })
 }
+
+/** Module 11 gap-closure - my active per-issue snoozes. */
+export function useNotificationSnoozes() {
+  return useQuery({
+    queryKey: queryKeys.notifications.snoozes,
+    queryFn: () => notificationsService.listSnoozes(),
+  })
+}
+
+/** Module 11 gap-closure - the in-app digest for the last day or week. */
+export function useNotificationDigest(period: 'daily' | 'weekly') {
+  return useQuery({
+    queryKey: queryKeys.notifications.digest(period),
+    queryFn: () => notificationsService.digest(period),
+  })
+}
