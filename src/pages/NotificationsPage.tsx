@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { Bell, Check } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { DigestCard } from '@/components/notifications/DigestCard'
 import { Button } from '@/components/common/Button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -20,6 +22,7 @@ import {
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { useToast } from '@/hooks/useToast'
 import { formatRelativeTime } from '@/lib/date'
+import { groupNotifications } from '@/lib/notification-groups'
 import { cn } from '@/lib/cn'
 import { toApiError } from '@/lib/error'
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
@@ -35,6 +38,15 @@ const ALL = '__all__'
 /** Module 11's Notifications Center - the bell dropdown (`NotificationBell.tsx`) stays a
  * lightweight 10-item preview; this page is the full paginated, filterable history it links to. */
 export function NotificationsPage() {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  function toggleExpanded(key: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
   const navigate = useNavigate()
   const { showToast } = useToast()
 
@@ -85,6 +97,8 @@ export function NotificationsPage() {
           </Button>
         }
       />
+
+      <DigestCard />
 
       <div className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-4 shadow-soft">
         <div className="w-56 space-y-1">
@@ -140,25 +154,55 @@ export function NotificationsPage() {
         className={cn('space-y-2', isFetching && 'opacity-60 transition-opacity')}
         aria-busy={isFetching}
       >
-        {notifications.map((notification) => (
-          <button
-            key={notification.id}
-            type="button"
-            onClick={() => handleSelect(notification)}
-            className={cn(
-              'flex w-full flex-col items-start gap-1 rounded-lg border bg-card p-4 text-left shadow-soft transition-colors hover:bg-accent/40',
-              !notification.read && 'border-primary/30 bg-accent/20',
-            )}
-          >
-            <span className="flex w-full items-center gap-2 font-medium">
-              {!notification.read && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
-              {notification.title}
-              <span className="ml-auto shrink-0 text-xs font-normal text-muted-foreground">
-                {formatRelativeTime(notification.createdAt)}
-              </span>
-            </span>
-            <span className="text-sm text-muted-foreground">{notification.message}</span>
-          </button>
+        {/* Module 11 gap-closure: grouped by day, with same-issue notifications bundled. */}
+        {groupNotifications(notifications).map((section) => (
+          <section key={section.label} aria-label={section.label} className="space-y-2">
+            <h2 className="pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {section.label}
+            </h2>
+            {section.bundles.map((bundle) => {
+              const isExpanded = expanded.has(bundle.key)
+              const shown = isExpanded ? [bundle.latest, ...bundle.older] : [bundle.latest]
+              return (
+                <div key={bundle.key} className="space-y-1">
+                  {shown.map((notification) => (
+                    <button
+                      key={notification.id}
+                      type="button"
+                      onClick={() => handleSelect(notification)}
+                      className={cn(
+                        'flex w-full flex-col items-start gap-1 rounded-lg border bg-card p-4 text-left shadow-soft transition-colors hover:bg-accent/40',
+                        !notification.read && 'border-primary/30 bg-accent/20',
+                        notification !== bundle.latest && 'ml-4 w-[calc(100%-1rem)] py-2',
+                      )}
+                    >
+                      <span className="flex w-full items-center gap-2 font-medium">
+                        {!notification.read && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                        )}
+                        {notification.title}
+                        <span className="ml-auto shrink-0 text-xs font-normal text-muted-foreground">
+                          {formatRelativeTime(notification.createdAt)}
+                        </span>
+                      </span>
+                      <span className="text-sm text-muted-foreground">{notification.message}</span>
+                    </button>
+                  ))}
+                  {bundle.older.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => toggleExpanded(bundle.key)}
+                      className="ml-4 text-xs text-primary hover:underline"
+                    >
+                      {isExpanded
+                        ? 'Show less'
+                        : `+${bundle.older.length} more update${bundle.older.length === 1 ? '' : 's'} on this issue`}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </section>
         ))}
       </div>
 

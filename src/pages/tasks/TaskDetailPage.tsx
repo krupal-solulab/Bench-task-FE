@@ -16,6 +16,7 @@ import { UserSelect } from '@/components/common/UserSelect'
 import { TaskStatusControl } from '@/components/tasks/TaskStatusControl'
 import { TaskApprovalActions } from '@/components/tasks/TaskApprovalActions'
 import { WatchVoteButtons } from '@/components/tasks/WatchVoteButtons'
+import { SnoozeNotificationsControl } from '@/components/tasks/SnoozeNotificationsControl'
 import { TaskForm } from '@/components/tasks/TaskForm'
 import { TaskActivityFeed } from '@/components/tasks/TaskActivityFeed'
 import { AttachmentList } from '@/components/tasks/AttachmentList'
@@ -228,6 +229,7 @@ export function TaskDetailPage() {
             <TaskStatusControl task={task} canEdit={canEditStatus} workflow={workflow} />
             <TaskApprovalActions task={task} />
             <WatchVoteButtons task={task} />
+            <SnoozeNotificationsControl taskId={task.id} />
             {canEditOther && (
               <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
                 Edit

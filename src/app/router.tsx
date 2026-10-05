@@ -29,8 +29,10 @@ import { AuditLogPage } from '@/pages/admin/AuditLogPage'
 import { ProjectCategoriesPage } from '@/pages/admin/ProjectCategoriesPage'
 import { SystemOverviewPage } from '@/pages/admin/SystemOverviewPage'
 import { CustomFieldLibraryPage } from '@/pages/admin/CustomFieldLibraryPage'
+import { ApiTokensPage } from '@/pages/admin/ApiTokensPage'
 import { ProfilePage } from '@/pages/ProfilePage'
 import { NotificationsPage } from '@/pages/NotificationsPage'
+import { ActivityPage } from '@/pages/ActivityPage'
 import { SearchResultsPage } from '@/pages/SearchResultsPage'
 import { CannedResponsesPage } from '@/pages/CannedResponsesPage'
 import { PlatformOrganizationsListPage } from '@/pages/platform/PlatformOrganizationsListPage'
@@ -61,6 +63,7 @@ export function AppRouter() {
             <Route path="/tasks/:id" element={<TaskDetailPage />} />
             <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/activity" element={<ActivityPage />} />
             <Route path="/search" element={<SearchResultsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/canned-responses" element={<CannedResponsesPage />} />
@@ -82,6 +85,7 @@ export function AppRouter() {
               <Route path="/admin/project-categories" element={<ProjectCategoriesPage />} />
               <Route path="/admin/system" element={<SystemOverviewPage />} />
               <Route path="/admin/field-library" element={<CustomFieldLibraryPage />} />
+              <Route path="/admin/api-tokens" element={<ApiTokensPage />} />
             </Route>
 
             <Route element={<RoleRoute roles={['Admin', 'Manager']} />}>

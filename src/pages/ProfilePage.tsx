@@ -7,6 +7,9 @@ import { FormField } from '@/components/common/FormField'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
+import { TimeZoneSettings } from '@/components/profile/TimeZoneSettings'
+import { DigestSettings } from '@/components/profile/DigestSettings'
+import { ApiTokensSettings } from '@/components/profile/ApiTokensSettings'
 import { useChangePassword, useUpdateProfile } from '@/hooks/mutations/useAuthMutations'
 import { useUpdateNotificationPreferences } from '@/hooks/mutations/useNotificationMutations'
 import { useNotificationPreferences } from '@/hooks/queries/useNotifications'
@@ -142,11 +145,15 @@ export function ProfilePage() {
         </form>
       </section>
 
+      <TimeZoneSettings />
+
       <section className="space-y-4 rounded-xl border bg-card p-5 shadow-soft">
         <div>
           <h2 className="font-medium">Notification preferences</h2>
           <p className="text-sm text-muted-foreground">Choose which notifications you receive.</p>
         </div>
+
+        <DigestSettings />
 
         <div className="space-y-2.5">
           {NOTIFICATION_TYPES.map((type) => (
@@ -160,6 +167,8 @@ export function ProfilePage() {
           ))}
         </div>
       </section>
+
+      <ApiTokensSettings />
 
       <section className="space-y-4 rounded-xl border bg-card p-5 shadow-soft">
         <div>

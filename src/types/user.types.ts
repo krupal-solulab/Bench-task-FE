@@ -12,6 +12,8 @@ export interface User {
   role: Role
   isActive: boolean
   organizationId: string | null
+  /** Module 11 gap-closure - display time zone; null/absent = the browser's. */
+  timezone?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -42,4 +44,6 @@ export interface CreateUserPayload {
 export interface UpdateUserPayload {
   name?: string
   email?: string
+  /** Self-service profile only (PATCH /auth/me). */
+  timezone?: string | null
 }

@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { CommandPalette } from './CommandPalette'
 import { ImpersonationBanner } from './ImpersonationBanner'
+import { KeyboardShortcutsDialog } from './KeyboardShortcutsDialog'
 
 export function AppLayout() {
   const location = useLocation()
@@ -30,6 +31,7 @@ export function AppLayout() {
         </main>
       </div>
       <CommandPalette />
+      <KeyboardShortcutsDialog />
     </div>
   )
 }

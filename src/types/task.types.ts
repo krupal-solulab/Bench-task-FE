@@ -313,6 +313,22 @@ export interface AtRiskIssue {
   risk: TaskRisk
 }
 
+/** Module 11 gap-closure - one entry of GET /tasks/activity-feed. */
+export interface ActivityFeedEntry {
+  id: string
+  action: string
+  from: unknown
+  to: unknown
+  createdAt: string
+  actor: { id: string; name: string } | null
+  task: { id: string; issueKey: string | null; title: string }
+}
+
+export interface ActivityFeedPage {
+  entries: ActivityFeedEntry[]
+  nextBefore: string | null
+}
+
 export interface TaskSummary {
   headline: string
   bullets: string[]

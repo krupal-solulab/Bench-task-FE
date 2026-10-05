@@ -11,4 +11,6 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   Scheme: 'Notification schemes',
   Mentioned: 'Mentions',
   WatchedTaskUpdated: 'Watched issue activity',
+  ApprovalRequested: 'Approval requests',
+  ApprovalDecided: 'Approval decisions',
 }

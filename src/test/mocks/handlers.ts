@@ -44,6 +44,18 @@ function fail(statusCode: number, message: string): ApiErrorResponse {
 const url = (path: string) => `${BASE_URL}${path}`
 
 export const handlers = [
+  // Module 11 gap-closure defaults.
+  http.get(url('/api-tokens'), () => HttpResponse.json(ok([]))),
+  http.get(url('/api-tokens/org'), () => HttpResponse.json(ok([]))),
+  http.get(url('/notifications/snoozes'), () => HttpResponse.json(ok([]))),
+  http.get(url('/notifications/digest'), () =>
+    HttpResponse.json(
+      ok({ period: 'daily', unreadCount: 0, byType: [], highlights: [], subject: '', text: '' }),
+    ),
+  ),
+  http.get(url('/tasks/activity-feed'), () =>
+    HttpResponse.json(ok({ entries: [], nextBefore: null })),
+  ),
   // Module 10 gap-closure - first in the list so the generic '/tasks/:id' handlers below can't
   // swallow 'similar' / 'at-risk' as an id.
   http.get(url('/tasks/similar'), () => HttpResponse.json(ok([]))),

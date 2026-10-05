@@ -69,3 +69,23 @@ describe('assignLanes', () => {
     expect(third?.lane).toBe(0)
   })
 })
+
+describe('listTimeZones (Module 11 gap-closure)', () => {
+  it('uses modern names, includes saved zones, and has no duplicates', async () => {
+    const { listTimeZones } = await import('./date')
+    const zones = listTimeZones(['Pacific/Chatham'])
+    expect(zones).toContain('Asia/Kolkata')
+    expect(zones).not.toContain('Asia/Calcutta')
+    expect(zones).toContain('Pacific/Chatham')
+    expect(new Set(zones).size).toBe(zones.length)
+  })
+})
+
+describe('formatDate for date-only values (Module 11 gap-closure)', () => {
+  it('shows a midnight-UTC due date by its calendar date in any display time zone', async () => {
+    const { formatDate, setDisplayTimeZone } = await import('./date')
+    setDisplayTimeZone('America/Los_Angeles')
+    expect(formatDate('2026-09-10T00:00:00.000Z')).toBe('Sep 10, 2026')
+    setDisplayTimeZone(null)
+  })
+})

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { formatRelativeTime } from '@/lib/date'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -33,7 +34,9 @@ export function SearchResultsPage() {
     setSearchParams({ q: term })
   }
 
-  const hasResults = !!data && data.tasks.length + data.projects.length + data.users.length > 0
+  const hasResults =
+    !!data &&
+    data.tasks.length + (data.comments?.length ?? 0) + data.projects.length + data.users.length > 0
 
   return (
     <div className="space-y-6">
@@ -145,6 +148,30 @@ export function SearchResultsPage() {
             ))}
           </section>
         </div>
+      )}
+
+      {searchQuery && data && (data.comments?.length ?? 0) > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold text-muted-foreground">
+            Comments ({data.comments!.length})
+          </h2>
+          {data.comments!.map((comment) => (
+            <button
+              key={comment.id}
+              type="button"
+              onClick={() => navigate(`/tasks/${comment.task.id}`)}
+              className="flex w-full flex-col items-start gap-0.5 rounded-lg border bg-card p-3 text-left shadow-soft transition-colors hover:bg-accent/40"
+            >
+              <span className="text-xs text-muted-foreground">
+                {comment.task.issueKey ? `${comment.task.issueKey} · ` : ''}
+                {comment.task.title}
+                {comment.author ? ` · ${comment.author.name}` : ''} ·{' '}
+                {formatRelativeTime(comment.createdAt)}
+              </span>
+              <span className="text-sm">{comment.snippet}</span>
+            </button>
+          ))}
+        </section>
       )}
     </div>
   )

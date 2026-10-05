@@ -1,14 +1,47 @@
-const dateFormatter = new Intl.DateTimeFormat('en-US', {
-  dateStyle: 'medium',
-})
+// Module 11 gap-closure: the signed-in user's display time zone (set by AuthContext from their
+// profile). Undefined - the default, and every user who never picks one - means the browser's
+// own, exactly as before.
+let displayTimeZone: string | undefined
 
-const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
+let dateFormatter = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' })
+let dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'medium',
   timeStyle: 'short',
 })
+const calendarDateFormatter = new Intl.DateTimeFormat('en-US', {
+  dateStyle: 'medium',
+  timeZone: 'UTC',
+})
+
+export function setDisplayTimeZone(timeZone: string | null | undefined): void {
+  const next = timeZone || undefined
+  if (next === displayTimeZone) return
+  try {
+    dateFormatter = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeZone: next })
+    dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: next,
+    })
+    displayTimeZone = next
+  } catch {
+    // An unrecognized zone (shouldn't happen - the API validates it) keeps the current one.
+  }
+}
+
+export function getDisplayTimeZone(): string | undefined {
+  return displayTimeZone
+}
+
+/** A date-only value (due/start dates are stored as midnight UTC) - shown by its calendar date,
+ * never shifted to the previous day in a time zone west of UTC. */
+function isCalendarDate(value: string): boolean {
+  return /T00:00:00(\.000)?Z$/.test(value) || /^\d{4}-\d{2}-\d{2}$/.test(value)
+}
 
 export function formatDate(value: string | null | undefined): string {
   if (!value) return '—'
+  if (isCalendarDate(value)) return calendarDateFormatter.format(new Date(value))
   return dateFormatter.format(new Date(value))
 }
 
@@ -17,11 +50,47 @@ export function formatDateTime(value: string | null | undefined): string {
   return dateTimeFormatter.format(new Date(value))
 }
 
+/** Old ICU names some browsers still list, mapped to the names people actually search for. */
+const ZONE_RENAMES: Record<string, string> = {
+  'Asia/Calcutta': 'Asia/Kolkata',
+  'Asia/Saigon': 'Asia/Ho_Chi_Minh',
+  'Asia/Katmandu': 'Asia/Kathmandu',
+  'Asia/Rangoon': 'Asia/Yangon',
+  'Europe/Kiev': 'Europe/Kyiv',
+}
+
 /**
- * A native `<input type="date">` only accepts a bare `YYYY-MM-DD` value - anything else (like the
- * full ISO datetime the API returns, e.g. "2026-09-10T00:00:00.000Z") is silently rejected and the
- * input just renders empty. Trims down to what the input actually accepts, so edit forms pre-fill.
+ * IANA zones for the profile picker - modern names (Kolkata, not Calcutta), always including the
+ * browser's own zone and any zone the user already saved, sorted. A short list on old browsers.
  */
+export function listTimeZones(extra: Array<string | null | undefined> = []): string[] {
+  const supported = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] })
+    .supportedValuesOf
+  const base = supported
+    ? supported('timeZone')
+    : [
+        'UTC',
+        'Asia/Kolkata',
+        'Asia/Dubai',
+        'Asia/Singapore',
+        'Asia/Tokyo',
+        'Europe/London',
+        'Europe/Berlin',
+        'America/New_York',
+        'America/Chicago',
+        'America/Los_Angeles',
+        'Australia/Sydney',
+      ]
+  const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const all = [...base, browserZone, ...extra].filter((z): z is string => !!z)
+  return [...new Set(all.map(modernTimeZoneName))].sort()
+}
+
+/** The current IANA name for a zone ICU may still report by its old name (Calcutta -> Kolkata). */
+export function modernTimeZoneName(zone: string): string {
+  return ZONE_RENAMES[zone] ?? zone
+}
+
 export function toDateInputValue(value: string | null | undefined): string {
   return value ? value.slice(0, 10) : ''
 }

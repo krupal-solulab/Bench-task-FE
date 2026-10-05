@@ -24,8 +24,19 @@ export interface GlobalSearchUserResult {
   email: string
 }
 
+/** Module 11 gap-closure - a comment match (always on an issue the viewer can see). */
+export interface GlobalSearchCommentResult {
+  id: string
+  snippet: string
+  task: { id: string; issueKey: string | null; title: string }
+  author: { id: string; name: string } | null
+  createdAt: string
+}
+
 export interface GlobalSearchResult {
   tasks: GlobalSearchTaskResult[]
+  /** Optional so mocks predating comment search stay valid. */
+  comments?: GlobalSearchCommentResult[]
   projects: GlobalSearchProjectResult[]
   users: GlobalSearchUserResult[]
 }
