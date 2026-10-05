@@ -284,6 +284,35 @@ export interface TaskActivityEntry {
 
 /** Module 10's deterministic (non-LLM - see the backend's `task-summary.util.ts`) issue summary:
  * a headline plus a handful of bullet facts composed from real field values, not generated prose. */
+/** Module 10 gap-closure - GET /tasks/similar (deterministic duplicate detection). */
+export interface SimilarIssue {
+  id: string
+  issueKey: string | null
+  title: string
+  status: string
+  statusCategory: string
+  /** 0..1 similarity to the text being typed. */
+  score: number
+}
+
+/** Module 10 gap-closure - deterministic risk flagging. */
+export interface TaskRisk {
+  score: number
+  level: 'high' | 'medium' | 'low'
+  reasons: string[]
+}
+
+export interface AtRiskIssue {
+  id: string
+  issueKey: string | null
+  title: string
+  status: string
+  priority: TaskPriority
+  dueDate: string | null
+  assignee: { id: string; name: string } | null
+  risk: TaskRisk
+}
+
 export interface TaskSummary {
   headline: string
   bullets: string[]

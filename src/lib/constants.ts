@@ -120,6 +120,9 @@ export const queryKeys = {
     epicProgress: (id: string) => ['tasks', 'detail', id, 'epic-progress'] as const,
     epicBurndown: (id: string) => ['tasks', 'detail', id, 'epic-burndown'] as const,
     summary: (id: string) => ['tasks', 'detail', id, 'summary'] as const,
+    risk: (id: string) => ['tasks', 'detail', id, 'risk'] as const,
+    similar: (query: unknown) => ['tasks', 'similar', query] as const,
+    atRisk: (projectId: string) => ['tasks', 'at-risk', projectId] as const,
     search: (filters: unknown) => ['tasks', 'search', filters] as const,
     autocompleteFields: ['tasks', 'search', 'autocomplete-fields'] as const,
     autocompleteValues: (field: string) =>

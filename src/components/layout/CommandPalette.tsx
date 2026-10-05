@@ -7,14 +7,19 @@ import { useTaskSearch } from '@/hooks/queries/useTasks'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useAuth } from '@/hooks/useAuth'
 import { getRecentlyViewed, type RecentlyViewedItem } from '@/hooks/useRecentlyViewed'
+import { useToast } from '@/hooks/useToast'
+import { toApiError } from '@/lib/error'
+import { useTaskQuickActions } from './useTaskQuickActions'
 import { cn } from '@/lib/cn'
 
 interface PaletteResult {
   key: string
-  section: 'Go to' | 'Recently viewed' | 'Issues'
+  section: 'Actions' | 'Go to' | 'Recently viewed' | 'Issues'
   label: string
   sublabel?: string
-  path: string
+  /** Navigation target - or, for a quick action (Module 10), `run` instead. */
+  path?: string
+  run?: () => Promise<string>
 }
 
 /**
@@ -32,6 +37,8 @@ export function CommandPalette() {
   const [recents, setRecents] = useState<RecentlyViewedItem[]>([])
   const navigate = useNavigate()
   const { hasRole } = useAuth()
+  const { showToast } = useToast()
+  const quickActions = useTaskQuickActions()
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -64,6 +71,16 @@ export function CommandPalette() {
   const results = useMemo<PaletteResult[]>(() => {
     const term = query.trim().toLowerCase()
 
+    const actionResults: PaletteResult[] = quickActions
+      .filter((action) => !term || action.label.toLowerCase().includes(term))
+      .map((action) => ({
+        key: `action-${action.key}`,
+        section: 'Actions',
+        label: action.label,
+        sublabel: action.sublabel,
+        run: action.run,
+      }))
+
     const navResults: PaletteResult[] = NAV_ITEMS.filter(
       (item) => !item.roles || hasRole(...item.roles),
     )
@@ -95,12 +112,25 @@ export function CommandPalette() {
       path: `/tasks/${task.id}`,
     }))
 
-    return [...navResults, ...recentResults, ...issueResultsList]
-  }, [query, recents, hasRole, issueSearchQuery, issueResults])
+    return [...actionResults, ...navResults, ...recentResults, ...issueResultsList]
+  }, [query, recents, hasRole, issueSearchQuery, issueResults, quickActions])
 
   function activate(result: PaletteResult) {
     setOpen(false)
-    navigate(result.path)
+    if (result.run) {
+      result
+        .run()
+        .then((message) => showToast({ title: message, variant: 'success' }))
+        .catch((err: unknown) =>
+          showToast({
+            title: `Could not ${result.label.toLowerCase()}`,
+            description: toApiError(err).message,
+            variant: 'destructive',
+          }),
+        )
+      return
+    }
+    if (result.path) navigate(result.path)
   }
 
   function handleInputKeyDown(e: React.KeyboardEvent) {
@@ -117,7 +147,7 @@ export function CommandPalette() {
     }
   }
 
-  const sections = ['Go to', 'Recently viewed', 'Issues'] as const
+  const sections = ['Actions', 'Go to', 'Recently viewed', 'Issues'] as const
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -133,7 +163,7 @@ export function CommandPalette() {
               setSelectedIndex(0)
             }}
             onKeyDown={handleInputKeyDown}
-            placeholder="Go to a page, a recent item, or search issues…"
+            placeholder="Go to a page, run an action, or search issues…"
             aria-label="Quick switcher search"
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />

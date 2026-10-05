@@ -28,6 +28,9 @@ import type {
   UpdateTaskRankPayload,
   UpdateTaskSprintPayload,
   UpdateTaskStatusPayload,
+  SimilarIssue,
+  AtRiskIssue,
+  TaskRisk,
 } from '@/types/task.types'
 import type { JqlAutocompleteFields } from '@/types/jql.types'
 
@@ -143,4 +146,11 @@ export const tasksService = {
   epicBurndown: (id: string) => apiGet<EpicBurndownResult>(`/tasks/${id}/epic-burndown`),
 
   summary: (id: string) => apiGet<TaskSummary>(`/tasks/${id}/summary`),
+
+  similar: (query: { project: string; text: string; excludeId?: string }) =>
+    apiGet<SimilarIssue[]>('/tasks/similar', query),
+
+  atRisk: (projectId: string) => apiGet<AtRiskIssue[]>('/tasks/at-risk', { project: projectId }),
+
+  risk: (id: string) => apiGet<TaskRisk>(`/tasks/${id}/risk`),
 }

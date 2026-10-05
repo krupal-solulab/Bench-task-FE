@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/common/Button'
@@ -26,11 +27,12 @@ import {
 import { useSecuritySchemes } from '@/hooks/queries/useSecuritySchemes'
 import { useFieldPermissionSchemes } from '@/hooks/queries/useFieldPermissionSchemes'
 import { useIssueTemplates } from '@/hooks/queries/useIssueTemplates'
-import { useTaskSearch } from '@/hooks/queries/useTasks'
+import { useSimilarIssues } from '@/hooks/queries/useTasks'
 import { useAssignableUsers } from '@/hooks/queries/useUsers'
 import { useAuth } from '@/hooks/useAuth'
 import { useDebounce } from '@/hooks/useDebounce'
 import { canEditField, canViewField } from '@/lib/field-permissions'
+import { draftIssue } from '@/lib/issue-draft'
 import { taskSchema, type TaskFormValues } from '@/schemas/task.schema'
 import { TASK_PRIORITIES, type Task } from '@/types/task.types'
 import { resolveIssueTypes } from '@/types/issue-type.types'
@@ -132,23 +134,42 @@ export function TaskForm({
   const { data: effectiveCustomFields } = useEffectiveCustomFields(projectId, issueType)
   const customFields = effectiveCustomFields ?? project?.customFields ?? []
 
-  // Module 10's deterministic (non-LLM) duplicate-detection: the same JQL `text ~` search
-  // IssueLinksSection already uses, scoped to this project, fired once the title looks like a
-  // real search term - create-mode only, since an existing issue isn't a duplicate of itself.
+  // Module 10 (gap-closure upgrade): deterministic duplicate detection - word + character
+  // similarity scored server-side (GET /tasks/similar), so differently-worded duplicates are
+  // caught, not just exact substrings. Create-mode only, once the title looks like a real term.
   const debouncedTitle = useDebounce(title, 400)
   const duplicateSearchQuery =
     !isEditingExisting && debouncedTitle.trim().length >= 4
-      ? {
-          jql: `text ~ '${debouncedTitle.trim().replace(/'/g, '')}' AND project = "${projectId}"`,
-          page: 1,
-          limit: 5,
-        }
+      ? { project: projectId, text: debouncedTitle.trim() }
       : null
   const { data: duplicateResults, isLoading: isSearchingDuplicates } =
-    useTaskSearch(duplicateSearchQuery)
-  const possibleDuplicates = (duplicateResults?.data ?? []).filter(
-    (t) => t.id !== initialValues?.id,
-  )
+    useSimilarIssues(duplicateSearchQuery)
+  const possibleDuplicates = (duplicateResults ?? []).filter((t) => t.id !== initialValues?.id)
+
+  // Module 10 gap-closure: "draft from a description" - deterministic, only proposes values the
+  // project actually has, and everything stays editable before Create.
+  const [draftText, setDraftText] = useState('')
+  const [draftApplied, setDraftApplied] = useState(false)
+  function applyDraft() {
+    const draft = draftIssue(draftText, {
+      issueTypes: standardTypeNames,
+      labels: labelSuggestions ?? [],
+      components: project?.components ?? [],
+    })
+    if (!draft) return
+    setValue('title', draft.title, { shouldValidate: true })
+    setValue('description', draft.description)
+    if (draft.issueType) {
+      setValue('issueType', draft.issueType as TaskFormValues['issueType'])
+      setValue('parent', null)
+    }
+    setValue('priority', draft.priority)
+    if (draft.labels.length) setValue('labels', [...new Set([...labels, ...draft.labels])])
+    if (draft.components.length) {
+      setValue('components', [...new Set([...(watch('components') ?? []), ...draft.components])])
+    }
+    setDraftApplied(true)
+  }
 
   // Module 10's deterministic (non-LLM) field suggestion: the most-frequent assignee/labels for
   // this project's existing issues of the chosen type - create-mode only, and only once an
@@ -189,6 +210,42 @@ export function TaskForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      {!isEditingExisting && (
+        <details className="rounded-md border border-dashed bg-muted/30 p-3 text-sm">
+          <summary className="cursor-pointer select-none font-medium">
+            Draft from a description (suggested)
+          </summary>
+          <div className="mt-2 space-y-2">
+            <Textarea
+              aria-label="Describe the issue in your own words"
+              placeholder="e.g. Checkout crashes on Safari when the cart is empty - urgent"
+              rows={3}
+              value={draftText}
+              onChange={(e) => {
+                setDraftText(e.target.value)
+                setDraftApplied(false)
+              }}
+            />
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={applyDraft}
+                disabled={draftText.trim().length < 3}
+              >
+                Draft fields
+              </Button>
+              {draftApplied && (
+                <span className="text-xs text-muted-foreground">
+                  Drafted title, type, priority, labels and components - review before creating.
+                </span>
+              )}
+            </div>
+          </div>
+        </details>
+      )}
+
       {!isEditingExisting && (issueTemplates?.length ?? 0) > 0 && (
         <FormField
           label="Apply a template"
@@ -226,8 +283,18 @@ export function TaskForm({
             <ul className="space-y-1">
               {possibleDuplicates.map((t) => (
                 <li key={t.id} className="flex items-center gap-2 text-muted-foreground">
-                  {t.issueKey && <span className="font-mono">{t.issueKey}</span>}
-                  <span className="truncate">{t.title}</span>
+                  <a
+                    href={`/tasks/${t.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex min-w-0 items-center gap-2 hover:text-foreground hover:underline"
+                  >
+                    {t.issueKey && <span className="font-mono">{t.issueKey}</span>}
+                    <span className="truncate">{t.title}</span>
+                  </a>
+                  <span className="ml-auto shrink-0 tabular-nums">
+                    {Math.round(t.score * 100)}% match
+                  </span>
                 </li>
               ))}
             </ul>
