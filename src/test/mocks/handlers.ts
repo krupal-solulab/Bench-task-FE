@@ -44,6 +44,13 @@ function fail(statusCode: number, message: string): ApiErrorResponse {
 const url = (path: string) => `${BASE_URL}${path}`
 
 export const handlers = [
+  // Module 10 gap-closure - first in the list so the generic '/tasks/:id' handlers below can't
+  // swallow 'similar' / 'at-risk' as an id.
+  http.get(url('/tasks/similar'), () => HttpResponse.json(ok([]))),
+  http.get(url('/tasks/at-risk'), () => HttpResponse.json(ok([]))),
+  http.get(url('/tasks/:id/risk'), () =>
+    HttpResponse.json(ok({ score: 0, level: 'low', reasons: [] })),
+  ),
   http.post(url('/auth/login'), async ({ request }) => {
     const body = (await request.json()) as { email: string; password: string }
     const user = mockUsers.find((u) => u.email === body.email)

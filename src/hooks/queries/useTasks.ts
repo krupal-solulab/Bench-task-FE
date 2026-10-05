@@ -94,3 +94,31 @@ export function useJqlAutocompleteValues(field: string | null) {
     staleTime: 60_000,
   })
 }
+
+/** Module 10 gap-closure - likely duplicates of the text being typed (disabled until `query`). */
+export function useSimilarIssues(
+  query: { project: string; text: string; excludeId?: string } | null,
+) {
+  return useQuery({
+    queryKey: queryKeys.tasks.similar(query),
+    queryFn: () => tasksService.similar(query!),
+    enabled: !!query,
+    placeholderData: (previous) => previous,
+  })
+}
+
+export function useAtRiskIssues(projectId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.tasks.atRisk(projectId ?? ''),
+    queryFn: () => tasksService.atRisk(projectId!),
+    enabled: !!projectId,
+  })
+}
+
+export function useTaskRisk(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.tasks.risk(id ?? ''),
+    queryFn: () => tasksService.risk(id!),
+    enabled: !!id,
+  })
+}

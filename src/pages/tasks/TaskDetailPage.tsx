@@ -11,6 +11,7 @@ import { Avatar } from '@/components/common/Avatar'
 import { PriorityBadge } from '@/components/common/PriorityBadge'
 import { IssueTypeBadge } from '@/components/common/IssueTypeBadge'
 import { OverdueBadge } from '@/components/common/OverdueBadge'
+import { RiskBadge, RiskReasons } from '@/components/tasks/RiskBadge'
 import { UserSelect } from '@/components/common/UserSelect'
 import { TaskStatusControl } from '@/components/tasks/TaskStatusControl'
 import { TaskApprovalActions } from '@/components/tasks/TaskApprovalActions'
@@ -311,7 +312,9 @@ export function TaskDetailPage() {
                     status={task.status}
                     isDone={task.statusCategory === 'Done'}
                   />
+                  <RiskBadge taskId={task.id} />
                 </dd>
+                <RiskReasons taskId={task.id} />
               </div>
               <div>
                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

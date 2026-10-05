@@ -6,6 +6,9 @@ import type { ReactNode } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, beforeEach } from 'vitest'
 import { AuthContext, type AuthContextValue } from '@/context/AuthContext'
+import { ToastProvider } from '@/context/ToastContext'
+import { ToastViewport } from '@/components/common/Toast'
+import { mockTasks } from '@/test/mocks/fixtures'
 import { server } from '@/test/mocks/server'
 import { CommandPalette } from './CommandPalette'
 import { addRecentlyViewed } from '@/hooks/useRecentlyViewed'
@@ -27,18 +30,22 @@ function makeAuthValue(overrides: Partial<AuthContextValue> = {}): AuthContextVa
   }
 }
 
-function renderPalette(authValue: AuthContextValue = makeAuthValue()) {
+function renderPalette(authValue: AuthContextValue = makeAuthValue(), initialEntry = '/dashboard') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  // ToastProvider mirrors the real app shell - Module 10's quick actions confirm with a toast.
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
-        <AuthContext.Provider value={authValue}>
-          <MemoryRouter initialEntries={['/dashboard']}>
-            <Routes>
-              <Route path="*" element={children} />
-            </Routes>
-          </MemoryRouter>
-        </AuthContext.Provider>
+        <ToastProvider>
+          <AuthContext.Provider value={authValue}>
+            <MemoryRouter initialEntries={[initialEntry]}>
+              <Routes>
+                <Route path="*" element={children} />
+              </Routes>
+            </MemoryRouter>
+          </AuthContext.Provider>
+          <ToastViewport />
+        </ToastProvider>
       </QueryClientProvider>
     )
   }
@@ -148,5 +155,53 @@ describe('CommandPalette', () => {
 
     expect(await screen.findByText('Fix login bug')).toBeInTheDocument()
     expect(screen.getByText('PRJ-9')).toBeInTheDocument()
+  })
+
+  describe('quick actions on an issue page (Module 10 gap-closure)', () => {
+    const task = { ...mockTasks[0]!, assignee: null, watcherIds: [], status: 'Todo' }
+
+    function mockTask() {
+      server.use(
+        http.get(url(`/tasks/${task.id}`), () => HttpResponse.json({ success: true, data: task })),
+      )
+    }
+
+    it('offers Assign to me, Watch, the next statuses and Copy link - only on an issue page', async () => {
+      mockTask()
+      const user = userEvent.setup()
+      renderPalette(makeAuthValue(), `/tasks/${task.id}`)
+      await user.keyboard('{Control>}k{/Control}')
+
+      expect(await screen.findByRole('button', { name: /Assign to me/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^Watch/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Move to In Progress/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Copy link to this issue/ })).toBeInTheDocument()
+    })
+
+    it('runs an action through the normal API and confirms with a toast', async () => {
+      mockTask()
+      let sent: unknown = null
+      server.use(
+        http.patch(url(`/tasks/${task.id}/assignee`), async ({ request }) => {
+          sent = await request.json()
+          return HttpResponse.json({ success: true, data: { ...task, assignee: { id: 'u-1' } } })
+        }),
+      )
+      const user = userEvent.setup()
+      renderPalette(makeAuthValue(), `/tasks/${task.id}`)
+      await user.keyboard('{Control>}k{/Control}')
+      await user.click(await screen.findByRole('button', { name: /Assign to me/ }))
+
+      await waitFor(() => expect(sent).toEqual({ assignee: 'u-1' }))
+      expect(await screen.findByText(/assigned to you/)).toBeInTheDocument()
+    })
+
+    it('shows no actions away from an issue page (regression)', async () => {
+      const user = userEvent.setup()
+      renderPalette()
+      await user.keyboard('{Control>}k{/Control}')
+      await screen.findByPlaceholderText(/Go to a page/)
+      expect(screen.queryByText('Actions')).not.toBeInTheDocument()
+    })
   })
 })

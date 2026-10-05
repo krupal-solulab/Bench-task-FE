@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Archive } from 'lucide-react'
+import { AtRiskIssuesCard } from '@/components/projects/AtRiskIssuesCard'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/common/Button'
@@ -720,6 +721,7 @@ export function ProjectDetailPage() {
         <TabsContent value="reports" className="space-y-4">
           {id && (
             <>
+              <AtRiskIssuesCard projectId={id} />
               <FormField label="Burndown for" htmlFor="reports-sprint-select">
                 <Select
                   value={effectiveReportsSprintId ?? ''}
