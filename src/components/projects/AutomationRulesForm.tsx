@@ -44,7 +44,14 @@ const TRIGGER_LABELS: Record<AutomationTriggerType, string> = {
   StatusChanged: 'Status Changed',
   UnassignedForDuration: 'Unassigned For Duration',
   AllSubtasksDone: 'All Sub-tasks Done',
+  ApprovalRequested: 'Approval Requested',
+  ApprovalDecided: 'Approval Decided',
+  AssigneeChanged: 'Assignee Changed',
+  PriorityChanged: 'Priority Changed',
+  CommentAdded: 'Comment Added',
 }
+
+const ANY = '__any__'
 
 const ACTION_LABELS: Record<AutomationActionType, string> = {
   SetStatus: 'Set Status',
@@ -248,6 +255,8 @@ export function AutomationRulesForm({ projectId, project, canManage }: Automatio
                       type: v as AutomationTriggerType,
                       toStatus: v === 'StatusChanged' ? rule.trigger.toStatus : null,
                       afterHours: v === 'UnassignedForDuration' ? rule.trigger.afterHours : null,
+                      approvalOutcome: null,
+                      toPriority: null,
                     },
                   })
                 }
@@ -283,6 +292,55 @@ export function AutomationRulesForm({ projectId, project, canManage }: Automatio
                         {name}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {rule.trigger.type === 'ApprovalDecided' && (
+                <Select
+                  value={rule.trigger.approvalOutcome ?? ANY}
+                  onValueChange={(v) =>
+                    updateRule(ruleIndex, {
+                      trigger: {
+                        type: 'ApprovalDecided',
+                        toStatus: null,
+                        approvalOutcome: v === ANY ? null : (v as 'approved' | 'rejected'),
+                      },
+                    })
+                  }
+                >
+                  <SelectTrigger aria-label={`Rule ${ruleIndex + 1} outcome`} className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ANY}>Either outcome</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+
+              {rule.trigger.type === 'PriorityChanged' && (
+                <Select
+                  value={rule.trigger.toPriority ?? ANY}
+                  onValueChange={(v) =>
+                    updateRule(ruleIndex, {
+                      trigger: {
+                        type: 'PriorityChanged',
+                        toStatus: null,
+                        toPriority: v === ANY ? null : (v as 'P1' | 'P2' | 'P3'),
+                      },
+                    })
+                  }
+                >
+                  <SelectTrigger aria-label={`Rule ${ruleIndex + 1} new priority`} className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ANY}>To any priority</SelectItem>
+                    <SelectItem value="P1">To P1</SelectItem>
+                    <SelectItem value="P2">To P2</SelectItem>
+                    <SelectItem value="P3">To P3</SelectItem>
                   </SelectContent>
                 </Select>
               )}

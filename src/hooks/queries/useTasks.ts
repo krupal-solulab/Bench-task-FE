@@ -123,6 +123,15 @@ export function useTaskRisk(id: string | undefined) {
   })
 }
 
+/** Module 12 gap-closure - workflow dry-run for one issue; fetched only while the preview is open. */
+export function useTransitionPreview(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.tasks.transitionPreview(id ?? ''),
+    queryFn: () => tasksService.previewTransitions(id!),
+    enabled: !!id,
+  })
+}
+
 /** Module 11 gap-closure - the activity feed, paged by the server's `nextBefore` cursor. */
 export function useActivityFeed(scope: 'all' | 'involved') {
   return useInfiniteQuery({

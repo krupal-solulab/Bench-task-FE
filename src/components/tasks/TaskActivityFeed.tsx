@@ -5,6 +5,7 @@ import { Spinner } from '@/components/common/Spinner'
 import { ErrorState } from '@/components/common/ErrorState'
 import { useTaskActivity } from '@/hooks/queries/useTasks'
 import { formatDateTime } from '@/lib/date'
+import { describeFieldChange } from '@/lib/field-labels'
 import { toApiError } from '@/lib/error'
 
 const ACTION_LABELS: Record<string, string> = {
@@ -18,9 +19,21 @@ const ACTION_LABELS: Record<string, string> = {
   sprint_assigned: 'moved the task into a sprint',
   sprint_removed: 'moved the task back to the backlog',
   commented: 'commented',
+  approval_requested: 'requested approval',
+  approval_recorded: 'approved (more approvals needed)',
+  approval_granted: 'approved the transition',
+  approval_rejected: 'rejected the transition',
+  moved_project: 'moved the task to another project',
 }
 
-export function TaskActivityFeed({ taskId }: { taskId: string }) {
+/** `customFieldNames` (id -> name) lets the field-level audit trail name custom fields. */
+export function TaskActivityFeed({
+  taskId,
+  customFieldNames,
+}: {
+  taskId: string
+  customFieldNames?: Record<string, string>
+}) {
   const [open, setOpen] = useState(false)
   const { data, isLoading, isError, error, refetch } = useTaskActivity(
     open ? taskId : undefined,
@@ -77,8 +90,14 @@ export function TaskActivityFeed({ taskId }: { taskId: string }) {
                     </span>
                     <span>
                       <span className="font-medium">{entry.actor.name}</span>{' '}
-                      {ACTION_LABELS[entry.action] ?? entry.action}
-                      {entry.from && entry.to ? ` (${entry.from} → ${entry.to})` : ''}
+                      {entry.action === 'updated' && entry.field ? (
+                        describeFieldChange(entry, customFieldNames)
+                      ) : (
+                        <>
+                          {ACTION_LABELS[entry.action] ?? entry.action}
+                          {entry.from && entry.to ? ` (${entry.from} → ${entry.to})` : ''}
+                        </>
+                      )}
                       {entry.viaAutomationRule && (
                         <span className="text-muted-foreground">
                           {' '}

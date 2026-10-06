@@ -44,6 +44,10 @@ function fail(statusCode: number, message: string): ApiErrorResponse {
 const url = (path: string) => `${BASE_URL}${path}`
 
 export const handlers = [
+  // Module 12 gap-closure defaults.
+  http.get(url('/tasks/:id/transitions/preview'), () =>
+    HttpResponse.json(ok({ currentStatus: 'Todo', pendingApprovalTo: null, transitions: [] })),
+  ),
   // Module 11 gap-closure defaults.
   http.get(url('/api-tokens'), () => HttpResponse.json(ok([]))),
   http.get(url('/api-tokens/org'), () => HttpResponse.json(ok([]))),

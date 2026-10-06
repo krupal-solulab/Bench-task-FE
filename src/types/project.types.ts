@@ -78,6 +78,12 @@ export const AUTOMATION_TRIGGER_TYPES = [
   'StatusChanged',
   'UnassignedForDuration',
   'AllSubtasksDone',
+  // Module 12 gap-closure - extended triggers.
+  'ApprovalRequested',
+  'ApprovalDecided',
+  'AssigneeChanged',
+  'PriorityChanged',
+  'CommentAdded',
 ] as const
 export type AutomationTriggerType = (typeof AUTOMATION_TRIGGER_TYPES)[number]
 
@@ -114,6 +120,9 @@ export interface AutomationTrigger {
   fromStatus?: string | null
   // Only meaningful (and required) for type === 'UnassignedForDuration'.
   afterHours?: number | null
+  // Module 12 gap-closure - optional scopes for ApprovalDecided / PriorityChanged (null = any).
+  approvalOutcome?: 'approved' | 'rejected' | null
+  toPriority?: 'P1' | 'P2' | 'P3' | null
 }
 
 export interface AutomationRule {

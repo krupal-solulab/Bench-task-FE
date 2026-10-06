@@ -15,6 +15,7 @@ import { RiskBadge, RiskReasons } from '@/components/tasks/RiskBadge'
 import { UserSelect } from '@/components/common/UserSelect'
 import { TaskStatusControl } from '@/components/tasks/TaskStatusControl'
 import { TaskApprovalActions } from '@/components/tasks/TaskApprovalActions'
+import { TransitionPreviewButton } from '@/components/tasks/TransitionPreviewButton'
 import { WatchVoteButtons } from '@/components/tasks/WatchVoteButtons'
 import { SnoozeNotificationsControl } from '@/components/tasks/SnoozeNotificationsControl'
 import { TaskForm } from '@/components/tasks/TaskForm'
@@ -228,6 +229,7 @@ export function TaskDetailPage() {
           <div className="flex items-center gap-2">
             <TaskStatusControl task={task} canEdit={canEditStatus} workflow={workflow} />
             <TaskApprovalActions task={task} />
+            <TransitionPreviewButton taskId={task.id} />
             <WatchVoteButtons task={task} />
             <SnoozeNotificationsControl taskId={task.id} />
             {canEditOther && (
@@ -472,7 +474,12 @@ export function TaskDetailPage() {
 
           <WorkLogSection taskId={task.id} />
 
-          <TaskActivityFeed taskId={task.id} />
+          <TaskActivityFeed
+            taskId={task.id}
+            customFieldNames={Object.fromEntries(
+              (project?.customFields ?? []).map((f) => [f.id, f.name]),
+            )}
+          />
 
           <AttachmentList taskId={task.id} />
         </div>

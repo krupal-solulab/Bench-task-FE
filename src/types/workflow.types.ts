@@ -27,6 +27,8 @@ export interface WorkflowTransition {
   approverUserIds?: string[]
   approverTeamIds?: string[]
   approverProjectRoleIds?: string[]
+  /** Module 12 gap-closure: how many different approvers must approve (unset = 1). */
+  requiredApprovals?: number
 }
 
 /** Module 12 - a snapshot of a requiresApproval transition's approver grantees, taken when the
@@ -40,6 +42,9 @@ export interface PendingApproval {
   approverUserIds: string[]
   approverTeamIds: string[]
   approverProjectRoleIds: string[]
+  /** Module 12 gap-closure - absent on requests made before multi-approver support (= 1). */
+  requiredApprovals?: number
+  approvals?: Array<{ user: string; at: string }>
 }
 
 export interface Workflow {
