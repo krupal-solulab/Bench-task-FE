@@ -111,6 +111,7 @@ export function WorkflowSettingsForm({
         | 'requiresApproval'
         | 'approverRoles'
         | 'approverUserIds'
+        | 'requiredApprovals'
       >
     >,
   ) {
@@ -470,6 +471,31 @@ export function WorkflowSettingsForm({
                         allowUnassigned={false}
                         placeholder="+ Add an individual approver…"
                       />
+
+                      <label
+                        className="flex items-center gap-2 text-xs"
+                        htmlFor={`transition-required-approvals-${t.from}-${t.to}`}
+                      >
+                        <span className="text-muted-foreground">Approvals required:</span>
+                        <Input
+                          id={`transition-required-approvals-${t.from}-${t.to}`}
+                          aria-label={`Approvals required for ${t.from} to ${t.to}`}
+                          type="number"
+                          min={1}
+                          max={10}
+                          className="h-7 w-16 text-xs"
+                          value={t.requiredApprovals ?? 1}
+                          onChange={(e) => {
+                            const n = Math.min(10, Math.max(1, Number(e.target.value) || 1))
+                            updateTransitionRule(t.from, t.to, {
+                              requiredApprovals: n === 1 ? undefined : n,
+                            })
+                          }}
+                        />
+                        <span className="text-muted-foreground">
+                          different approvers (any one rejection rejects)
+                        </span>
+                      </label>
 
                       {!t.approverRoles?.length && !t.approverUserIds?.length && (
                         <p className="text-xs text-destructive">

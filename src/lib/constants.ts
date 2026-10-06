@@ -121,6 +121,7 @@ export const queryKeys = {
     epicBurndown: (id: string) => ['tasks', 'detail', id, 'epic-burndown'] as const,
     summary: (id: string) => ['tasks', 'detail', id, 'summary'] as const,
     risk: (id: string) => ['tasks', 'detail', id, 'risk'] as const,
+    transitionPreview: (id: string) => ['tasks', 'detail', id, 'transition-preview'] as const,
     similar: (query: unknown) => ['tasks', 'similar', query] as const,
     atRisk: (projectId: string) => ['tasks', 'at-risk', projectId] as const,
     activityFeed: (scope: string) => ['tasks', 'activity-feed', scope] as const,

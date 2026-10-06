@@ -17,6 +17,11 @@ const TRIGGER_LABELS: Record<string, string> = {
   StatusChanged: 'Status Changed',
   UnassignedForDuration: 'Unassigned For Duration',
   AllSubtasksDone: 'All Sub-tasks Done',
+  ApprovalRequested: 'Approval Requested',
+  ApprovalDecided: 'Approval Decided',
+  AssigneeChanged: 'Assignee Changed',
+  PriorityChanged: 'Priority Changed',
+  CommentAdded: 'Comment Added',
 }
 
 /** BRD 8's automation audit trail viewer - "which rule fired, when, on which issue, and whether

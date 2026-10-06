@@ -19,6 +19,8 @@ export function describeActivity(entry: Pick<ActivityFeedEntry, 'action' | 'from
       return 'changed the due date of'
     case 'updated':
       return 'updated'
+    case 'approval_recorded':
+      return 'added an approval on'
     case 'deleted':
       return 'deleted'
     case 'sprint_assigned':

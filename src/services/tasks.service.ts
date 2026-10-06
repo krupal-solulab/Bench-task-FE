@@ -1,6 +1,7 @@
 import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost } from './api-client'
 import type { CsvExportResult } from '@/types/import-export.types'
 import type {
+  TransitionPreview,
   AddExternalReferencePayload,
   BulkAssignPayload,
   BulkCustomFieldPayload,
@@ -122,6 +123,8 @@ export const tasksService = {
   approveTransition: (id: string) => apiPost<Task>(`/tasks/${id}/approval/approve`),
 
   rejectTransition: (id: string) => apiPost<Task>(`/tasks/${id}/approval/reject`),
+
+  previewTransitions: (id: string) => apiGet<TransitionPreview>(`/tasks/${id}/transitions/preview`),
 
   watch: (id: string) => apiPost<Task>(`/tasks/${id}/watch`),
 

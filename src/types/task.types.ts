@@ -279,7 +279,38 @@ export interface TaskActivityEntry {
   actor: User
   // Set only when an automation rule's action produced this entry, rather than `actor` directly.
   viaAutomationRule: string | null
+  /** Module 12 gap-closure - for an `updated` entry, which field changed (null on older entries). */
+  field?: string | null
+  /** True when the viewer's role can't see this field - from/to are then blanked. */
+  redacted?: boolean
   createdAt: string
+}
+
+/** Module 12 gap-closure - GET /tasks/:id/transitions/preview (workflow dry-run). */
+export interface TransitionPreviewItem {
+  toStatus: string
+  category: string | null
+  allowed: boolean
+  blockers: string[]
+  requiresApproval: boolean
+  requiredApprovals: number
+  approverRoles: string[]
+  approverUserCount: number
+  approverTeamCount: number
+  approverProjectRoleCount: number
+  automations: Array<{
+    ruleName: string
+    trigger: string
+    actionType: string
+    value: string
+    whenApproved: boolean
+  }>
+}
+
+export interface TransitionPreview {
+  currentStatus: string
+  pendingApprovalTo: string | null
+  transitions: TransitionPreviewItem[]
 }
 
 /** Module 10's deterministic (non-LLM - see the backend's `task-summary.util.ts`) issue summary:
