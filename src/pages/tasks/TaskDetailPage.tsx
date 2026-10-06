@@ -225,8 +225,9 @@ export function TaskDetailPage() {
       <PageHeader
         title={task.title}
         description={task.description || undefined}
+        actionsBelow
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <TaskStatusControl task={task} canEdit={canEditStatus} workflow={workflow} />
             <TaskApprovalActions task={task} />
             <TransitionPreviewButton taskId={task.id} />
