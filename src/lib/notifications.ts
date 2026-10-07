@@ -13,4 +13,5 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   WatchedTaskUpdated: 'Watched issue activity',
   ApprovalRequested: 'Approval requests',
   ApprovalDecided: 'Approval decisions',
+  InviteAccepted: 'Accepted invitations',
 }

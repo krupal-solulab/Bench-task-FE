@@ -41,6 +41,8 @@ import { PlatformApiLogsPage } from '@/pages/platform/PlatformApiLogsPage'
 import { PlatformWorkflowTemplatesPage } from '@/pages/platform/PlatformWorkflowTemplatesPage'
 import { PlatformIntegrationHealthPage } from '@/pages/platform/PlatformIntegrationHealthPage'
 import { PlatformBillingPage } from '@/pages/platform/PlatformBillingPage'
+import { AcceptInvitePage } from '@/pages/auth/AcceptInvitePage'
+import { SetPasswordPage } from '@/pages/auth/SetPasswordPage'
 import { ForbiddenPage } from '@/pages/errors/ForbiddenPage'
 import { NotFoundPage } from '@/pages/errors/NotFoundPage'
 
@@ -49,8 +51,10 @@ export function AppRouter() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterOrganizationPage />} />
+      <Route path="/invite/:token" element={<AcceptInvitePage />} />
 
       <Route element={<ProtectedRoute />}>
+        <Route path="/set-password" element={<SetPasswordPage />} />
         <Route element={<OrgAppGuard />}>
           <Route element={<AppLayout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />

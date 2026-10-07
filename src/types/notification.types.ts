@@ -9,6 +9,7 @@ export const NOTIFICATION_TYPES = [
   'WatchedTaskUpdated',
   'ApprovalRequested',
   'ApprovalDecided',
+  'InviteAccepted',
 ] as const
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
 

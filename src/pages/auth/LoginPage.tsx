@@ -36,7 +36,14 @@ export function LoginPage() {
       navigate(returnTo || '/dashboard', { replace: true })
     } catch (err) {
       const apiError = toApiError(err)
-      setFormError(apiError.statusCode === 401 ? 'Invalid email or password' : apiError.message)
+      // An expired/revoked invitation's temporary password gets its own explanation (the server
+      // only discloses that to someone who knows the password); other 401s stay generic.
+      const isInviteProblem = /invitation/i.test(apiError.message)
+      setFormError(
+        apiError.statusCode === 401 && !isInviteProblem
+          ? 'Invalid email or password'
+          : apiError.message,
+      )
     }
   }
 

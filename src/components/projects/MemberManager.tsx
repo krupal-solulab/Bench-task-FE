@@ -6,8 +6,23 @@ import { Modal } from '@/components/common/Modal'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { UserSelect } from '@/components/common/UserSelect'
 import { FormField } from '@/components/common/FormField'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MemberPermissionsEditor } from './MemberPermissionsEditor'
+import { InviteSecretsPanel } from './InviteSecretsPanel'
+import { PendingInvitesList } from './PendingInvitesList'
+import { PROJECT_INVITE_FORM_ID, ProjectInviteForm } from './ProjectInviteForm'
 import { useAddProjectMembers, useRemoveProjectMember } from '@/hooks/mutations/useProjectMutations'
+import { useCreateProjectInvite } from '@/hooks/mutations/useProjectInviteMutations'
+import { useProjectMemberCandidates } from '@/hooks/queries/useProjects'
+import type { ProjectInviteFormValues } from '@/schemas/project-invite.schema'
+import type { SentProjectInvite } from '@/types/project-invite.types'
 import { useToast } from '@/hooks/useToast'
 import { isConflictError, toApiError } from '@/lib/error'
 import type { Project, ProjectMember } from '@/types/project.types'
@@ -19,8 +34,13 @@ export function MemberManager({ project, canManage }: { project: Project; canMan
   const [reassignTo, setReassignTo] = useState<string | null>(null)
   const [needsReassign, setNeedsReassign] = useState(false)
   const [permissionsTarget, setPermissionsTarget] = useState<ProjectMember | null>(null)
+  const [addMode, setAddMode] = useState<'existing' | 'invite'>('existing')
+  // Set right after an invite is sent/resent: the only time its link + password are visible.
+  const [sentInvite, setSentInvite] = useState<SentProjectInvite | null>(null)
 
   const addMembers = useAddProjectMembers(project.id)
+  const createInvite = useCreateProjectInvite(project.id)
+  const candidates = useProjectMemberCandidates(project.id, canManage && addOpen)
   const removeMember = useRemoveProjectMember(project.id)
   const { showToast } = useToast()
 
@@ -31,8 +51,7 @@ export function MemberManager({ project, canManage }: { project: Project; canMan
     try {
       await addMembers.mutateAsync([pendingUserId])
       showToast({ title: 'Member added', variant: 'success' })
-      setPendingUserId(null)
-      setAddOpen(false)
+      closeAddDialog()
     } catch (err) {
       showToast({
         title: 'Could not add member',
@@ -40,6 +59,25 @@ export function MemberManager({ project, canManage }: { project: Project; canMan
         variant: 'destructive',
       })
     }
+  }
+
+  async function handleInvite(values: ProjectInviteFormValues) {
+    try {
+      setSentInvite(await createInvite.mutateAsync(values))
+      setAddOpen(false)
+    } catch (err) {
+      showToast({
+        title: 'Could not send invitation',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  function closeAddDialog() {
+    setAddOpen(false)
+    setPendingUserId(null)
+    setAddMode('existing')
   }
 
   async function handleRemove() {
@@ -92,7 +130,9 @@ export function MemberManager({ project, canManage }: { project: Project; canMan
               <Avatar name={member.user.name} size="sm" />
               <div>
                 <p className="text-sm font-medium leading-tight">{member.user.name}</p>
-                <p className="text-xs text-muted-foreground">{member.role}</p>
+                <p className="text-xs text-muted-foreground">
+                  {member.role === 'owner' ? 'Owner' : 'Member'} · {member.user.role}
+                </p>
               </div>
             </div>
             {canManage && member.role !== 'owner' && (
@@ -119,30 +159,81 @@ export function MemberManager({ project, canManage }: { project: Project; canMan
         ))}
       </ul>
 
+      <PendingInvitesList projectId={project.id} canManage={canManage} onResent={setSentInvite} />
+
       <Modal
         open={addOpen}
-        onOpenChange={setAddOpen}
+        onOpenChange={(open) => (open ? setAddOpen(true) : closeAddDialog())}
         title="Add member"
-        size="sm"
+        description="Add someone from your organization, or invite a new person by email."
+        size="md"
         footer={
           <>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>
+            <Button variant="outline" onClick={closeAddDialog}>
               Cancel
             </Button>
-            <Button onClick={handleAdd} loading={addMembers.isPending} disabled={!pendingUserId}>
-              Add
-            </Button>
+            {addMode === 'existing' ? (
+              <Button onClick={handleAdd} loading={addMembers.isPending} disabled={!pendingUserId}>
+                Add
+              </Button>
+            ) : (
+              <Button type="submit" form={PROJECT_INVITE_FORM_ID} loading={createInvite.isPending}>
+                Send invitation
+              </Button>
+            )}
           </>
         }
       >
-        <FormField label="Developer" htmlFor="add-member-select">
-          <UserSelect
-            id="add-member-select"
-            value={pendingUserId}
-            onChange={setPendingUserId}
-            allowUnassigned={false}
-          />
-        </FormField>
+        <Tabs value={addMode} onValueChange={(v) => setAddMode(v as 'existing' | 'invite')}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="existing">Existing user</TabsTrigger>
+            <TabsTrigger value="invite">Invite by email</TabsTrigger>
+          </TabsList>
+          <TabsContent value="existing" className="pt-3">
+            {candidates.data && candidates.data.length === 0 ? (
+              <p className="rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
+                Everyone in your organization is already in this project.{' '}
+                <button
+                  type="button"
+                  className="font-medium text-primary hover:underline"
+                  onClick={() => setAddMode('invite')}
+                >
+                  Invite someone new
+                </button>
+              </p>
+            ) : (
+              <FormField label="User" htmlFor="add-member-select">
+                <Select value={pendingUserId ?? ''} onValueChange={setPendingUserId}>
+                  <SelectTrigger id="add-member-select" disabled={candidates.isLoading}>
+                    <SelectValue
+                      placeholder={candidates.isLoading ? 'Loading users...' : 'Choose a user'}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(candidates.data ?? []).map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name} · {u.email} · {u.role}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
+          </TabsContent>
+          <TabsContent value="invite" className="pt-3">
+            <ProjectInviteForm onSubmit={handleInvite} />
+          </TabsContent>
+        </Tabs>
+      </Modal>
+
+      <Modal
+        open={!!sentInvite}
+        onOpenChange={(open) => !open && setSentInvite(null)}
+        title={sentInvite?.invite.resendCount ? 'Invitation resent' : 'Invitation sent'}
+        size="md"
+        footer={<Button onClick={() => setSentInvite(null)}>Done</Button>}
+      >
+        {sentInvite && <InviteSecretsPanel sent={sentInvite} />}
       </Modal>
 
       <ConfirmDialog

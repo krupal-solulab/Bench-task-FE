@@ -158,6 +158,11 @@ export const handlers = [
   // Module 5 gap-closure - a plain array (not paginated), matching the backend's actual response
   // shape. ImportExportPanel fetches this unconditionally for a canManage viewer.
   http.get(url('/projects/:id/backups'), () => HttpResponse.json(ok([]))),
+  // Project invites: MemberManager lists pending invitations for a canManage viewer.
+  http.get(url('/projects/:id/invites'), () => HttpResponse.json(ok([]))),
+  http.get(url('/projects/:id/member-candidates'), () =>
+    HttpResponse.json(ok(mockUsers.filter((u) => u.role === 'Developer'))),
+  ),
   // Module 6 - a plain array (not paginated), matching the backend's actual response shape.
   // Grant/level pickers (GrantTeamsAndRoles, PermissionSchemeForm, SecuritySchemeForm,
   // RoleAssignmentsPanel) call these unconditionally, so every test rendering them needs a

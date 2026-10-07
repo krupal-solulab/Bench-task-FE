@@ -5,6 +5,10 @@ export type Role = (typeof ROLES)[number]
 export const ORG_ROLES = ['Admin', 'Manager', 'Developer'] as const
 export type OrgRole = (typeof ORG_ROLES)[number]
 
+/** Roles a project member can hold - and so what a project invite can grant. */
+export const PROJECT_MEMBER_ROLES = ['Developer', 'Manager'] as const
+export type ProjectMemberRole = (typeof PROJECT_MEMBER_ROLES)[number]
+
 export interface User {
   id: string
   name: string
@@ -14,6 +18,8 @@ export interface User {
   organizationId: string | null
   /** Module 11 gap-closure - display time zone; null/absent = the browser's. */
   timezone?: string | null
+  /** Signed in with a project invite's temporary password and must set their own first. */
+  mustChangePassword?: boolean
   createdAt: string
   updatedAt: string
 }

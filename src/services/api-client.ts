@@ -102,6 +102,8 @@ apiClient.interceptors.response.use(
       '/auth/login',
       '/auth/register-organization',
       '/auth/refresh',
+      // Project invitation link: preview + accept-with-temporary-password.
+      '/auth/invites/',
     ].some((path) => originalRequest?.url?.includes(path))
     if (
       error.response?.status === 401 &&
