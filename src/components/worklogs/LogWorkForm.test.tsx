@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { pickDate } from '@/test/utils/datePicker'
 import { LogWorkForm } from '@/components/worklogs/LogWorkForm'
 
 describe('LogWorkForm', () => {
@@ -12,9 +13,7 @@ describe('LogWorkForm', () => {
     fireEvent.change(screen.getByLabelText('Hours', { exact: false }), {
       target: { value: '0' },
     })
-    fireEvent.change(screen.getByLabelText('Date', { exact: false }), {
-      target: { value: '2026-03-01' },
-    })
+    await pickDate(user, screen.getByLabelText('Date', { exact: false }), '2026-03-01')
     await user.click(screen.getByRole('button', { name: 'Log work' }))
 
     expect(await screen.findByText('Must be at least 0.1 hours')).toBeInTheDocument()
@@ -29,9 +28,7 @@ describe('LogWorkForm', () => {
     fireEvent.change(screen.getByLabelText('Hours', { exact: false }), {
       target: { value: '3' },
     })
-    fireEvent.change(screen.getByLabelText('Date', { exact: false }), {
-      target: { value: '2026-03-01' },
-    })
+    await pickDate(user, screen.getByLabelText('Date', { exact: false }), '2026-03-01')
     await user.type(screen.getByLabelText('Description', { exact: false }), 'Fixed the bug')
     await user.click(screen.getByRole('button', { name: 'Log work' }))
 
@@ -54,9 +51,7 @@ describe('LogWorkForm', () => {
     fireEvent.change(screen.getByLabelText('Hours', { exact: false }), {
       target: { value: '1' },
     })
-    fireEvent.change(screen.getByLabelText('Date', { exact: false }), {
-      target: { value: '2026-03-01' },
-    })
+    await pickDate(user, screen.getByLabelText('Date', { exact: false }), '2026-03-01')
     await user.click(screen.getByRole('checkbox'))
     await user.click(screen.getByRole('button', { name: 'Log work' }))
 
@@ -95,7 +90,7 @@ describe('LogWorkForm', () => {
     // The stored decimal (4) displays as its shorthand form ("4h"), not a raw number.
     expect(screen.getByDisplayValue('4h')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Existing note')).toBeInTheDocument()
-    expect(screen.getByLabelText('Date', { exact: false })).toHaveValue('2026-03-01')
+    expect(screen.getByLabelText('Date', { exact: false })).toHaveTextContent('Mar 1, 2026')
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument()
   })
 
@@ -107,9 +102,7 @@ describe('LogWorkForm', () => {
     fireEvent.change(screen.getByLabelText('Hours', { exact: false }), {
       target: { value: '2h 30m' },
     })
-    fireEvent.change(screen.getByLabelText('Date', { exact: false }), {
-      target: { value: '2026-03-01' },
-    })
+    await pickDate(user, screen.getByLabelText('Date', { exact: false }), '2026-03-01')
     await user.click(screen.getByRole('button', { name: 'Log work' }))
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
@@ -124,9 +117,7 @@ describe('LogWorkForm', () => {
     fireEvent.change(screen.getByLabelText('Hours', { exact: false }), {
       target: { value: 'not a duration' },
     })
-    fireEvent.change(screen.getByLabelText('Date', { exact: false }), {
-      target: { value: '2026-03-01' },
-    })
+    await pickDate(user, screen.getByLabelText('Date', { exact: false }), '2026-03-01')
     await user.click(screen.getByRole('button', { name: 'Log work' }))
 
     expect(await screen.findByRole('alert')).toBeInTheDocument()

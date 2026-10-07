@@ -25,6 +25,7 @@ import type { SuggestedTaskFields, Task, TaskListQuery } from '@/types/task.type
 import { toTaskListParams } from './tasks.service'
 import type { Workflow } from '@/types/workflow.types'
 import type { NotificationSchemeRule } from '@/types/notification-scheme.types'
+import type { User } from '@/types/user.types'
 
 export const projectsService = {
   list: (query: ProjectListQuery) => apiGetPaginated<Project>('/projects', query),
@@ -47,6 +48,9 @@ export const projectsService = {
 
   members: (id: string, query: PageQuery = {}) =>
     apiGetPaginated<ProjectMember>(`/projects/${id}/members`, query),
+
+  /** Active Developers/Managers who are not yet in the project - the Add member picker. */
+  memberCandidates: (id: string) => apiGet<User[]>(`/projects/${id}/member-candidates`),
 
   addMembers: (id: string, userIds: string[]) =>
     apiPost<Project>(`/projects/${id}/members`, { userIds }),

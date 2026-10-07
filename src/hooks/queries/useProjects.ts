@@ -144,3 +144,11 @@ export function useSuggestedTaskFields(id: string | undefined, issueType: string
     enabled: !!id,
   })
 }
+
+export function useProjectMemberCandidates(id: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.projects.memberCandidates(id),
+    queryFn: () => projectsService.memberCandidates(id),
+    enabled: !!id && enabled,
+  })
+}

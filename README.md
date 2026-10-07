@@ -217,9 +217,10 @@ runs commitlint against Conventional Commits.
 
 ## Assumptions & trade-offs
 
-1. **DatePicker** wraps the native `<input type="date">` rather than a JS calendar widget
-   (`react-day-picker` was not in the fixed dependency list). This gets full keyboard support and
-   platform-consistent affordances for free, at the cost of styling control across browsers.
+1. **DatePicker** is a hand-rolled calendar in a Radix Popover (`react-day-picker` was not in the
+   fixed dependency list). It replaced the native `<input type="date">`, whose browser-drawn
+   calendar ignored dark mode. Fixed 6-week grid (no scroll), month/year view, arrow-key/PageUp/
+   PageDown navigation, Today/Clear. Tests drive it via `pickDate()` in `src/test/utils/datePicker.ts`.
 2. **Toasts** are a hand-rolled `role="status"`/`aria-live` stack (`ToastContext` + `Toast.tsx`)
    rather than Radix's `@radix-ui/react-toast` primitive — simpler to reason about and sufficient
    for the accessibility requirement (auto-dismiss, dismissible, screen-reader announced).

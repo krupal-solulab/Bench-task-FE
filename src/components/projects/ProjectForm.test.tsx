@@ -75,7 +75,7 @@ describe('ProjectForm', () => {
 
     expect(screen.getByDisplayValue('Existing Project')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Existing description')).toBeInTheDocument()
-    expect(screen.getByLabelText('Start date', { exact: false })).toHaveValue('2026-01-01')
+    expect(screen.getByLabelText('Start date', { exact: false })).toHaveTextContent('Jan 1, 2026')
     expect(screen.getByRole('button', { name: 'Update' })).toBeInTheDocument()
   })
 

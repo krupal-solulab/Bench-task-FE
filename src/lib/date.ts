@@ -91,6 +91,17 @@ export function modernTimeZoneName(zone: string): string {
   return ZONE_RENAMES[zone] ?? zone
 }
 
+const dayLabelFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+})
+
+/** A local calendar day spelled out ("March 1, 2026") - the DatePicker's day-cell name. */
+export function formatDayLabel(date: Date): string {
+  return dayLabelFormatter.format(date)
+}
+
 export function toDateInputValue(value: string | null | undefined): string {
   return value ? value.slice(0, 10) : ''
 }

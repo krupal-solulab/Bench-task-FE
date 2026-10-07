@@ -40,6 +40,11 @@ export interface AuthContextValue {
   startImpersonation?: (userId: string) => Promise<void>
   /** Ends the "view as" session and returns to the Admin's own session (reloads the app). */
   stopImpersonation?: () => Promise<void>
+  /** Accepts a project invitation with its temporary password and signs the new account in.
+   * Optional (like the impersonation members) so older test doubles of this context stay valid. */
+  acceptInvite?: (token: string, temporaryPassword: string) => Promise<void>
+  /** Sets the first own password of an invite account, replacing the session with a fresh one. */
+  setInitialPassword?: (name: string, newPassword: string) => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -191,6 +196,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   )
 
+  const acceptInvite = useCallback(
+    async (token: string, temporaryPassword: string) => {
+      applySession(await authService.acceptInvite(token, temporaryPassword))
+    },
+    [applySession],
+  )
+
+  const setInitialPassword = useCallback(
+    async (name: string, newPassword: string) => {
+      applySession(await authService.setInitialPassword(name, newPassword))
+    },
+    [applySession],
+  )
+
   const registerOrganization = useCallback(
     async (payload: RegisterOrganizationPayload) => {
       const session = await authService.registerOrganization(payload)
@@ -264,6 +283,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       impersonation,
       startImpersonation,
       stopImpersonation,
+      acceptInvite,
+      setInitialPassword,
     }),
     [
       user,
@@ -276,6 +297,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       impersonation,
       startImpersonation,
       stopImpersonation,
+      acceptInvite,
+      setInitialPassword,
     ],
   )
 

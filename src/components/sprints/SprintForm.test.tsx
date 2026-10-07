@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { pickDate } from '@/test/utils/datePicker'
 import { SprintForm } from '@/components/sprints/SprintForm'
 
 describe('SprintForm', () => {
@@ -10,12 +11,8 @@ describe('SprintForm', () => {
     render(<SprintForm onSubmit={onSubmit} onCancel={vi.fn()} />)
 
     await user.type(screen.getByLabelText('Name', { exact: false }), 'ab')
-    fireEvent.change(screen.getByLabelText('Start date', { exact: false }), {
-      target: { value: '2026-01-01' },
-    })
-    fireEvent.change(screen.getByLabelText('End date', { exact: false }), {
-      target: { value: '2026-01-14' },
-    })
+    await pickDate(user, screen.getByLabelText('Start date', { exact: false }), '2026-01-01')
+    await pickDate(user, screen.getByLabelText('End date', { exact: false }), '2026-01-14')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     expect(await screen.findByText('Name must be at least 3 characters')).toBeInTheDocument()
@@ -28,12 +25,9 @@ describe('SprintForm', () => {
     render(<SprintForm onSubmit={onSubmit} onCancel={vi.fn()} />)
 
     await user.type(screen.getByLabelText('Name', { exact: false }), 'Sprint 12')
-    fireEvent.change(screen.getByLabelText('Start date', { exact: false }), {
-      target: { value: '2026-02-01' },
-    })
-    fireEvent.change(screen.getByLabelText('End date', { exact: false }), {
-      target: { value: '2026-01-01' },
-    })
+    // End first: once a start date is set, the calendar disables earlier end dates outright.
+    await pickDate(user, screen.getByLabelText('End date', { exact: false }), '2026-01-01')
+    await pickDate(user, screen.getByLabelText('Start date', { exact: false }), '2026-02-01')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     expect(
@@ -48,12 +42,8 @@ describe('SprintForm', () => {
     render(<SprintForm onSubmit={onSubmit} onCancel={vi.fn()} />)
 
     await user.type(screen.getByLabelText('Name', { exact: false }), 'Sprint 12')
-    fireEvent.change(screen.getByLabelText('Start date', { exact: false }), {
-      target: { value: '2026-01-01' },
-    })
-    fireEvent.change(screen.getByLabelText('End date', { exact: false }), {
-      target: { value: '2026-01-14' },
-    })
+    await pickDate(user, screen.getByLabelText('Start date', { exact: false }), '2026-01-01')
+    await pickDate(user, screen.getByLabelText('End date', { exact: false }), '2026-01-14')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
@@ -91,8 +81,8 @@ describe('SprintForm', () => {
 
     expect(screen.getByDisplayValue('Existing Sprint')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Ship it')).toBeInTheDocument()
-    expect(screen.getByLabelText('Start date', { exact: false })).toHaveValue('2026-01-01')
-    expect(screen.getByLabelText('End date', { exact: false })).toHaveValue('2026-01-14')
+    expect(screen.getByLabelText('Start date', { exact: false })).toHaveTextContent('Jan 1, 2026')
+    expect(screen.getByLabelText('End date', { exact: false })).toHaveTextContent('Jan 14, 2026')
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
   })
 

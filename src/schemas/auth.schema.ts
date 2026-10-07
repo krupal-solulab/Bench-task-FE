@@ -50,3 +50,27 @@ export const changePasswordSchema = z
   })
 
 export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>
+
+export const acceptInviteSchema = z.object({
+  temporaryPassword: z.string().trim().min(1, 'Enter the temporary password from your invitation'),
+})
+
+export type AcceptInviteFormValues = z.infer<typeof acceptInviteSchema>
+
+/** Completing an invite account: own name + first password - no current password asked. */
+export const setInitialPasswordSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, 'Name must be at least 2 characters')
+      .max(60, 'Name is too long'),
+    newPassword: passwordRule,
+    confirmNewPassword: z.string().min(1, 'Please confirm your new password'),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmNewPassword'],
+  })
+
+export type SetInitialPasswordFormValues = z.infer<typeof setInitialPasswordSchema>

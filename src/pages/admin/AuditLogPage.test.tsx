@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import type { ReactNode } from 'react'
@@ -7,6 +7,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { server } from '@/test/mocks/server'
 import { AuditLogPage } from '@/pages/admin/AuditLogPage'
+import { pickDate } from '@/test/utils/datePicker'
 import type { AuditLogEntry } from '@/types/audit-log.types'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
@@ -103,10 +104,11 @@ describe('AuditLogPage', () => {
       seenPages.push(reqUrl.searchParams.get('page'))
     })
     // Start on page 2 so resetting to page 1 on filter change is actually observable.
+    const user = userEvent.setup()
     renderPage('/admin/audit-log?page=2')
 
     await waitFor(() => expect(screen.getByText('User Created')).toBeInTheDocument())
-    fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-01-01' } })
+    await pickDate(user, screen.getByLabelText('From'), '2026-01-01')
 
     await waitFor(() => expect(seenDateFroms.at(-1)).toBe('2026-01-01'))
     expect(seenPages.at(-1)).toBe('1')
