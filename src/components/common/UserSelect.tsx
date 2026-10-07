@@ -18,6 +18,8 @@ export interface UserSelectProps {
   placeholder?: string
   id?: string
   allowUnassigned?: boolean
+  /** Read-only (e.g. a field-permission rule) - shows the value but can't be changed. */
+  disabled?: boolean
 }
 
 const UNASSIGNED_VALUE = '__unassigned__'
@@ -29,6 +31,7 @@ export function UserSelect({
   placeholder = 'Select assignee',
   id,
   allowUnassigned = true,
+  disabled = false,
 }: UserSelectProps) {
   const { data, isLoading, isError } = useAssignableUsers()
   const [search, setSearch] = useState('')
@@ -66,6 +69,7 @@ export function UserSelect({
   return (
     <Select
       value={selectValue}
+      disabled={disabled}
       onValueChange={(next) => onChange(next === UNASSIGNED_VALUE ? null : next)}
     >
       <SelectTrigger id={id} aria-label={placeholder}>

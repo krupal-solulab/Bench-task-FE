@@ -8,6 +8,7 @@ import { UserSelect } from '@/components/common/UserSelect'
 import { TagInput } from '@/components/common/TagInput'
 import { IssuePicker } from '@/components/tasks/IssuePicker'
 import { ReleaseMultiSelect } from '@/components/releases/ReleaseMultiSelect'
+import { BUILT_IN_TASK_FIELD_IDS } from '@/types/field-permission-scheme.types'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -102,6 +103,21 @@ export function TaskForm({
     !user || canViewField(assignedFieldPermissionScheme, fieldId, user.role)
   const canEdit = (fieldId: string) =>
     !user || canEditField(assignedFieldPermissionScheme, fieldId, user.role)
+
+  // Gap-closure: when editing, never send a field the viewer can't edit (hidden or read-only) -
+  // its value is unchanged anyway, and for a hidden field the form only holds a blanked value.
+  // On create every field is sent, as before (priority, for one, is required there).
+  async function submit(values: TaskFormValues) {
+    if (!initialValues) return onSubmit(values)
+    const editable = { ...values } as Record<string, unknown>
+    for (const fieldId of BUILT_IN_TASK_FIELD_IDS) {
+      if (!canEdit(fieldId)) editable[fieldId] = undefined
+    }
+    const customFieldValues = Object.fromEntries(
+      Object.entries(values.customFieldValues ?? {}).filter(([fieldId]) => canEdit(fieldId)),
+    )
+    return onSubmit({ ...editable, customFieldValues } as TaskFormValues)
+  }
 
   const title = watch('title')
   const dueDate = watch('dueDate')
@@ -209,7 +225,7 @@ export function TaskForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+    <form onSubmit={handleSubmit(submit)} className="space-y-4" noValidate>
       {!isEditingExisting && (
         <details className="rounded-md border border-dashed bg-muted/30 p-3 text-sm">
           <summary className="cursor-pointer select-none font-medium">
@@ -566,6 +582,7 @@ export function TaskForm({
               value={fixVersions}
               onChange={(next) => setValue('fixVersions', next)}
               placeholder="No fix version"
+              disabled={!canEdit('fixVersions')}
             />
           </FormField>
         )}
@@ -578,6 +595,7 @@ export function TaskForm({
               value={affectsVersions}
               onChange={(next) => setValue('affectsVersions', next)}
               placeholder="No affects version"
+              disabled={!canEdit('affectsVersions')}
             />
           </FormField>
         )}
@@ -683,6 +701,7 @@ export function TaskForm({
                 }
                 memberIds={memberIds}
                 placeholder={`Select ${field.name.toLowerCase()}`}
+                disabled={!canEdit(field.id)}
               />
             )}
           </FormField>

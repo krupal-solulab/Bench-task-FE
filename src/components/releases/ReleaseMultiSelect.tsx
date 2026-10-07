@@ -10,6 +10,8 @@ export interface ReleaseMultiSelectProps {
   onChange: (releaseIds: string[]) => void
   placeholder?: string
   id?: string
+  /** Read-only (e.g. a field-permission rule) - shows the selection but can't be changed. */
+  disabled?: boolean
 }
 
 /**
@@ -23,6 +25,7 @@ export function ReleaseMultiSelect({
   onChange,
   placeholder = 'Select releases',
   id,
+  disabled = false,
 }: ReleaseMultiSelectProps) {
   const { data, isLoading } = useReleases(projectId, { page: 1, limit: 100, sortOrder: 'asc' })
   const releases = data?.data ?? []
@@ -38,7 +41,7 @@ export function ReleaseMultiSelect({
         <button
           id={id}
           type="button"
-          disabled={isLoading}
+          disabled={isLoading || disabled}
           className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-sm disabled:opacity-50"
         >
           <span className="truncate text-left">

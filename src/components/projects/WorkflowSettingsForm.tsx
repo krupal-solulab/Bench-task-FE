@@ -5,6 +5,7 @@ import { FormField } from '@/components/common/FormField'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { UserSelect } from '@/components/common/UserSelect'
+import { GrantTeamsAndRoles } from '@/components/admin/GrantTeamsAndRoles'
 import {
   Select,
   SelectContent,
@@ -111,6 +112,8 @@ export function WorkflowSettingsForm({
         | 'requiresApproval'
         | 'approverRoles'
         | 'approverUserIds'
+        | 'approverTeamIds'
+        | 'approverProjectRoleIds'
         | 'requiredApprovals'
       >
     >,
@@ -472,6 +475,24 @@ export function WorkflowSettingsForm({
                         placeholder="+ Add an individual approver…"
                       />
 
+                      {/* Gap-closure: teams and project roles as approvers - the backend has
+                          always supported all 4 grantee kinds; the UI now offers them too. */}
+                      <GrantTeamsAndRoles
+                        idPrefix={`Approvers for ${t.from} to ${t.to}`}
+                        allowedTeamIds={t.approverTeamIds ?? []}
+                        allowedProjectRoleIds={t.approverProjectRoleIds ?? []}
+                        onChangeTeamIds={(ids) =>
+                          updateTransitionRule(t.from, t.to, {
+                            approverTeamIds: ids.length ? ids : undefined,
+                          })
+                        }
+                        onChangeProjectRoleIds={(ids) =>
+                          updateTransitionRule(t.from, t.to, {
+                            approverProjectRoleIds: ids.length ? ids : undefined,
+                          })
+                        }
+                      />
+
                       <label
                         className="flex items-center gap-2 text-xs"
                         htmlFor={`transition-required-approvals-${t.from}-${t.to}`}
@@ -497,11 +518,14 @@ export function WorkflowSettingsForm({
                         </span>
                       </label>
 
-                      {!t.approverRoles?.length && !t.approverUserIds?.length && (
-                        <p className="text-xs text-destructive">
-                          At least one approver role or user is required.
-                        </p>
-                      )}
+                      {!t.approverRoles?.length &&
+                        !t.approverUserIds?.length &&
+                        !t.approverTeamIds?.length &&
+                        !t.approverProjectRoleIds?.length && (
+                          <p className="text-xs text-destructive">
+                            At least one approver role, user, team or project role is required.
+                          </p>
+                        )}
                     </div>
                   )}
                 </div>

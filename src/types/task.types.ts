@@ -98,6 +98,8 @@ export interface Task {
   // Module 12's Approval Workflows - set instead of applying a `requiresApproval` transition
   // immediately; null (every existing task) means no transition is currently awaiting a decision.
   pendingApproval: PendingApproval | null
+  /** Field ids hidden from the viewer's role (field permissions) - their values are blanked. */
+  redactedFields?: string[]
   createdAt: string
   updatedAt: string
 }
