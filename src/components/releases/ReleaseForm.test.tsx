@@ -77,7 +77,9 @@ describe('ReleaseForm', () => {
 
     expect(screen.getByDisplayValue('v1.0.0')).toBeInTheDocument()
     expect(screen.getByDisplayValue('First release')).toBeInTheDocument()
-    expect(screen.getByLabelText('Target release date', { exact: false })).toHaveValue('2026-03-01')
+    expect(screen.getByLabelText('Target release date', { exact: false })).toHaveTextContent(
+      'Mar 1, 2026',
+    )
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument()
   })
 
