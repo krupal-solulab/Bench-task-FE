@@ -12,7 +12,8 @@ import { CardSkeleton } from '@/components/common/Skeleton'
 import { Avatar } from '@/components/common/Avatar'
 import { StaggerContainer, StaggerItem } from '@/components/common/Stagger'
 import { StatCard } from '@/components/dashboard/StatCard'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
+import { OverflowTabsList, type OverflowTab } from '@/components/common/OverflowTabsList'
 import { FormField } from '@/components/common/FormField'
 import {
   Select,
@@ -97,6 +98,33 @@ import type { Sprint } from '@/types/sprint.types'
 import { STANDARD_ISSUE_TYPES, type TaskListQuery } from '@/types/task.types'
 import { resolveIssueTypes, standardIssueTypeNames } from '@/types/issue-type.types'
 import type { Workflow } from '@/types/workflow.types'
+
+const PROJECT_TABS: OverflowTab[] = [
+  { value: 'board', label: 'Board' },
+  { value: 'backlog', label: 'Backlog' },
+  { value: 'sprint-board', label: 'Sprint Board' },
+  { value: 'calendar', label: 'Calendar' },
+  { value: 'epics', label: 'Epics' },
+  { value: 'list', label: 'List' },
+  { value: 'members', label: 'Members' },
+  { value: 'stats', label: 'Stats' },
+  { value: 'reports', label: 'Reports' },
+  { value: 'dependencies', label: 'Dependencies' },
+  { value: 'releases', label: 'Releases' },
+  { value: 'timesheet', label: 'Timesheet' },
+  { value: 'activity', label: 'Activity' },
+  { value: 'import-export', label: 'Import/Export' },
+  { value: 'workflow', label: 'Workflow' },
+  { value: 'fields', label: 'Fields' },
+  { value: 'issue-types', label: 'Issue Types' },
+  { value: 'automation', label: 'Automation' },
+  { value: 'notifications', label: 'Notifications' },
+  { value: 'sla', label: 'SLA' },
+  { value: 'permissions', label: 'Permissions' },
+]
+const SPRINT_ONLY_TABS = new Set(['backlog', 'sprint-board', 'calendar'])
+/** Kanban projects have no sprints, so no Backlog / Sprint Board / Calendar. */
+const KANBAN_PROJECT_TABS = PROJECT_TABS.filter((t) => !SPRINT_ONLY_TABS.has(t.value))
 
 /** The issue-type selector's sentinel value for "the project-wide default workflow" - Select
  * doesn't allow an empty-string item value, and `undefined` isn't a valid controlled value. */
@@ -425,34 +453,12 @@ export function ProjectDetailPage() {
       </div>
 
       <Tabs value={tab} onValueChange={(next) => setFilters({ tab: next })}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <TabsList>
-            <TabsTrigger value="board">Board</TabsTrigger>
-            {!isKanban && (
-              <>
-                <TabsTrigger value="backlog">Backlog</TabsTrigger>
-                <TabsTrigger value="sprint-board">Sprint Board</TabsTrigger>
-                <TabsTrigger value="calendar">Calendar</TabsTrigger>
-              </>
-            )}
-            <TabsTrigger value="epics">Epics</TabsTrigger>
-            <TabsTrigger value="list">List</TabsTrigger>
-            <TabsTrigger value="members">Members</TabsTrigger>
-            <TabsTrigger value="stats">Stats</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-            <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
-            <TabsTrigger value="releases">Releases</TabsTrigger>
-            <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
-            <TabsTrigger value="activity">Activity</TabsTrigger>
-            <TabsTrigger value="import-export">Import/Export</TabsTrigger>
-            <TabsTrigger value="workflow">Workflow</TabsTrigger>
-            <TabsTrigger value="fields">Fields</TabsTrigger>
-            <TabsTrigger value="issue-types">Issue Types</TabsTrigger>
-            <TabsTrigger value="automation">Automation</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="sla">SLA</TabsTrigger>
-            <TabsTrigger value="permissions">Permissions</TabsTrigger>
-          </TabsList>
+        <div className="flex items-center justify-between gap-2">
+          <OverflowTabsList
+            tabs={isKanban ? KANBAN_PROJECT_TABS : PROJECT_TABS}
+            value={tab}
+            onValueChange={(next) => setFilters({ tab: next })}
+          />
           {(canManageSprintsHere || canCreateTaskHere) && (
             <div className="flex shrink-0 items-center gap-2">
               {canManageSprintsHere && (
