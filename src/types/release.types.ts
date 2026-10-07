@@ -85,10 +85,18 @@ export interface ReleaseCompareIssue {
   statusCategory: string
 }
 
+/** Gap-closure: an issue that was tagged with the release but later removed from it. */
+export interface ReleaseMovedOutIssue extends ReleaseCompareIssue {
+  movedOutAt: string
+}
+
 export interface ReleaseCompareResult {
   onlyInA: ReleaseCompareIssue[]
   onlyInB: ReleaseCompareIssue[]
   inBoth: ReleaseCompareIssue[]
+  // Optional so an older backend response still renders.
+  movedOutOfA?: ReleaseMovedOutIssue[]
+  movedOutOfB?: ReleaseMovedOutIssue[]
 }
 
 export interface ReleaseNotes {

@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { Button } from '@/components/common/Button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { UserSelect } from '@/components/common/UserSelect'
+import { GrantTeamsAndRoles } from '@/components/admin/GrantTeamsAndRoles'
 import { useUpdateDefaultApprovers } from '@/hooks/mutations/useProjectMutations'
 import { useAssignableUsers } from '@/hooks/queries/useUsers'
 import { useToast } from '@/hooks/useToast'
@@ -27,9 +28,8 @@ const EMPTY_GRANT: DefaultApproversPayload = {
 /**
  * Module 6 gap-closure: a project-wide fallback approver pool for Approval Workflows, rendered
  * ONCE on the Workflow tab (not per-issue-type, unlike WorkflowSettingsForm below it) since it's a
- * project-level setting. Same "roles + explicit users only" scope as WorkflowSettingsForm's own
- * per-transition approver editor - team/project-role pickers aren't in the UI for either, a
- * pre-existing, documented v1 scope decision this mirrors rather than expands.
+ * project-level setting. Offers all 4 grantee kinds - roles, users, and (gap-closure) teams and
+ * project roles - the same as WorkflowSettingsForm's per-transition approver editor.
  */
 export function DefaultApproversForm({
   projectId,
@@ -75,7 +75,13 @@ export function DefaultApproversForm({
   }
 
   if (!canManage) {
-    const hasAny = grant.allowedRoles.length > 0 || grant.allowedUserIds.length > 0
+    const teamCount = grant.allowedTeamIds?.length ?? 0
+    const projectRoleCount = grant.allowedProjectRoleIds?.length ?? 0
+    const hasAny =
+      grant.allowedRoles.length > 0 ||
+      grant.allowedUserIds.length > 0 ||
+      teamCount > 0 ||
+      projectRoleCount > 0
     return (
       <div className="space-y-2">
         <h3 className="font-medium">Default approvers</h3>
@@ -84,6 +90,10 @@ export function DefaultApproversForm({
             {[
               ...grant.allowedRoles,
               ...grant.allowedUserIds.map((id) => userById.get(id)?.name ?? id),
+              ...(teamCount ? [`${teamCount} team${teamCount === 1 ? '' : 's'}`] : []),
+              ...(projectRoleCount
+                ? [`${projectRoleCount} project role${projectRoleCount === 1 ? '' : 's'}`]
+                : []),
             ].join(', ')}
           </p>
         ) : (
@@ -146,6 +156,14 @@ export function DefaultApproversForm({
         onChange={addUser}
         allowUnassigned={false}
         placeholder="+ Add a default approver…"
+      />
+
+      <GrantTeamsAndRoles
+        idPrefix="Default approvers"
+        allowedTeamIds={grant.allowedTeamIds ?? []}
+        allowedProjectRoleIds={grant.allowedProjectRoleIds ?? []}
+        onChangeTeamIds={(ids) => setGrant({ ...grant, allowedTeamIds: ids })}
+        onChangeProjectRoleIds={(ids) => setGrant({ ...grant, allowedProjectRoleIds: ids })}
       />
 
       <div className="flex justify-end border-t pt-3">

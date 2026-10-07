@@ -6,9 +6,22 @@ export function PriorityBadge({
   priority,
   className,
 }: {
-  priority: TaskPriority
+  priority: TaskPriority | null
   className?: string
 }) {
+  // A priority field hidden from the viewer's role (field permissions) comes back empty.
+  if (!priority) {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground',
+          className,
+        )}
+      >
+        Hidden
+      </span>
+    )
+  }
   return (
     <span
       className={cn(

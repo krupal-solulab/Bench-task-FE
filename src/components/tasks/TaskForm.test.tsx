@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { AuthContext, type AuthContextValue } from '@/context/AuthContext'
 import { server } from '@/test/mocks/server'
-import { mockProjects, mockUsers } from '@/test/mocks/fixtures'
+import { mockProjects, mockTasks, mockUsers } from '@/test/mocks/fixtures'
 import { TaskForm } from '@/components/tasks/TaskForm'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
@@ -251,6 +251,70 @@ describe('TaskForm', () => {
 
       expect(onSubmit).toHaveBeenCalledTimes(1)
       expect(onSubmit.mock.calls[0]![0]).toEqual(expect.objectContaining({ securityLevel: null }))
+    })
+  })
+
+  // Post-BRD clean-up: never send fields the viewer can't edit when saving an existing issue.
+  describe('read-only fields when editing', () => {
+    function useReadOnlyScheme() {
+      server.use(
+        http.get(url('/projects/p-1'), () =>
+          HttpResponse.json({
+            success: true,
+            data: { ...mockProjects[0]!, id: 'p-1', fieldPermissionSchemeId: 'fps-1' },
+          }),
+        ),
+        http.get(url('/field-permission-schemes'), () =>
+          HttpResponse.json({
+            success: true,
+            data: [
+              {
+                id: 'fps-1',
+                organizationId: 'o-1',
+                name: 'Locked',
+                rules: [
+                  { fieldId: 'priority', hiddenFromRoles: [], readOnlyForRoles: ['Developer'] },
+                  { fieldId: 'labels', hiddenFromRoles: [], readOnlyForRoles: ['Developer'] },
+                ],
+                createdAt: '2026-01-01T00:00:00.000Z',
+                updatedAt: '2026-01-01T00:00:00.000Z',
+              },
+            ],
+          }),
+        ),
+      )
+    }
+
+    it('leaves read-only fields out of an edit, keeping editable ones', async () => {
+      useReadOnlyScheme()
+      const user = userEvent.setup()
+      const { onSubmit } = renderTaskForm({
+        initialValues: { ...mockTasks[0]!, title: 'Existing issue', labels: ['x'] },
+      })
+      const title = screen.getByLabelText('Title', { exact: false })
+      await waitFor(() => expect(document.getElementById('labels')).toBeNull())
+      await user.clear(title)
+      await user.type(title, 'Renamed issue')
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+      const sent = onSubmit.mock.calls[0]![0]
+      expect(sent.title).toBe('Renamed issue')
+      expect(sent.priority).toBeUndefined()
+      expect(sent.labels).toBeUndefined()
+    })
+
+    it('still sends every field when creating an issue', async () => {
+      useReadOnlyScheme()
+      const user = userEvent.setup()
+      const { onSubmit } = renderTaskForm()
+      await waitFor(() => expect(document.getElementById('labels')).toBeNull())
+      await user.type(screen.getByLabelText('Title', { exact: false }), 'Brand new issue')
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+      await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+      expect(onSubmit.mock.calls[0]![0]).toEqual(
+        expect.objectContaining({ title: 'Brand new issue', priority: 'P2', labels: [] }),
+      )
     })
   })
 })
