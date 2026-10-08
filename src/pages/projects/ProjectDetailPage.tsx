@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Archive } from 'lucide-react'
+import { Archive, X } from 'lucide-react'
 import { AtRiskIssuesCard } from '@/components/projects/AtRiskIssuesCard'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -26,7 +26,9 @@ import { ProjectForm } from '@/components/projects/ProjectForm'
 import { ProjectStatusControl } from '@/components/projects/ProjectStatusControl'
 import { MemberManager } from '@/components/projects/MemberManager'
 import { ProjectActivityFeed } from '@/components/projects/ProjectActivityFeed'
-import { TaskBoard } from '@/components/tasks/TaskBoard'
+import { SWIMLANE_OPTIONS, TaskBoard, type SwimlaneBy } from '@/components/tasks/TaskBoard'
+import { BoardPeopleFilter, UNASSIGNED_FILTER } from '@/components/tasks/BoardPeopleFilter'
+import type { Task } from '@/types/task.types'
 import { TaskList } from '@/components/tasks/TaskList'
 import { TaskFilters } from '@/components/tasks/TaskFilters'
 import { SavedFiltersMenu } from '@/components/tasks/SavedFiltersMenu'
@@ -130,6 +132,38 @@ const KANBAN_PROJECT_TABS = PROJECT_TABS.filter((t) => !SPRINT_ONLY_TABS.has(t.v
  * doesn't allow an empty-string item value, and `undefined` isn't a valid controlled value. */
 const DEFAULT_WORKFLOW_OPTION = '__default__'
 
+const SWIMLANE_STORAGE_KEY = 'ptm.board.groupBy'
+
+/** Board / Sprint Board filter bar: one card holding grouping, people and reset. */
+const BOARD_TOOLBAR_CLASS =
+  'flex flex-wrap items-center gap-2 rounded-xl border bg-card px-3 py-2 shadow-soft'
+
+/** The board's remembered grouping - Assignee by default, so unassigned work is its own section. */
+function readStoredSwimlane(): SwimlaneBy {
+  try {
+    const stored = localStorage.getItem(SWIMLANE_STORAGE_KEY)
+    if (stored && (SWIMLANE_OPTIONS as readonly string[]).includes(stored)) {
+      return stored as SwimlaneBy
+    }
+  } catch {
+    // Storage blocked - fall through to the default.
+  }
+  return 'assignee'
+}
+
+/** Board people filter: tasks of any selected person, plus unassigned ones when that's picked. */
+function filterByPeople(tasks: Task[], selected: string[]): Task[] {
+  if (selected.length === 0) return tasks
+  const wanted = new Set(selected)
+  return tasks.filter((t) =>
+    t.assignee ? wanted.has(t.assignee.id) : wanted.has(UNASSIGNED_FILTER),
+  )
+}
+
+function dedupePeople<T extends { id: string }>(people: T[]): T[] {
+  return [...new Map(people.map((p) => [p.id, p])).values()]
+}
+
 export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -160,11 +194,23 @@ export function ProjectDetailPage() {
     // Board quick filter (BRD 6.1) - which epic's linked issues to show. Shared with List, same
     // as every other filter in this object.
     epicId: undefined as string | undefined,
+    // Board/Sprint Board people filter: comma-separated user ids and/or "unassigned". Applied
+    // client-side to the loaded board, so any combination of people works.
+    people: '',
   })
-  const { tab, issueType: issueTypeFilter, epicId, ...filters } = state
-  // Board-only, not persisted to the URL or shared with List - a pure display grouping (see
-  // TaskBoard's own SwimlaneBy type), reset is harmless so it doesn't need to survive a reload.
-  const [swimlaneBy, setSwimlaneBy] = useState<'none' | 'assignee' | 'priority' | 'epic'>('none')
+  const { tab, issueType: issueTypeFilter, epicId, people, ...filters } = state
+  const peopleFilter = people ? people.split(',').filter(Boolean) : []
+  // Board-only display grouping (see TaskBoard's SwimlaneBy) - not in the URL; remembered per
+  // browser, defaulting to Assignee so unassigned work sits in its own section.
+  const [swimlaneBy, setSwimlaneByState] = useState<SwimlaneBy>(readStoredSwimlane)
+  function setSwimlaneBy(next: SwimlaneBy) {
+    setSwimlaneByState(next)
+    try {
+      localStorage.setItem(SWIMLANE_STORAGE_KEY, next)
+    } catch {
+      // Storage blocked - the choice simply isn't remembered.
+    }
+  }
   // Not persisted to the URL, unlike the rest of `filters` - useQueryParams is shared with several
   // pages and typed for scalar values only; these are string arrays.
   const [labelFilter, setLabelFilter] = useState<string[]>([])
@@ -393,6 +439,44 @@ export function ProjectDetailPage() {
     }
   }
 
+  // Board + Sprint Board share these: grouping, the people filter (everyone in the project, so
+  // anyone can look at anyone's issues) and a reset for both people and "My issues".
+  const boardPeople = dedupePeople([project.owner, ...project.members.map((m) => m.user)])
+  const boardFiltered = peopleFilter.length > 0 || !!filters.assignee || !!epicId
+  const boardPeopleFilter = (
+    <BoardPeopleFilter
+      people={boardPeople}
+      selected={peopleFilter}
+      currentUserId={user?.id}
+      onChange={(next) => setFilters({ people: next.join(',') })}
+    />
+  )
+  const groupBySelect = (
+    <Select value={swimlaneBy} onValueChange={(v) => setSwimlaneBy(v as SwimlaneBy)}>
+      <SelectTrigger aria-label="Group into swimlanes" className="w-44">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="assignee">Group: Assignee</SelectItem>
+        <SelectItem value="priority">Group: Priority</SelectItem>
+        <SelectItem value="epic">Group: Epic</SelectItem>
+        <SelectItem value="none">No grouping</SelectItem>
+      </SelectContent>
+    </Select>
+  )
+  const clearBoardFilters = boardFiltered ? (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className="ml-auto text-muted-foreground"
+      onClick={() => setFilters({ people: '', assignee: undefined, epicId: undefined })}
+    >
+      <X />
+      Clear filters
+    </Button>
+  ) : null
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -476,7 +560,7 @@ export function ProjectDetailPage() {
         </div>
 
         <TabsContent value="board" className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className={BOARD_TOOLBAR_CLASS}>
             <Button
               type="button"
               variant={filters.assignee === user?.id ? 'default' : 'outline'}
@@ -503,20 +587,14 @@ export function ProjectDetailPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={swimlaneBy} onValueChange={(v) => setSwimlaneBy(v as typeof swimlaneBy)}>
-              <SelectTrigger aria-label="Group into swimlanes" className="w-44">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No swimlanes</SelectItem>
-                <SelectItem value="assignee">Swimlanes: Assignee</SelectItem>
-                <SelectItem value="priority">Swimlanes: Priority</SelectItem>
-                <SelectItem value="epic">Swimlanes: Epic</SelectItem>
-              </SelectContent>
-            </Select>
+            {groupBySelect}
+            <span className="mx-1 hidden h-6 w-px bg-border sm:block" aria-hidden />
+            {boardPeopleFilter}
+            {clearBoardFilters}
           </div>
           <TaskBoard
-            tasks={tasksData?.data ?? []}
+            tasks={filterByPeople(tasksData?.data ?? [], peopleFilter)}
+            storageKey={`ptm.board.lanes:${id}`}
             workflow={workflow}
             grant={myGrant}
             issueTypeDefinitions={resolveIssueTypes(project)}
@@ -593,8 +671,15 @@ export function ProjectDetailPage() {
                   plannedSprints={(sprintsData?.data ?? []).filter((s) => s.status === 'Planned')}
                 />
               </div>
+              <div className={BOARD_TOOLBAR_CLASS}>
+                {groupBySelect}
+                <span className="mx-1 hidden h-6 w-px bg-border sm:block" aria-hidden />
+                {boardPeopleFilter}
+                {clearBoardFilters}
+              </div>
               <TaskBoard
-                tasks={sprintBoardData?.data ?? []}
+                tasks={filterByPeople(sprintBoardData?.data ?? [], peopleFilter)}
+                storageKey={`ptm.sprint-board.lanes:${id}`}
                 workflow={workflow}
                 grant={myGrant}
                 issueTypeDefinitions={resolveIssueTypes(project)}
