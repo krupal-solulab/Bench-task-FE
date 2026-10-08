@@ -239,6 +239,28 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByTestId('location-probe')).toHaveTextContent(`assignee=${ADMIN.id}`)
   })
 
+  it('groups the board by assignee by default and filters it by any people picked', async () => {
+    localStorage.clear()
+    const user = userEvent.setup()
+    renderProjectDetail(makeAuthValue())
+
+    await waitFor(() => expect(screen.getByText('Design homepage hero')).toBeInTheDocument())
+    expect(screen.getByText('Set up analytics')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Group into swimlanes' })).toHaveTextContent(
+      'Group: Assignee',
+    )
+    expect(screen.getByRole('button', { name: /Dev One/, expanded: true })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: "Show Dev One's issues" }))
+    expect(screen.queryByText('Set up analytics')).not.toBeInTheDocument()
+    expect(screen.getByText('Design homepage hero')).toBeInTheDocument()
+    expect(screen.getByTestId('location-probe')).toHaveTextContent('people=u-dev1')
+
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+    expect(screen.getByText('Set up analytics')).toBeInTheDocument()
+    expect(screen.getByTestId('location-probe')).not.toHaveTextContent('people=')
+  })
+
   it('hides the Backlog/Sprint Board/Calendar tabs for a Kanban project (Phase 2 gap-closure - BRD 6.3)', async () => {
     server.use(
       http.get(url('/projects/p-1'), () => {

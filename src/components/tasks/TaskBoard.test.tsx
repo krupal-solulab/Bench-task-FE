@@ -2,7 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { afterEach, describe, expect, it } from 'vitest'
 import { AuthContext, type AuthContextValue } from '@/context/AuthContext'
 import { ToastProvider } from '@/context/ToastContext'
 import { TaskBoard, type SwimlaneBy } from '@/components/tasks/TaskBoard'
@@ -83,6 +84,7 @@ function renderBoard(
   authOverrides: Partial<AuthContextValue> = {},
   grant?: MemberPermissions | null,
   swimlaneBy?: SwimlaneBy,
+  storageKey?: string,
 ) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   function Wrapper({ children }: { children: ReactNode }) {
@@ -99,7 +101,13 @@ function renderBoard(
     )
   }
   return render(
-    <TaskBoard tasks={tasks} workflow={workflow} grant={grant} swimlaneBy={swimlaneBy} />,
+    <TaskBoard
+      tasks={tasks}
+      workflow={workflow}
+      grant={grant}
+      swimlaneBy={swimlaneBy}
+      storageKey={storageKey}
+    />,
     { wrapper: Wrapper },
   )
 }
@@ -230,6 +238,62 @@ describe('TaskBoard', () => {
     expect(screen.getByRole('heading', { name: /Unassigned/ })).toBeInTheDocument()
     expect(screen.getByText('Alice task')).toBeInTheDocument()
     expect(screen.getByText('Unassigned task')).toBeInTheDocument()
+  })
+
+  describe('assignee swimlanes (collapsible sections)', () => {
+    const todoOnly: Workflow = {
+      statuses: [{ name: 'Todo', category: 'To Do' }],
+      transitions: [],
+      initialStatus: 'Todo',
+    }
+    const person = (id: string, name: string) => ({ ...makeAuthValue().user!, id, name })
+    const laneTasks = [
+      makeTask({ id: 't-1', title: 'Zed task', assignee: person('zed', 'Zed') }),
+      makeTask({ id: 't-2', title: 'Loose task', assignee: null }),
+      makeTask({ id: 't-3', title: 'Alice task', assignee: person('alice', 'Alice') }),
+    ]
+    afterEach(() => localStorage.clear())
+
+    it('puts Unassigned last, as its own section, after people in name order', () => {
+      renderBoard(laneTasks, todoOnly, {}, undefined, 'assignee')
+
+      const lanes = screen.getAllByRole('button', { expanded: true }).map((b) => b.textContent)
+      expect(lanes).toEqual([
+        expect.stringContaining('Alice'),
+        expect.stringContaining('Zed'),
+        expect.stringContaining('Unassigned'),
+      ])
+    })
+
+    it('collapses and expands a section, and Collapse all / Expand all', async () => {
+      const user = userEvent.setup()
+      renderBoard(laneTasks, todoOnly, {}, undefined, 'assignee')
+
+      await user.click(screen.getByRole('button', { name: /Unassigned/ }))
+      expect(screen.queryByText('Loose task')).not.toBeInTheDocument()
+      expect(screen.getByText('Alice task')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Unassigned/ })).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      )
+
+      await user.click(screen.getByRole('button', { name: 'Expand all' }))
+      expect(screen.getByText('Loose task')).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Collapse all' }))
+      expect(screen.queryByText('Alice task')).not.toBeInTheDocument()
+      expect(screen.queryByText('Zed task')).not.toBeInTheDocument()
+    })
+
+    it('remembers collapsed sections per board', async () => {
+      const user = userEvent.setup()
+      const { unmount } = renderBoard(laneTasks, todoOnly, {}, undefined, 'assignee', 'board:p-1')
+      await user.click(screen.getByRole('button', { name: /Zed/, expanded: true }))
+      unmount()
+
+      renderBoard(laneTasks, todoOnly, {}, undefined, 'assignee', 'board:p-1')
+      expect(screen.queryByText('Zed task')).not.toBeInTheDocument()
+      expect(screen.getByText('Alice task')).toBeInTheDocument()
+    })
   })
 
   describe('per-project grants (Phase 3)', () => {
