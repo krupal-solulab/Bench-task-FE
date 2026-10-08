@@ -127,6 +127,38 @@ describe('invite flow pages', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Incorrect temporary password')
   })
 
+  it('switches to the revoked page when the owner revokes while the form is open', async () => {
+    let revoked = false
+    server.use(
+      http.get(url(`/auth/invites/${TOKEN}`), () =>
+        HttpResponse.json({
+          success: true,
+          data: preview(revoked ? { status: 'Revoked' } : {}),
+        }),
+      ),
+      http.post(url(`/auth/invites/${TOKEN}/accept`), () => {
+        revoked = true
+        return HttpResponse.json(
+          {
+            statusCode: 410,
+            message: 'This invitation has been revoked. Ask the project owner for a new one.',
+            error: 'Gone',
+          },
+          { status: 410 },
+        )
+      }),
+    )
+    const user = userEvent.setup()
+    renderApp(`/invite/${TOKEN}`)
+
+    await user.type(await screen.findByLabelText(/temporary password/i), 'Tmp4wordXyz9')
+    await user.click(screen.getByRole('button', { name: 'Accept invitation' }))
+
+    expect(await screen.findByText('Invitation revoked')).toBeInTheDocument()
+    expect(screen.getByText(/Ask Max Manager for a new one/)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/temporary password/i)).not.toBeInTheDocument()
+  })
+
   it.each([
     ['Expired', 'Invitation expired', /Ask Max Manager to resend it/],
     ['Revoked', 'Invitation revoked', /Ask Max Manager for a new one/],

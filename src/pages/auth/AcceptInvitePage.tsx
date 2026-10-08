@@ -88,7 +88,14 @@ export function AcceptInvitePage() {
     )
   }
 
-  return <AcceptInviteForm token={token} invite={invite} onAccept={acceptInvite} />
+  return (
+    <AcceptInviteForm
+      token={token}
+      invite={invite}
+      onAccept={acceptInvite}
+      onInviteChanged={() => void preview.refetch()}
+    />
+  )
 }
 
 const STATUS_TITLES = {
@@ -121,10 +128,13 @@ function AcceptInviteForm({
   token,
   invite,
   onAccept,
+  onInviteChanged,
 }: {
   token: string
   invite: ProjectInvitePreview
   onAccept?: (token: string, temporaryPassword: string) => Promise<void>
+  /** The invite was revoked/expired/accepted since this page loaded - re-read its state. */
+  onInviteChanged: () => void
 }) {
   const navigate = useNavigate()
   const [formError, setFormError] = useState<string | null>(null)
@@ -140,7 +150,11 @@ function AcceptInviteForm({
       await onAccept?.(token, values.temporaryPassword)
       navigate('/set-password', { replace: true })
     } catch (err) {
-      setFormError(toApiError(err).message)
+      const apiError = toApiError(err)
+      // 410 = revoked/expired, 409 = already accepted: show that state's page instead of a form
+      // that can no longer succeed.
+      if (apiError.statusCode === 410 || apiError.statusCode === 409) onInviteChanged()
+      else setFormError(apiError.message)
     }
   }
 
