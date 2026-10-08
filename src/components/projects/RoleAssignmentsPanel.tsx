@@ -76,6 +76,8 @@ function RoleRow({ projectId, roleId, roleName, assignment }: RoleRowProps) {
             if (!userId || userIds.includes(userId)) return
             void save({ userIds: [...userIds, userId] })
           }}
+          excludeIds={userIds}
+          emptyText="Everyone is already in this role"
           allowUnassigned={false}
           placeholder="+ Add a user…"
         />

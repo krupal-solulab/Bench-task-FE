@@ -158,6 +158,8 @@ export function PermissionSchemeForm({
               onChange={(userId) => addUser(grant.action, userId)}
               allowUnassigned={false}
               placeholder="+ Add an individual…"
+              excludeIds={grant.allowedUserIds}
+              emptyText="Everyone is already listed"
             />
 
             <GrantTeamsAndRoles
