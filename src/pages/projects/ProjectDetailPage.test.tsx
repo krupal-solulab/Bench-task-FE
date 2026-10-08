@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import type { ReactNode } from 'react'
@@ -259,6 +259,41 @@ describe('ProjectDetailPage', () => {
     await user.click(screen.getByRole('button', { name: 'Clear filters' }))
     expect(screen.getByText('Set up analytics')).toBeInTheDocument()
     expect(screen.getByTestId('location-probe')).not.toHaveTextContent('people=')
+  })
+
+  it('opens a board card in a Jira-style popup (URL ?selectedIssue=) and closes back to the board', async () => {
+    const user = userEvent.setup()
+    renderProjectDetail(makeAuthValue())
+
+    await user.click(await screen.findByRole('link', { name: 'Design homepage hero' }))
+
+    const popup = await screen.findByRole('dialog')
+    expect(
+      await within(popup).findByRole('heading', { level: 2, name: 'Design homepage hero' }),
+    ).toBeInTheDocument()
+    expect(within(popup).getByRole('heading', { name: 'Details' })).toBeInTheDocument()
+    expect(within(popup).getByRole('link', { name: 'Open full page' })).toHaveAttribute(
+      'href',
+      '/tasks/t-1',
+    )
+    expect(screen.getByTestId('location-probe')).toHaveTextContent('selectedIssue=t-1')
+    // Still on the project page underneath - the board never navigated away.
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Website Revamp', hidden: true }),
+    ).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByTestId('location-probe')).not.toHaveTextContent('selectedIssue')
+  })
+
+  it('opens straight into the popup from a shared ?selectedIssue= link', async () => {
+    renderProjectDetail(makeAuthValue(), '/projects/p-1?selectedIssue=t-1')
+
+    const popup = await screen.findByRole('dialog')
+    expect(
+      await within(popup).findByRole('heading', { level: 2, name: 'Design homepage hero' }),
+    ).toBeInTheDocument()
   })
 
   it('hides the Backlog/Sprint Board/Calendar tabs for a Kanban project (Phase 2 gap-closure - BRD 6.3)', async () => {
