@@ -26,6 +26,8 @@ import { ProjectForm } from '@/components/projects/ProjectForm'
 import { ProjectStatusControl } from '@/components/projects/ProjectStatusControl'
 import { MemberManager } from '@/components/projects/MemberManager'
 import { ProjectActivityFeed } from '@/components/projects/ProjectActivityFeed'
+import { effectiveMemberGrant } from '@/lib/roles'
+import { ProjectRolePermissionsPanel } from '@/components/projects/ProjectRolePermissionsPanel'
 import { SWIMLANE_OPTIONS, TaskBoard, type SwimlaneBy } from '@/components/tasks/TaskBoard'
 import { TaskQuickViewDialog } from '@/components/tasks/TaskQuickViewDialog'
 import { BoardPeopleFilter, UNASSIGNED_FILTER } from '@/components/tasks/BoardPeopleFilter'
@@ -339,18 +341,23 @@ export function ProjectDetailPage() {
     return <ErrorState message={toApiError(error).message} onRetry={() => void refetch()} />
   }
 
-  const canManage = hasRole('Admin') || (hasRole('Manager') && project.owner.id === user?.id)
+  // Admin or the owning Manager: the only ones who may delete the project, assign schemes or
+  // project roles. "Manage project" (from a role or a per-project grant) covers everything else.
+  const canManageStrict = hasRole('Admin') || (hasRole('Manager') && project.owner.id === user?.id)
   const memberIds = project.members.map((m) => m.user.id)
   const memberNameById = Object.fromEntries(
     [project.owner, ...project.members.map((m) => m.user)].map((u) => [u.id, u.name]),
   )
   // Per-project grants (see Phase 3's permission schemes) can only ever ADD capability beyond
   // canManage, never replace it - canManage still gates every project-administration action.
-  const myGrant = project.members.find((m) => m.user.id === user?.id)?.permissions ?? null
+  // Per-project grant plus the custom role permissions (QA, DevOps, ...), as the API enforces.
+  const myGrant = effectiveMemberGrant(project, user)
   // Module 8 gap-closure: an archived project is read-only - `canManage` still drives the header's
   // Archive/Restore/Delete, while every editing surface below goes through `canEdit`.
   const isArchived = !!project.archivedAt
+  const canManage = canManageStrict || !!myGrant?.canManageProject
   const canEdit = canManage && !isArchived
+  const canEditStrict = canManageStrict && !isArchived
   const canCreateTaskHere = !isArchived && (canManage || !!myGrant?.canCreateTask)
   const canManageSprintsHere = !isArchived && (canManage || !!myGrant?.canManageSprints)
 
@@ -513,9 +520,11 @@ export function ProjectDetailPage() {
                     Archive
                   </Button>
                 )}
-                <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
-                  Delete
-                </Button>
+                {canManageStrict && (
+                  <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+                    Delete
+                  </Button>
+                )}
               </>
             )}
           </div>
@@ -1001,22 +1010,26 @@ export function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="permissions" className="space-y-6">
+          <ProjectRolePermissionsPanel
+            projectId={id ?? ''}
+            canEdit={hasRole('Admin') && !isArchived}
+          />
           <PermissionSchemeAssignment
             projectId={id ?? ''}
             permissionSchemeId={project.permissionSchemeId}
-            canManage={canEdit}
+            canManage={canEditStrict}
           />
           <SecuritySchemeAssignment
             projectId={id ?? ''}
             securitySchemeId={project.securitySchemeId ?? null}
-            canManage={canEdit}
+            canManage={canEditStrict}
           />
           <FieldPermissionSchemeAssignment
             projectId={id ?? ''}
             fieldPermissionSchemeId={project.fieldPermissionSchemeId ?? null}
-            canManage={canEdit}
+            canManage={canEditStrict}
           />
-          {canEdit && (
+          {canEditStrict && (
             <RoleAssignmentsPanel
               projectId={id ?? ''}
               roleAssignments={project.roleAssignments ?? []}

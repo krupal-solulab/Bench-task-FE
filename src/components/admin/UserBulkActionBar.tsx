@@ -1,19 +1,16 @@
 import { useState } from 'react'
 import { Button } from '@/components/common/Button'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { RoleChoiceSelect } from './RoleChoiceSelect'
+import { useCustomRoles } from '@/hooks/queries/useCustomRoles'
+import { fromRoleChoice, roleChoiceLabel, type RoleChoice } from '@/lib/roles'
 import { useBulkUpdateUserRole, useBulkUpdateUserStatus } from '@/hooks/mutations/useUserMutations'
 import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
-import { ORG_ROLES, type BulkUserResult, type Role } from '@/types/user.types'
+import type { BulkUserResult } from '@/types/user.types'
 
-type PendingAction = { kind: 'role'; role: Role } | { kind: 'status'; isActive: boolean } | null
+type PendingAction =
+  { kind: 'role'; choice: RoleChoice } | { kind: 'status'; isActive: boolean } | null
 
 export interface UserBulkActionBarProps {
   selectedIds: Set<string>
@@ -27,6 +24,7 @@ export function UserBulkActionBar({ selectedIds, onDone }: UserBulkActionBarProp
   const [pending, setPending] = useState<PendingAction>(null)
   const bulkRole = useBulkUpdateUserRole()
   const bulkStatus = useBulkUpdateUserStatus()
+  const { data: customRoles } = useCustomRoles()
   const { showToast } = useToast()
   const count = selectedIds.size
   const userIds = [...selectedIds]
@@ -51,7 +49,13 @@ export function UserBulkActionBar({ selectedIds, onDone }: UserBulkActionBarProp
     if (!pending) return
     try {
       if (pending.kind === 'role') {
-        report('Role change', await bulkRole.mutateAsync({ userIds, role: pending.role }))
+        report(
+          'Role change',
+          await bulkRole.mutateAsync({
+            userIds,
+            change: fromRoleChoice(pending.choice, customRoles),
+          }),
+        )
       } else {
         report(
           pending.isActive ? 'Activate' : 'Deactivate',
@@ -69,7 +73,7 @@ export function UserBulkActionBar({ selectedIds, onDone }: UserBulkActionBarProp
 
   const description =
     pending?.kind === 'role'
-      ? `Change the role of ${count} user(s) to ${pending.role}?`
+      ? `Change the role of ${count} user(s) to ${roleChoiceLabel(pending.choice, customRoles)}?`
       : pending?.kind === 'status' && pending.isActive
         ? `Activate ${count} user(s)?`
         : `Deactivate ${count} user(s)? They will be signed out and unable to log in.`
@@ -81,18 +85,13 @@ export function UserBulkActionBar({ selectedIds, onDone }: UserBulkActionBarProp
       className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 px-4 py-2"
     >
       <span className="text-sm font-medium">{count} selected</span>
-      <Select value="" onValueChange={(v) => setPending({ kind: 'role', role: v as Role })}>
-        <SelectTrigger className="w-40" aria-label="Change role to">
-          <SelectValue placeholder="Change role to…" />
-        </SelectTrigger>
-        <SelectContent>
-          {ORG_ROLES.map((role) => (
-            <SelectItem key={role} value={role}>
-              {role}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <RoleChoiceSelect
+        value=""
+        onChange={(choice) => setPending({ kind: 'role', choice })}
+        className="w-44"
+        ariaLabel="Change role to"
+        placeholder="Change role to…"
+      />
       <Button
         size="sm"
         variant="outline"

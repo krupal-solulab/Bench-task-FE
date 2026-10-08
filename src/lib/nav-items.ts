@@ -22,6 +22,7 @@ import {
   FolderKanban,
   Users,
   UserCog,
+  BadgeCheck,
 } from 'lucide-react'
 import type { Role } from '@/types/user.types'
 
@@ -66,6 +67,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: KeyRound,
     roles: ['Admin'],
   },
+  { to: '/admin/roles', label: 'Roles', icon: BadgeCheck, roles: ['Admin'] },
   { to: '/admin/project-roles', label: 'Project Roles', icon: UserCog, roles: ['Admin'] },
   { to: '/admin/teams', label: 'Teams', icon: Users, roles: ['Admin', 'Manager'] },
   {

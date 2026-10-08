@@ -1,31 +1,30 @@
 import { useState } from 'react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { RoleChoiceSelect } from '@/components/admin/RoleChoiceSelect'
 import { useUpdateUserRole } from '@/hooks/mutations/useUserMutations'
+import { useCustomRoles } from '@/hooks/queries/useCustomRoles'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
 import { toApiError } from '@/lib/error'
-import { ORG_ROLES, type Role, type User } from '@/types/user.types'
+import { fromRoleChoice, roleChoiceLabel, toRoleChoice, type RoleChoice } from '@/lib/roles'
+import type { User } from '@/types/user.types'
 
+/** Inline role change in the users table - built-in or custom role, behind a confirmation. */
 export function RoleSelect({ user }: { user: User }) {
   const { user: currentUser } = useAuth()
   const updateRole = useUpdateUserRole(user.id)
+  const { data: customRoles } = useCustomRoles()
   const { showToast } = useToast()
-  const [pendingRole, setPendingRole] = useState<Role | null>(null)
+  const [pending, setPending] = useState<RoleChoice | null>(null)
 
   const isSelf = currentUser?.id === user.id
+  const pendingLabel = pending ? roleChoiceLabel(pending, customRoles) : ''
 
   async function confirmChange() {
-    if (!pendingRole) return
+    if (!pending) return
     try {
-      await updateRole.mutateAsync(pendingRole)
-      showToast({ title: `Role updated to ${pendingRole}`, variant: 'success' })
+      await updateRole.mutateAsync(fromRoleChoice(pending, customRoles))
+      showToast({ title: `Role updated to ${pendingLabel}`, variant: 'success' })
     } catch (err) {
       showToast({
         title: 'Could not update role',
@@ -33,30 +32,25 @@ export function RoleSelect({ user }: { user: User }) {
         variant: 'destructive',
       })
     } finally {
-      setPendingRole(null)
+      setPending(null)
     }
   }
 
   return (
     <>
-      <Select value={user.role} onValueChange={(v) => setPendingRole(v as Role)} disabled={isSelf}>
-        <SelectTrigger className="w-32" aria-label={`Change role for ${user.name}`}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {ORG_ROLES.map((role) => (
-            <SelectItem key={role} value={role}>
-              {role}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <RoleChoiceSelect
+        value={toRoleChoice(user)}
+        onChange={(choice) => choice !== toRoleChoice(user) && setPending(choice)}
+        disabled={isSelf}
+        className="w-40"
+        ariaLabel={`Change role for ${user.name}`}
+      />
 
       <ConfirmDialog
-        open={!!pendingRole}
-        onOpenChange={(open) => !open && setPendingRole(null)}
+        open={!!pending}
+        onOpenChange={(open) => !open && setPending(null)}
         title="Change role"
-        description={`Change ${user.name}'s role to ${pendingRole}?`}
+        description={`Change ${user.name}'s role to ${pendingLabel}?`}
         confirmLabel="Change role"
         onConfirm={confirmChange}
       />

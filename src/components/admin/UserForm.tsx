@@ -3,15 +3,8 @@ import { useForm } from 'react-hook-form'
 import { Button } from '@/components/common/Button'
 import { FormField } from '@/components/common/FormField'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { RoleChoiceSelect } from './RoleChoiceSelect'
 import { createUserSchema, type CreateUserFormValues } from '@/schemas/user.schema'
-import { ORG_ROLES } from '@/types/user.types'
 
 export function UserForm({
   onSubmit,
@@ -61,21 +54,7 @@ export function UserForm({
       </FormField>
 
       <FormField label="Role" htmlFor="role" error={errors.role?.message} required>
-        <Select
-          value={role}
-          onValueChange={(v) => setValue('role', v as CreateUserFormValues['role'])}
-        >
-          <SelectTrigger id="role">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {ORG_ROLES.map((r) => (
-              <SelectItem key={r} value={r}>
-                {r}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <RoleChoiceSelect id="role" value={role} onChange={(v) => setValue('role', v)} />
       </FormField>
 
       <div className="flex justify-end gap-2 pt-2">

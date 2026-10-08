@@ -9,6 +9,8 @@ import {
 } from '@/hooks/mutations/useProjectInviteMutations'
 import { useToast } from '@/hooks/useToast'
 import { formatRelativeTime } from '@/lib/date'
+import { customRoleChoice, roleChoiceLabel } from '@/lib/roles'
+import { useCustomRoles } from '@/hooks/queries/useCustomRoles'
 import { toApiError } from '@/lib/error'
 import type { ProjectInvite, SentProjectInvite } from '@/types/project-invite.types'
 
@@ -24,6 +26,7 @@ export function PendingInvitesList({
   onResent: (sent: SentProjectInvite) => void
 }) {
   const invites = useProjectInvites(projectId, canManage)
+  const { data: customRoles } = useCustomRoles(canManage)
   const resend = useResendProjectInvite(projectId)
   const revoke = useRevokeProjectInvite(projectId)
   const { showToast } = useToast()
@@ -89,7 +92,10 @@ export function PendingInvitesList({
                     )}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {invite.role} ·{' '}
+                    {invite.customRoleId
+                      ? roleChoiceLabel(customRoleChoice(invite.customRoleId), customRoles)
+                      : invite.role}{' '}
+                    ·{' '}
                     <span className={expired ? 'font-medium text-destructive' : undefined}>
                       {expired
                         ? `Expired ${formatRelativeTime(invite.expiresAt)}`

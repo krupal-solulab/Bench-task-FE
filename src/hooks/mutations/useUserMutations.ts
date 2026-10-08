@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/constants'
 import { usersService } from '@/services/users.service'
-import type { CreateUserPayload, Role, UpdateUserPayload } from '@/types/user.types'
+import type { CreateUserPayload, UpdateUserPayload, RoleChange } from '@/types/user.types'
 
 export function useCreateUser() {
   const queryClient = useQueryClient()
@@ -22,7 +22,7 @@ export function useUpdateUser(id: string) {
 export function useUpdateUserRole(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (role: Role) => usersService.updateRole(id, role),
+    mutationFn: (change: RoleChange) => usersService.updateRole(id, change),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
   })
 }
@@ -39,8 +39,8 @@ export function useUpdateUserStatus(id: string) {
 export function useBulkUpdateUserRole() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ userIds, role }: { userIds: string[]; role: Role }) =>
-      usersService.bulkUpdateRole(userIds, role),
+    mutationFn: ({ userIds, change }: { userIds: string[]; change: RoleChange }) =>
+      usersService.bulkUpdateRole(userIds, change),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
   })
 }

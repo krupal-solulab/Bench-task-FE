@@ -1,6 +1,7 @@
 import { HttpResponse, http } from 'msw'
 import {
   mockAuditLogEntries,
+  mockCustomRoles,
   mockComments,
   mockOrganizationSettings,
   mockProjects,
@@ -160,8 +161,10 @@ export const handlers = [
   http.get(url('/projects/:id/backups'), () => HttpResponse.json(ok([]))),
   // Project invites: MemberManager lists pending invitations for a canManage viewer.
   http.get(url('/projects/:id/invites'), () => HttpResponse.json(ok([]))),
+  http.get(url('/custom-roles'), () => HttpResponse.json(ok(mockCustomRoles))),
+  http.get(url('/projects/:id/role-permissions'), () => HttpResponse.json(ok([]))),
   http.get(url('/projects/:id/member-candidates'), () =>
-    HttpResponse.json(ok(mockUsers.filter((u) => u.role === 'Developer'))),
+    HttpResponse.json(ok(mockUsers.filter((u) => u.role === 'Developer' || u.role === 'Manager'))),
   ),
   // Module 6 - a plain array (not paginated), matching the backend's actual response shape.
   // Grant/level pickers (GrantTeamsAndRoles, PermissionSchemeForm, SecuritySchemeForm,

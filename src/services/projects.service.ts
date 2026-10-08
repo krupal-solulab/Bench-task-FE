@@ -26,6 +26,7 @@ import { toTaskListParams } from './tasks.service'
 import type { Workflow } from '@/types/workflow.types'
 import type { NotificationSchemeRule } from '@/types/notification-scheme.types'
 import type { User } from '@/types/user.types'
+import type { ProjectRolePermissionRow } from '@/types/project.types'
 
 export const projectsService = {
   list: (query: ProjectListQuery) => apiGetPaginated<Project>('/projects', query),
@@ -51,6 +52,13 @@ export const projectsService = {
 
   /** Active Developers/Managers who are not yet in the project - the Add member picker. */
   memberCandidates: (id: string) => apiGet<User[]>(`/projects/${id}/member-candidates`),
+
+  rolePermissions: (id: string) =>
+    apiGet<ProjectRolePermissionRow[]>(`/projects/${id}/role-permissions`),
+  setRolePermissionOverride: (id: string, roleId: string, permissions: MemberPermissions) =>
+    apiPut<ProjectRolePermissionRow[]>(`/projects/${id}/role-permissions/${roleId}`, permissions),
+  resetRolePermissionOverride: (id: string, roleId: string) =>
+    apiDelete<ProjectRolePermissionRow[]>(`/projects/${id}/role-permissions/${roleId}`),
 
   addMembers: (id: string, userIds: string[]) =>
     apiPost<Project>(`/projects/${id}/members`, { userIds }),

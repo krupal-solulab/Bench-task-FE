@@ -43,6 +43,7 @@ import { PlatformIntegrationHealthPage } from '@/pages/platform/PlatformIntegrat
 import { PlatformBillingPage } from '@/pages/platform/PlatformBillingPage'
 import { AcceptInvitePage } from '@/pages/auth/AcceptInvitePage'
 import { SetPasswordPage } from '@/pages/auth/SetPasswordPage'
+import { CustomRolesPage } from '@/pages/admin/CustomRolesPage'
 import { ForbiddenPage } from '@/pages/errors/ForbiddenPage'
 import { NotFoundPage } from '@/pages/errors/NotFoundPage'
 
@@ -76,6 +77,7 @@ export function AppRouter() {
             <Route element={<RoleRoute roles={['Admin']} />}>
               <Route path="/admin/users" element={<UsersPage />} />
               <Route path="/admin/permission-schemes" element={<PermissionSchemesPage />} />
+              <Route path="/admin/roles" element={<CustomRolesPage />} />
               <Route path="/admin/project-roles" element={<ProjectRolesPage />} />
               <Route path="/admin/security-schemes" element={<SecuritySchemesPage />} />
               <Route
