@@ -19,6 +19,7 @@ function makeInvite(overrides: Partial<ProjectInvite> = {}): ProjectInvite {
     email: 'asha@example.com',
     name: null,
     role: 'Developer',
+    customRoleId: null,
     status: 'Pending',
     expiresAt: new Date(Date.now() + 6 * 86_400_000).toISOString(),
     invitedBy: { id: 'u-manager', name: 'Max Manager' },
@@ -71,7 +72,7 @@ describe('MemberManager invitations', () => {
     await user.click(screen.getByRole('button', { name: 'Send invitation' }))
 
     const dialog = await screen.findByRole('dialog', { name: 'Invitation sent' })
-    expect(body).toEqual({ email: 'asha@example.com', role: 'Developer' })
+    expect(body).toEqual({ email: 'asha@example.com', role: 'Developer', customRoleId: null })
     expect(within(dialog).getByText(/Invitation emailed to asha@example.com/)).toBeInTheDocument()
     expect(within(dialog).getByLabelText('Invitation link')).toHaveValue(sent().inviteUrl)
     const password = within(dialog).getByLabelText('Temporary password')

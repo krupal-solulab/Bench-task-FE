@@ -5,13 +5,6 @@ import { Button } from '@/components/common/Button'
 import { Modal } from '@/components/common/Modal'
 import { SearchInput } from '@/components/common/SearchInput'
 import { Pagination } from '@/components/common/Pagination'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { UserForm } from '@/components/admin/UserForm'
 import { UserTable } from '@/components/admin/UserTable'
 import { UserBulkActionBar } from '@/components/admin/UserBulkActionBar'
@@ -23,10 +16,14 @@ import { useQueryParams } from '@/hooks/useQueryParams'
 import { useToast } from '@/hooks/useToast'
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
 import { isConflictError, toApiError } from '@/lib/error'
-import { ORG_ROLES, type Role, type User } from '@/types/user.types'
+import type { User } from '@/types/user.types'
 import type { CreateUserFormValues } from '@/schemas/user.schema'
 
 const ALL = '__all__'
+
+import { RoleChoiceSelect } from '@/components/admin/RoleChoiceSelect'
+import { useCustomRoles } from '@/hooks/queries/useCustomRoles'
+import { fromRoleChoice } from '@/lib/roles'
 
 export function UsersPage() {
   const [createOpen, setCreateOpen] = useState(false)
@@ -45,13 +42,20 @@ export function UsersPage() {
     page: 1,
     limit: DEFAULT_PAGE_SIZE,
     search: '',
-    role: undefined as Role | undefined,
+    // A RoleChoice: a built-in role, or custom:<id> for a custom role (QA, DevOps, ...).
+    role: undefined as string | undefined,
     sortBy: 'createdAt' as 'name' | 'email' | 'createdAt' | 'role',
     sortOrder: 'desc' as 'asc' | 'desc',
   })
   const filters = state
 
-  const { data, isLoading, isError, error, refetch } = useUsers(state)
+  const { data: customRoles } = useCustomRoles()
+  const roleFilter = filters.role ? fromRoleChoice(filters.role, customRoles) : null
+  const { data, isLoading, isError, error, refetch } = useUsers({
+    ...state,
+    role: roleFilter && !roleFilter.customRoleId ? roleFilter.role : undefined,
+    customRoleId: roleFilter?.customRoleId ?? undefined,
+  })
   const createUser = useCreateUser()
   const { showToast } = useToast()
 
@@ -74,7 +78,8 @@ export function UsersPage() {
 
   async function handleCreate(values: CreateUserFormValues) {
     try {
-      await createUser.mutateAsync(values)
+      const { role, customRoleId } = fromRoleChoice(values.role, customRoles)
+      await createUser.mutateAsync({ ...values, role, customRoleId })
       showToast({ title: 'User created', variant: 'success' })
       setCreateOpen(false)
     } catch (err) {
@@ -111,25 +116,17 @@ export function UsersPage() {
           placeholder="Search by name or email…"
           className="w-64"
         />
-        <Select
+        <RoleChoiceSelect
           value={filters.role ?? ALL}
-          onValueChange={(v) => {
+          onChange={(v) => {
             setSelectedIds(new Set())
-            setState({ role: v === ALL ? undefined : (v as Role), page: 1 })
+            setState({ role: v === ALL ? undefined : v, page: 1 })
           }}
-        >
-          <SelectTrigger className="w-40" aria-label="Filter by role">
-            <SelectValue placeholder="All roles" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>All roles</SelectItem>
-            {ORG_ROLES.map((role) => (
-              <SelectItem key={role} value={role}>
-                {role}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          allOption={{ value: ALL, label: 'All roles' }}
+          className="w-44"
+          ariaLabel="Filter by role"
+          placeholder="All roles"
+        />
       </div>
 
       {selectedIds.size > 0 && (

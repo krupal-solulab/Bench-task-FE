@@ -14,6 +14,7 @@ const CAPABILITY_LABELS: Array<{ key: keyof MemberPermissions; label: string }> 
   { key: 'canDeleteTask', label: 'Delete tasks' },
   { key: 'canChangeAnyTaskStatus', label: "Change any task's status" },
   { key: 'canManageSprints', label: 'Manage sprints' },
+  { key: 'canManageProject', label: 'Manage project (details, members, sprints, settings)' },
 ]
 
 export interface MemberPermissionsEditorProps {

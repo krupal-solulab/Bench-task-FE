@@ -57,6 +57,7 @@ import { useSocket } from '@/hooks/useSocket'
 import { addRecentlyViewed } from '@/hooks/useRecentlyViewed'
 import { useToast } from '@/hooks/useToast'
 import { formatDate, formatDateTime } from '@/lib/date'
+import { effectiveMemberGrant } from '@/lib/roles'
 import { toApiError } from '@/lib/error'
 import type { TaskFormValues } from '@/schemas/task.schema'
 
@@ -141,7 +142,8 @@ export function TaskDetailView({ taskId: id, layout = 'page', onDeleted }: TaskD
   const isAssignee = task.assignee?.id === user?.id
   // Per-project grants (see Phase 3's permission schemes) let these diverge for a Developer -
   // Admin/Manager are unaffected since `can(role, 'task:editAny')` already covers every case.
-  const myGrant = project?.members.find((m) => m.user.id === user?.id)?.permissions ?? null
+  // Per-project grant plus the custom role permissions (QA, DevOps, ...), as the API enforces.
+  const myGrant = effectiveMemberGrant(project, user)
   const userNameById = new Map(
     project
       ? [project.owner, ...project.members.map((m) => m.user)].map((u) => [u.id, u.name])
@@ -157,7 +159,10 @@ export function TaskDetailView({ taskId: id, layout = 'page', onDeleted }: TaskD
   // (Admin-in-org, or the Manager who owns the project) - the same check ProjectDetailPage's own
   // canManage uses, deliberately NOT the grant-extensible check canEditOther/canDeleteTask use.
   const canManageProject =
-    !!project && (hasRole('Admin') || (hasRole('Manager') && project.owner.id === user?.id))
+    !!project &&
+    (hasRole('Admin') ||
+      (hasRole('Manager') && project.owner.id === user?.id) ||
+      !!myGrant?.canManageProject)
   const otherProjects = (projectsData?.data ?? []).filter((p) => p.id !== task.project.id)
 
   async function handleUpdate(values: TaskFormValues) {

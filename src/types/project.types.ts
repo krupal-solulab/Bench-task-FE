@@ -1,3 +1,4 @@
+import type { CustomRoleColor } from './custom-role.types'
 import type { SortOrder } from './api.types'
 import type { OrgRole, User } from './user.types'
 import type { IssueTypeDefinition } from './issue-type.types'
@@ -13,6 +14,8 @@ export interface MemberPermissions {
   canDeleteTask: boolean
   canChangeAnyTaskStatus: boolean
   canManageSprints: boolean
+  /** Manage the project: details, members & invites, sprints & releases, settings. */
+  canManageProject: boolean
 }
 
 export const NO_MEMBER_PERMISSIONS: MemberPermissions = {
@@ -21,6 +24,7 @@ export const NO_MEMBER_PERMISSIONS: MemberPermissions = {
   canDeleteTask: false,
   canChangeAnyTaskStatus: false,
   canManageSprints: false,
+  canManageProject: false,
 }
 
 export interface ProjectMember {
@@ -184,6 +188,8 @@ export interface Project {
   fieldPermissionSchemeId?: string | null
   createdAt: string
   updatedAt: string
+  /** Per-project role permission overrides (absent on older responses). */
+  rolePermissionOverrides?: RolePermissionOverride[]
 }
 
 export interface ProjectRoleAssignment {
@@ -296,4 +302,21 @@ export interface CycleTimeReport {
   points: CycleTimePoint[]
   averageLeadTimeHours: number | null
   averageCycleTimeHours: number | null
+}
+
+/** A project's replacement for one role's organization-wide permissions (Admin-managed). */
+export interface RolePermissionOverride {
+  roleId: string
+  permissions: MemberPermissions
+}
+
+/** One row of a project's "Role permissions" table. */
+export interface ProjectRolePermissionRow {
+  roleId: string
+  name: string
+  color: CustomRoleColor
+  builtInRole: 'Manager' | 'Developer' | null
+  defaults: MemberPermissions
+  override: MemberPermissions | null
+  effective: MemberPermissions
 }

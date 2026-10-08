@@ -9,6 +9,8 @@ export interface ProjectInvite {
   /** Null for every new invite - the invitee enters their own name when they first sign in. */
   name: string | null
   role: ProjectMemberRole
+  /** Custom role (QA, DevOps, ...) the account will get, if any. */
+  customRoleId: string | null
   status: ProjectInviteStatus
   expiresAt: string
   invitedBy: { id: string; name: string } | null
@@ -22,6 +24,7 @@ export interface ProjectInvite {
 export interface CreateProjectInvitePayload {
   email: string
   role: ProjectMemberRole
+  customRoleId: string | null
 }
 
 /** Only returned when an invite is sent or resent - the one time the secrets are visible. */
@@ -36,7 +39,8 @@ export interface SentProjectInvite {
 export interface ProjectInvitePreview {
   status: ProjectInviteStatus
   email: string
-  role: ProjectMemberRole
+  /** The role the account gets, by name (a custom role such as "QA", or a built-in role). */
+  role: string
   projectName: string
   organizationName: string | null
   inviterName: string | null

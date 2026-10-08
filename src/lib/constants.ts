@@ -74,6 +74,7 @@ export const queryKeys = {
   auth: {
     me: ['auth', 'me'] as const,
   },
+  customRoles: { all: ['custom-roles'] as const },
   users: {
     all: ['users'] as const,
     list: (filters: unknown) => ['users', 'list', filters] as const,
@@ -87,6 +88,7 @@ export const queryKeys = {
     members: (id: string) => ['projects', 'detail', id, 'members'] as const,
     memberCandidates: (id: string) => ['projects', 'detail', id, 'member-candidates'] as const,
     invites: (id: string) => ['projects', 'detail', id, 'invites'] as const,
+    rolePermissions: (id: string) => ['projects', 'detail', id, 'role-permissions'] as const,
     tasks: (id: string, filters: unknown) => ['projects', 'detail', id, 'tasks', filters] as const,
     stats: (id: string) => ['projects', 'detail', id, 'stats'] as const,
     activity: (id: string) => ['projects', 'detail', id, 'activity'] as const,

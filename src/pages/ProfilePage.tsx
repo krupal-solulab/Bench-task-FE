@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
+import { RoleBadge } from '@/components/common/RoleBadge'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar } from '@/components/common/Avatar'
 import { Button } from '@/components/common/Button'
@@ -116,10 +117,11 @@ export function ProfilePage() {
         <Avatar name={user.name} size="lg" className="h-14 w-14 text-lg" />
         <dl className="grid flex-1 grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
           <dt className="text-muted-foreground">Role</dt>
-          <dd>
-            <span className="inline-flex items-center gap-1.5 rounded-full border bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-              {user.role}
-            </span>
+          <dd className="flex flex-wrap items-center gap-2">
+            <RoleBadge user={user} />
+            {user.customRole && (
+              <span className="text-xs text-muted-foreground">{user.role} access</span>
+            )}
           </dd>
         </dl>
       </section>

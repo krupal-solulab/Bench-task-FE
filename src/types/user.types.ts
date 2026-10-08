@@ -1,3 +1,6 @@
+import type { MemberPermissions } from './project.types'
+import type { CustomRoleSummary } from './custom-role.types'
+
 export const ROLES = ['Admin', 'Manager', 'Developer', 'PlatformAdmin'] as const
 export type Role = (typeof ROLES)[number]
 
@@ -20,6 +23,14 @@ export interface User {
   timezone?: string | null
   /** Signed in with a project invite's temporary password and must set their own first. */
   mustChangePassword?: boolean
+  /** A custom role (QA, DevOps, ...); `role` then holds its access level. */
+  customRoleId?: string | null
+  /** The signed-in user’s custom role with its permissions (from /auth/me and login only). */
+  customRole?: CustomRoleSummary | null
+  /** The role the user's permissions come from (custom role or built-in Manager/Developer) and
+   * its organization-wide permissions - projects may override them (from /auth/me and login). */
+  roleId?: string | null
+  rolePermissions?: MemberPermissions | null
   createdAt: string
   updatedAt: string
 }
@@ -35,16 +46,23 @@ export interface UserListQuery {
   limit?: number
   search?: string
   role?: Role
+  /** Only users holding this custom role. */
+  customRoleId?: string
   isActive?: boolean
   sortBy?: 'name' | 'email' | 'createdAt' | 'role'
   sortOrder?: 'asc' | 'desc'
 }
 
-export interface CreateUserPayload {
+/** A role assignment: a built-in role, optionally with a custom role (which then sets `role`). */
+export interface RoleChange {
+  role: OrgRole
+  customRoleId: string | null
+}
+
+export interface CreateUserPayload extends RoleChange {
   name: string
   email: string
   password: string
-  role: Role
 }
 
 export interface UpdateUserPayload {

@@ -1,3 +1,4 @@
+import type { CustomRole } from '@/types/custom-role.types'
 import type { AuditLogEntry } from '@/types/audit-log.types'
 import type { Comment } from '@/types/comment.types'
 import type { OrganizationSettings } from '@/types/organization.types'
@@ -207,3 +208,30 @@ export const mockAuditLogEntries: AuditLogEntry[] = [
     createdAt: '2025-02-01T00:00:00.000Z',
   },
 ]
+
+/** The four default custom roles every organization starts with. */
+export const mockCustomRoles: CustomRole[] = [
+  ['role-qa', 'QA', 'violet', { canCreateTask: true, canChangeAnyTaskStatus: true }],
+  ['role-devops', 'DevOps', 'cyan', { canCreateTask: true, canChangeAnyTaskStatus: true }],
+  ['role-designer', 'Designer', 'rose', { canCreateTask: true }],
+  ['role-ba', 'Business Analyst', 'amber', { canCreateTask: true, canEditAnyTask: true }],
+].map(([id, name, color, perms]) => ({
+  id: id as string,
+  name: name as string,
+  description: '',
+  color: color as CustomRole['color'],
+  accessLevel: 'Developer' as const,
+  permissions: {
+    canCreateTask: false,
+    canEditAnyTask: false,
+    canDeleteTask: false,
+    canChangeAnyTaskStatus: false,
+    canManageSprints: false,
+    canManageProject: false,
+    ...(perms as object),
+  },
+  builtInRole: null,
+  memberCount: 0,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+}))

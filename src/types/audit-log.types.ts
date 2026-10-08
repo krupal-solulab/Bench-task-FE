@@ -34,6 +34,9 @@ export const AUDIT_ACTIONS = [
   'ProjectInviteResent',
   'ProjectInviteRevoked',
   'ProjectInviteAccepted',
+  'CustomRoleCreated',
+  'CustomRoleUpdated',
+  'CustomRoleDeleted',
 ] as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
 
