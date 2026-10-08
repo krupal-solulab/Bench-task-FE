@@ -51,6 +51,10 @@ interface Swimlane {
   assigneeName?: string
 }
 
+/** Clicks on these inside a card keep their own behaviour instead of opening the popup. */
+const INTERACTIVE_SELECTOR =
+  'a, button, input, select, textarea, [role="combobox"], [role="option"]'
+
 /** Lanes that collect "nothing set" always sort last, as their own section. */
 const CATCH_ALL_LANES = new Set(['unassigned', 'no-epic'])
 
@@ -183,6 +187,7 @@ export function TaskBoard({
   issueTypeDefinitions,
   swimlaneBy = 'none',
   storageKey,
+  onOpenTask,
 }: {
   tasks: Task[]
   /** The project's workflow (custom, or the system default). Defaults to the system default
@@ -197,6 +202,8 @@ export function TaskBoard({
   swimlaneBy?: SwimlaneBy
   /** Where collapsed swimlanes are remembered (per grouping); omitted = not remembered. */
   storageKey?: string
+  /** Opens a card in the quick-view popup; omitted = the title links to the full task page. */
+  onOpenTask?: (task: Task) => void
 }) {
   const { canEditTaskField } = usePermissions()
   const { user } = useAuth()
@@ -296,9 +303,27 @@ export function TaskBoard({
     return (
       <StaggerItem key={task.id}>
         <DraggableCard task={task} canDrag={canEdit}>
-          <div className="group space-y-2 rounded-lg border bg-card p-3 text-sm shadow-soft transition-all duration-200 ease-smooth hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-card-hover">
+          <div
+            className={cn(
+              'group space-y-2 rounded-lg border bg-card p-3 text-sm shadow-soft transition-all duration-200 ease-smooth hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-card-hover',
+              onOpenTask && 'cursor-pointer',
+            )}
+            onClick={(e) => {
+              // A click anywhere on the card opens it - except on its own controls (status
+              // dropdown, buttons, links), which keep doing their own thing.
+              if (!onOpenTask || (e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) return
+              onOpenTask(task)
+            }}
+          >
             <Link
               to={`/tasks/${task.id}`}
+              onClick={(e) => {
+                // Plain click opens the popup; ctrl/cmd/shift/middle-click still opens the page.
+                if (!onOpenTask || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+                e.preventDefault()
+                e.stopPropagation()
+                onOpenTask(task)
+              }}
               className="block font-medium leading-snug transition-colors group-hover:text-primary"
             >
               {task.title}

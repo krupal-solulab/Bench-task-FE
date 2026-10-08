@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AuthContext, type AuthContextValue } from '@/context/AuthContext'
 import { ToastProvider } from '@/context/ToastContext'
 import { TaskBoard, type SwimlaneBy } from '@/components/tasks/TaskBoard'
@@ -85,6 +85,7 @@ function renderBoard(
   grant?: MemberPermissions | null,
   swimlaneBy?: SwimlaneBy,
   storageKey?: string,
+  onOpenTask?: (task: Task) => void,
 ) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   function Wrapper({ children }: { children: ReactNode }) {
@@ -107,6 +108,7 @@ function renderBoard(
       grant={grant}
       swimlaneBy={swimlaneBy}
       storageKey={storageKey}
+      onOpenTask={onOpenTask}
     />,
     { wrapper: Wrapper },
   )
@@ -238,6 +240,51 @@ describe('TaskBoard', () => {
     expect(screen.getByRole('heading', { name: /Unassigned/ })).toBeInTheDocument()
     expect(screen.getByText('Alice task')).toBeInTheDocument()
     expect(screen.getByText('Unassigned task')).toBeInTheDocument()
+  })
+
+  describe('quick-view popup', () => {
+    it('opens the popup from the card title or body, but not from its own controls', async () => {
+      const user = userEvent.setup()
+      const onOpenTask = vi.fn()
+      renderBoard(
+        [makeTask({ title: 'Popup task' })],
+        undefined,
+        {},
+        undefined,
+        'none',
+        undefined,
+        onOpenTask,
+      )
+
+      await user.click(screen.getByRole('link', { name: 'Popup task' }))
+      expect(onOpenTask).toHaveBeenCalledTimes(1)
+      expect(onOpenTask.mock.calls[0]![0]).toMatchObject({ title: 'Popup task' })
+
+      await user.click(screen.getByText('P2'))
+      expect(onOpenTask).toHaveBeenCalledTimes(2)
+
+      await user.click(screen.getByRole('combobox', { name: 'Change task status' }))
+      expect(onOpenTask).toHaveBeenCalledTimes(2)
+    })
+
+    it('ctrl/cmd-click on the title keeps the normal link (open in a new tab)', async () => {
+      const user = userEvent.setup()
+      const onOpenTask = vi.fn()
+      renderBoard(
+        [makeTask({ title: 'Popup task' })],
+        undefined,
+        {},
+        undefined,
+        'none',
+        undefined,
+        onOpenTask,
+      )
+
+      await user.keyboard('{Control>}')
+      await user.click(screen.getByRole('link', { name: 'Popup task' }))
+      await user.keyboard('{/Control}')
+      expect(onOpenTask).not.toHaveBeenCalled()
+    })
   })
 
   describe('assignee swimlanes (collapsible sections)', () => {

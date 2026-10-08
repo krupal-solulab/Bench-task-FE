@@ -27,6 +27,7 @@ import { ProjectStatusControl } from '@/components/projects/ProjectStatusControl
 import { MemberManager } from '@/components/projects/MemberManager'
 import { ProjectActivityFeed } from '@/components/projects/ProjectActivityFeed'
 import { SWIMLANE_OPTIONS, TaskBoard, type SwimlaneBy } from '@/components/tasks/TaskBoard'
+import { TaskQuickViewDialog } from '@/components/tasks/TaskQuickViewDialog'
 import { BoardPeopleFilter, UNASSIGNED_FILTER } from '@/components/tasks/BoardPeopleFilter'
 import type { Task } from '@/types/task.types'
 import { TaskList } from '@/components/tasks/TaskList'
@@ -197,8 +198,10 @@ export function ProjectDetailPage() {
     // Board/Sprint Board people filter: comma-separated user ids and/or "unassigned". Applied
     // client-side to the loaded board, so any combination of people works.
     people: '',
+    // Jira-style: the task open in the quick-view popup over the board (shareable in the URL).
+    selectedIssue: undefined as string | undefined,
   })
-  const { tab, issueType: issueTypeFilter, epicId, people, ...filters } = state
+  const { tab, issueType: issueTypeFilter, epicId, people, selectedIssue, ...filters } = state
   const peopleFilter = people ? people.split(',').filter(Boolean) : []
   // Board-only display grouping (see TaskBoard's SwimlaneBy) - not in the URL; remembered per
   // browser, defaulting to Assignee so unassigned work sits in its own section.
@@ -479,6 +482,10 @@ export function ProjectDetailPage() {
 
   return (
     <div className="space-y-6">
+      <TaskQuickViewDialog
+        taskId={selectedIssue ?? null}
+        onClose={() => setFilters({ selectedIssue: undefined })}
+      />
       <PageHeader
         title={project.name}
         description={project.description}
@@ -593,6 +600,7 @@ export function ProjectDetailPage() {
             {clearBoardFilters}
           </div>
           <TaskBoard
+            onOpenTask={(task) => setFilters({ selectedIssue: task.id })}
             tasks={filterByPeople(tasksData?.data ?? [], peopleFilter)}
             storageKey={`ptm.board.lanes:${id}`}
             workflow={workflow}
@@ -678,6 +686,7 @@ export function ProjectDetailPage() {
                 {clearBoardFilters}
               </div>
               <TaskBoard
+                onOpenTask={(task) => setFilters({ selectedIssue: task.id })}
                 tasks={filterByPeople(sprintBoardData?.data ?? [], peopleFilter)}
                 storageKey={`ptm.sprint-board.lanes:${id}`}
                 workflow={workflow}
