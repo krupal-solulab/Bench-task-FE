@@ -90,4 +90,29 @@ describe('TeamForm', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
+
+  it('never offers people who are already in the team (and offers them again once removed)', async () => {
+    const user = userEvent.setup()
+    renderForm({
+      initialValues: {
+        name: 'Backend Guild',
+        description: '',
+        leadId: null,
+        memberIds: ['u-dev1'],
+        capacityPoints: null,
+      },
+    })
+    const options = async () => {
+      await user.click(await screen.findByRole('combobox', { name: '+ Add a member…' }))
+      const names = (await screen.findAllByRole('option')).map((o) => o.textContent)
+      await user.keyboard('{Escape}')
+      return names
+    }
+
+    expect((await options()).some((n) => n?.startsWith('Dev One'))).toBe(false)
+    expect((await options()).some((n) => n?.startsWith('Dev Two'))).toBe(true)
+
+    await user.click(await screen.findByRole('button', { name: 'Remove Dev One' }))
+    expect((await options()).some((n) => n?.startsWith('Dev One'))).toBe(true)
+  })
 })

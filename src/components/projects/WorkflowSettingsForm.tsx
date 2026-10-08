@@ -473,6 +473,8 @@ export function WorkflowSettingsForm({
                         onChange={(userId) => addApproverUser(t.from, t.to, userId)}
                         allowUnassigned={false}
                         placeholder="+ Add an individual approver…"
+                        excludeIds={t.approverUserIds ?? []}
+                        emptyText="Everyone is already an approver"
                       />
 
                       {/* Gap-closure: teams and project roles as approvers - the backend has

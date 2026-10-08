@@ -151,6 +151,8 @@ export function SecuritySchemeForm({
               onChange={(userId) => addUser(index, userId)}
               allowUnassigned={false}
               placeholder="+ Add an individual…"
+              excludeIds={level.allowedUserIds}
+              emptyText="Everyone is already listed"
             />
 
             <GrantTeamsAndRoles

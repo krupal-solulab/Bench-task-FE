@@ -20,6 +20,10 @@ export interface UserSelectProps {
   allowUnassigned?: boolean
   /** Read-only (e.g. a field-permission rule) - shows the value but can't be changed. */
   disabled?: boolean
+  /** Leave these people out - e.g. those already in the list this picker adds to. */
+  excludeIds?: string[]
+  /** Shown when nobody is left to pick (everyone is excluded or out of scope). */
+  emptyText?: string
 }
 
 const UNASSIGNED_VALUE = '__unassigned__'
@@ -32,19 +36,23 @@ export function UserSelect({
   id,
   allowUnassigned = true,
   disabled = false,
+  excludeIds,
+  emptyText = 'No users found',
 }: UserSelectProps) {
   const { data, isLoading, isError } = useAssignableUsers()
   const [search, setSearch] = useState('')
 
   const options = useMemo(() => {
     const pool = data?.data ?? []
-    const scoped = memberIds ? pool.filter((u) => memberIds.includes(u.id)) : pool
+    const inScope = memberIds ? pool.filter((u) => memberIds.includes(u.id)) : pool
+    const excluded = new Set(excludeIds ?? [])
+    const scoped = excluded.size > 0 ? inScope.filter((u) => !excluded.has(u.id)) : inScope
     if (!search.trim()) return scoped
     const term = search.trim().toLowerCase()
     return scoped.filter(
       (u) => u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term),
     )
-  }, [data, memberIds, search])
+  }, [data, memberIds, excludeIds, search])
 
   if (isLoading) {
     return (
@@ -64,7 +72,9 @@ export function UserSelect({
 
   // Only fall back to the "Unassigned" sentinel when that item actually renders — otherwise
   // Radix can't resolve a label for it and the trigger shows blank instead of the placeholder.
-  const selectValue = value ?? (allowUnassigned ? UNASSIGNED_VALUE : undefined)
+  // An empty string (not undefined) keeps the Select controlled: as an "add someone" picker
+  // (value always null) it then shows its placeholder again after each pick instead of a blank.
+  const selectValue = value ?? (allowUnassigned ? UNASSIGNED_VALUE : '')
 
   return (
     <Select
@@ -86,6 +96,11 @@ export function UserSelect({
           />
         </div>
         {allowUnassigned && <SelectItem value={UNASSIGNED_VALUE}>Unassigned</SelectItem>}
+        {options.length === 0 && (
+          <p className="px-2 py-3 text-center text-xs text-muted-foreground">
+            {search.trim() ? 'No users match your search' : emptyText}
+          </p>
+        )}
         {options.map((user) => (
           <SelectItem key={user.id} value={user.id}>
             {user.name} · {user.email}

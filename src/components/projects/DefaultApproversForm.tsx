@@ -156,6 +156,8 @@ export function DefaultApproversForm({
         onChange={addUser}
         allowUnassigned={false}
         placeholder="+ Add a default approver…"
+        excludeIds={grant.allowedUserIds}
+        emptyText="Everyone is already an approver"
       />
 
       <GrantTeamsAndRoles

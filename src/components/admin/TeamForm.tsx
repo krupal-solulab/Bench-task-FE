@@ -129,6 +129,8 @@ export function TeamForm({ initialValues, onSubmit, onCancel, submitLabel }: Tea
           onChange={addMember}
           allowUnassigned={false}
           placeholder="+ Add a member…"
+          excludeIds={memberIds}
+          emptyText="Everyone is already in this team"
         />
       </div>
 
