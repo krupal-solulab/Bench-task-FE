@@ -19,6 +19,9 @@ export interface QuickAction {
   run: () => Promise<string>
 }
 
+/** Pages under /tasks/ that are not an issue. */
+const NON_ISSUE_TASK_PAGES = new Set(['my-tasks'])
+
 /**
  * Module 10 gap-closure: contextual quick actions for the command palette - when the current page
  * is an issue, the palette offers the most common one-step changes for it. Every action goes
@@ -28,9 +31,14 @@ export interface QuickAction {
  */
 export function useTaskQuickActions(): QuickAction[] {
   const location = useLocation()
-  const taskId = matchPath('/tasks/:id', location.pathname)?.params.id
+  // `/tasks/my-tasks` is its own page but also matches `/tasks/:id` - and the API's
+  // GET /tasks/my-tasks returns a task LIST, which crashed the palette on the My Tasks page.
+  const matchedId = matchPath('/tasks/:id', location.pathname)?.params.id
+  const taskId = matchedId && !NON_ISSUE_TASK_PAGES.has(matchedId) ? matchedId : undefined
   const { user } = useAuth()
-  const { data: task } = useTask(taskId)
+  const { data: fetched } = useTask(taskId)
+  // Defensive: only ever act on a single issue (one with a project).
+  const task = fetched?.project ? fetched : undefined
   const { data: workflow } = useProjectWorkflow(task?.project.id, task?.issueType)
   const assign = useUpdateAnyTaskAssignee()
   const updateStatus = useUpdateAnyTaskStatus()
