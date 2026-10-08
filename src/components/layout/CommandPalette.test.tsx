@@ -196,6 +196,25 @@ describe('CommandPalette', () => {
       expect(await screen.findByText(/assigned to you/)).toBeInTheDocument()
     })
 
+    it('does not crash on the My Tasks page, which shares the /tasks/ prefix (regression)', async () => {
+      // The real API answers GET /tasks/my-tasks with a LIST - which the palette used to treat as
+      // an issue and crash on (blank My Tasks page).
+      server.use(
+        http.get(url('/tasks/my-tasks'), () =>
+          HttpResponse.json({
+            success: true,
+            data: [task],
+            meta: { page: 1, limit: 20, total: 1 },
+          }),
+        ),
+      )
+      const user = userEvent.setup()
+      renderPalette(makeAuthValue(), '/tasks/my-tasks')
+      await user.keyboard('{Control>}k{/Control}')
+      await screen.findByPlaceholderText(/Go to a page/)
+      expect(screen.queryByText('Actions')).not.toBeInTheDocument()
+    })
+
     it('shows no actions away from an issue page (regression)', async () => {
       const user = userEvent.setup()
       renderPalette()
