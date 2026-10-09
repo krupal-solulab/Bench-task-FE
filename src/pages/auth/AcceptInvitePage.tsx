@@ -105,7 +105,9 @@ const STATUS_TITLES = {
 } as const
 
 function statusSubtitle(invite: ProjectInvitePreview): string {
-  const who = invite.inviterName ?? 'the project owner'
+  const who =
+    invite.inviterName ??
+    (invite.scope === 'organization' ? 'your administrator' : 'the project owner')
   switch (invite.status) {
     case 'Accepted':
       return `Sign in with ${invite.email} and the password you chose.`

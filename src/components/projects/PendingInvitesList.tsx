@@ -7,6 +7,11 @@ import {
   useResendProjectInvite,
   useRevokeProjectInvite,
 } from '@/hooks/mutations/useProjectInviteMutations'
+import { useOrganizationInvites } from '@/hooks/queries/useOrganizationInvites'
+import {
+  useResendOrganizationInvite,
+  useRevokeOrganizationInvite,
+} from '@/hooks/mutations/useOrganizationInviteMutations'
 import { useToast } from '@/hooks/useToast'
 import { formatRelativeTime } from '@/lib/date'
 import { customRoleChoice, roleChoiceLabel } from '@/lib/roles'
@@ -15,20 +20,28 @@ import { toApiError } from '@/lib/error'
 import type { ProjectInvite, SentProjectInvite } from '@/types/project-invite.types'
 
 /** Invitations still waiting on someone (pending or expired), with Resend / Revoke. Accepted
- * ones show up as members instead; revoked ones are gone from view. */
+ * ones show up as members/users instead; revoked ones are gone from view. Without a `projectId`
+ * it lists the organization's own invitations (Admin > Users). */
 export function PendingInvitesList({
   projectId,
   canManage,
   onResent,
 }: {
-  projectId: string
+  projectId?: string
   canManage: boolean
   onResent: (sent: SentProjectInvite) => void
 }) {
-  const invites = useProjectInvites(projectId, canManage)
+  const isProject = !!projectId
+  const projectInvites = useProjectInvites(projectId ?? '', canManage && isProject)
+  const orgInvites = useOrganizationInvites(canManage && !isProject)
+  const invites = isProject ? projectInvites : orgInvites
   const { data: customRoles } = useCustomRoles(canManage)
-  const resend = useResendProjectInvite(projectId)
-  const revoke = useRevokeProjectInvite(projectId)
+  const resendProject = useResendProjectInvite(projectId ?? '')
+  const revokeProject = useRevokeProjectInvite(projectId ?? '')
+  const resendOrg = useResendOrganizationInvite()
+  const revokeOrg = useRevokeOrganizationInvite()
+  const resend = isProject ? resendProject : resendOrg
+  const revoke = isProject ? revokeProject : revokeOrg
   const { showToast } = useToast()
   const [revokeTarget, setRevokeTarget] = useState<ProjectInvite | null>(null)
   const [resendingId, setResendingId] = useState<string | null>(null)

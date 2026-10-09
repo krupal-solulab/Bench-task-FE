@@ -81,6 +81,9 @@ export const queryKeys = {
     assignable: ['users', 'assignable'] as const,
     detail: (id: string) => ['users', 'detail', id] as const,
   },
+  organizationInvites: {
+    all: ['organization-invites'] as const,
+  },
   projects: {
     all: ['projects'] as const,
     list: (filters: unknown) => ['projects', 'list', filters] as const,

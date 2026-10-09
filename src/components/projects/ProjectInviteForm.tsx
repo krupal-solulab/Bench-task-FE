@@ -6,21 +6,27 @@ import { RoleChoiceSelect } from '@/components/admin/RoleChoiceSelect'
 import { useCustomRoles } from '@/hooks/queries/useCustomRoles'
 import { findCustomRole } from '@/lib/roles'
 import { projectInviteSchema, type ProjectInviteFormValues } from '@/schemas/project-invite.schema'
-import { PROJECT_MEMBER_ROLES, type ProjectMemberRole } from '@/types/user.types'
+import { PROJECT_MEMBER_ROLES, type OrgRole } from '@/types/user.types'
 
 export const PROJECT_INVITE_FORM_ID = 'project-invite-form'
 
-const ROLE_HINTS: Record<ProjectMemberRole, string> = {
+const ROLE_HINTS: Record<OrgRole, string> = {
   Developer: 'Works on tasks in the projects they belong to.',
   Manager: 'Can also own and run projects of their own.',
+  Admin: 'Full access to the whole organization, including its settings and users.',
 }
 
 /** Email + role only: the invitee enters their own name, and the server generates a temporary
  * password (the owner never types one). */
 export function ProjectInviteForm({
   onSubmit,
+  builtInRoles = PROJECT_MEMBER_ROLES,
+  formId = PROJECT_INVITE_FORM_ID,
 }: {
   onSubmit: (values: ProjectInviteFormValues) => Promise<void>
+  /** Built-in roles offered (custom roles are always listed). Admin > Users adds Admin. */
+  builtInRoles?: readonly OrgRole[]
+  formId?: string
 }) {
   const {
     register,
@@ -37,17 +43,10 @@ export function ProjectInviteForm({
   const custom = findCustomRole(role, customRoles)
   const roleHint =
     custom?.description ||
-    (custom
-      ? `Custom role on ${custom.accessLevel} access.`
-      : ROLE_HINTS[role as ProjectMemberRole])
+    (custom ? `Custom role on ${custom.accessLevel} access.` : ROLE_HINTS[role as OrgRole])
 
   return (
-    <form
-      id={PROJECT_INVITE_FORM_ID}
-      onSubmit={handleSubmit(onSubmit)}
-      className="space-y-4"
-      noValidate
-    >
+    <form id={formId} onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <FormField label="Email" htmlFor="invite-email" error={errors.email?.message} required>
         <Input id="invite-email" type="email" autoComplete="off" {...register('email')} />
       </FormField>
@@ -56,7 +55,7 @@ export function ProjectInviteForm({
           id="invite-role"
           value={role}
           onChange={(v) => setValue('role', v)}
-          builtIn={PROJECT_MEMBER_ROLES}
+          builtIn={builtInRoles}
         />
       </FormField>
       <p className="text-xs text-muted-foreground">
