@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "node api.js && vite",
+    "build": "node api.js && tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
@@ -95,5 +95,8 @@
     "*.{ts,tsx,css,md,json}": [
       "prettier --write"
     ]
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
