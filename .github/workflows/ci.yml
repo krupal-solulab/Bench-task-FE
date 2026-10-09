@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, development, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main, development, develop]
 
 jobs:
   build-and-test:
@@ -15,12 +15,14 @@ jobs:
       VITE_ENABLE_DEVTOOLS: 'false'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
+          # Same Node as local development (.nvmrc). Node 20 is end-of-life, and under Node 20/22
+          # jsdom file uploads never reach the test API mock, failing the attachment tests.
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -42,7 +44,7 @@ jobs:
         run: npm run build
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: dist
           path: dist

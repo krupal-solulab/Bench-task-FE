@@ -1,7 +1,12 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { server } from './mocks/server'
+
+// findBy*/waitFor give up after 1s by default. Under coverage instrumentation on a CI runner a
+// form's lookups (e.g. TaskForm's Epic picker) can take longer than that, failing tests that pass
+// locally - wait up to 5s instead (still well under the 20s test timeout in vitest.config.ts).
+configure({ asyncUtilTimeout: 5000 })
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
