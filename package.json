@@ -95,5 +95,8 @@
     "*.{ts,tsx,css,md,json}": [
       "prettier --write"
     ]
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
