@@ -38,7 +38,7 @@ export function InviteSecretsPanel({ sent }: { sent: SentProjectInvite }) {
       <SecretField label="Temporary password" value={temporaryPassword} masked />
 
       <CopyAllButton
-        text={`You're invited to join the project.\nLink: ${inviteUrl}\nEmail: ${invite.email}\nTemporary password: ${temporaryPassword}`}
+        text={`You're invited to join ${invite.projectId ? 'the project' : 'our workspace'}.\nLink: ${inviteUrl}\nEmail: ${invite.email}\nTemporary password: ${temporaryPassword}`}
       />
 
       <p className="text-xs text-muted-foreground">

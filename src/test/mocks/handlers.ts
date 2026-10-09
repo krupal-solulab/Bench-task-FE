@@ -45,6 +45,8 @@ function fail(statusCode: number, message: string): ApiErrorResponse {
 const url = (path: string) => `${BASE_URL}${path}`
 
 export const handlers = [
+  // Admin > Users invitations (organization invites).
+  http.get(url('/organization-invites'), () => HttpResponse.json(ok([]))),
   // Module 12 gap-closure defaults.
   http.get(url('/tasks/:id/transitions/preview'), () =>
     HttpResponse.json(ok({ currentStatus: 'Todo', pendingApprovalTo: null, transitions: [] })),

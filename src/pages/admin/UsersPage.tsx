@@ -1,32 +1,44 @@
 import { useContext, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, UserPlus } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/common/Button'
 import { Modal } from '@/components/common/Modal'
 import { SearchInput } from '@/components/common/SearchInput'
 import { Pagination } from '@/components/common/Pagination'
+import { ProjectInviteForm } from '@/components/projects/ProjectInviteForm'
+import { InviteSecretsPanel } from '@/components/projects/InviteSecretsPanel'
+import { PendingInvitesList } from '@/components/projects/PendingInvitesList'
 import { UserForm } from '@/components/admin/UserForm'
 import { UserTable } from '@/components/admin/UserTable'
 import { UserBulkActionBar } from '@/components/admin/UserBulkActionBar'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { AuthContext } from '@/context/AuthContext'
 import { useUsers } from '@/hooks/queries/useUsers'
+import { useCreateOrganizationInvite } from '@/hooks/mutations/useOrganizationInviteMutations'
 import { useCreateUser } from '@/hooks/mutations/useUserMutations'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { useToast } from '@/hooks/useToast'
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants'
 import { isConflictError, toApiError } from '@/lib/error'
-import type { User } from '@/types/user.types'
+import { ORG_ROLES, type User } from '@/types/user.types'
+import type { ProjectInviteFormValues } from '@/schemas/project-invite.schema'
 import type { CreateUserFormValues } from '@/schemas/user.schema'
+import type { SentProjectInvite } from '@/types/project-invite.types'
 
 const ALL = '__all__'
+const INVITE_FORM_ID = 'org-invite-form'
 
 import { RoleChoiceSelect } from '@/components/admin/RoleChoiceSelect'
 import { useCustomRoles } from '@/hooks/queries/useCustomRoles'
 import { fromRoleChoice } from '@/lib/roles'
 
 export function UsersPage() {
+  const [inviteOpen, setInviteOpen] = useState(false)
+  // Both ways to add someone stay available: invite by email (they set their own name and
+  // password) or create the account directly with a password the Admin chooses.
   const [createOpen, setCreateOpen] = useState(false)
+  // Set right after an invite is sent/resent: the only time its link + password are visible.
+  const [sentInvite, setSentInvite] = useState<SentProjectInvite | null>(null)
   // Module 8 gap-closure - bulk-action selection. Cleared whenever the visible page/filters change
   // so a bulk action never silently applies to rows the Admin can no longer see.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -56,6 +68,7 @@ export function UsersPage() {
     role: roleFilter && !roleFilter.customRoleId ? roleFilter.role : undefined,
     customRoleId: roleFilter?.customRoleId ?? undefined,
   })
+  const createInvite = useCreateOrganizationInvite()
   const createUser = useCreateUser()
   const { showToast } = useToast()
 
@@ -76,6 +89,8 @@ export function UsersPage() {
     setState({ search: '', role: undefined, page: 1 })
   }
 
+  // Admin > Users invites by email + role, like a project's Members tab: the person enters their
+  // own name and a temporary password is generated (the Admin never types one).
   async function handleCreate(values: CreateUserFormValues) {
     try {
       const { role, customRoleId } = fromRoleChoice(values.role, customRoles)
@@ -94,15 +109,35 @@ export function UsersPage() {
     }
   }
 
+  async function handleInvite(values: ProjectInviteFormValues) {
+    try {
+      const { role, customRoleId } = fromRoleChoice(values.role, customRoles)
+      const sent = await createInvite.mutateAsync({ email: values.email, role, customRoleId })
+      setInviteOpen(false)
+      setSentInvite(sent)
+    } catch (err) {
+      showToast({
+        title: 'Could not send invitation',
+        description: toApiError(err).message,
+        variant: 'destructive',
+      })
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Users"
         description="Manage accounts, roles, and access"
         actions={
-          <Button onClick={() => setCreateOpen(true)} className="gap-1">
-            <Plus className="h-4 w-4" /> New User
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={() => setCreateOpen(true)} className="gap-1">
+              <Plus className="h-4 w-4" /> New User
+            </Button>
+            <Button onClick={() => setInviteOpen(true)} className="gap-1">
+              <UserPlus className="h-4 w-4" /> Invite user
+            </Button>
+          </div>
         }
       />
 
@@ -128,6 +163,8 @@ export function UsersPage() {
           placeholder="All roles"
         />
       </div>
+
+      <PendingInvitesList canManage onResent={setSentInvite} />
 
       {selectedIds.size > 0 && (
         <UserBulkActionBar selectedIds={selectedIds} onDone={() => setSelectedIds(new Set())} />
@@ -185,6 +222,41 @@ export function UsersPage() {
 
       <Modal open={createOpen} onOpenChange={setCreateOpen} title="New user">
         <UserForm onSubmit={handleCreate} onCancel={() => setCreateOpen(false)} />
+      </Modal>
+
+      <Modal
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        title="Invite user"
+        description="They'll get an email with a link and a temporary password, then set their own name and password."
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setInviteOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" form={INVITE_FORM_ID} loading={createInvite.isPending}>
+              Send invitation
+            </Button>
+          </>
+        }
+      >
+        {inviteOpen && (
+          <ProjectInviteForm
+            onSubmit={handleInvite}
+            builtInRoles={ORG_ROLES}
+            formId={INVITE_FORM_ID}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        open={!!sentInvite}
+        onOpenChange={(open) => !open && setSentInvite(null)}
+        title={sentInvite?.invite.resendCount ? 'Invitation resent' : 'Invitation sent'}
+        size="md"
+        footer={<Button onClick={() => setSentInvite(null)}>Done</Button>}
+      >
+        {sentInvite && <InviteSecretsPanel sent={sentInvite} />}
       </Modal>
     </div>
   )
